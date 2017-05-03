@@ -32,8 +32,11 @@
 
 #include <map>
 #include <regex>
+#include <tuple>
+#include <utility>
 #include <vector>
 #include <string>
+#include <cassert>
 #include <sstream>
 #include <codecvt>
 #include <functional>
@@ -53,8 +56,8 @@ namespace cmd_options {
   it was thrown. These sequences are:
 
    - '%@' : This string is replaced with the command argument as provided
-   - '&L' : This string is replaced by parse_options.long_option_flag
-   - '&S' : This string is replaced by parse_options.short_option_flag
+   - '%L' : This string is replaced by parse_options.long_option_flag
+   - '%S' : This string is replaced by parse_options.short_option_flag
 
   Not all sequences are available everywhere. For example, if an error
   is observed in an option_description finalize function, the '%@'
@@ -102,13 +105,195 @@ class command_option_error : public std::runtime_error {
 
 
 /*
-  function that takes key and returns ??
+  Currently uses boost::any but will eventually transition to std::any in C++17
+*/
+using any = boost::any;
+
+/*
+  Checking if any has a value is different between boost and C++17.
+
+  Provide an abstraction
+*/
+inline bool is_empty(const any &_val)
+{
+  return _val.empty();
+}
+
+/*
+  Convenience syntax for any_cast between boost::any and std::any
+
+  Would rather use a "using any_cast = boost::any_cast" syntax but aliases
+  are not available for functions
+*/
+template<typename T, typename AnyT>
+inline T any_cast(AnyT && _val)
+{
+  return boost::any_cast<T>(std::forward<AnyT>(_val));
+}
+
+/*
+  Convenience for bad_any_cast between boost::any and std::any
+*/
+using bad_any_cast = boost::bad_any_cast;
+
+
+template<typename CharT>
+using basic_variable_map = std::multimap<std::basic_string<CharT>,any>;
+
+/*
+  Structure describing an unpacked argument.
+
+  The elements represent:
+    - \c prefix A string specifying the start of the option.
+
+    - \c raw_key A string containing the raw key.
+
+    - \c packed_key A string containing any remaining packed keys if
+    present. To prevent undefined behavior, the \c prefix string will be
+    prepended to the \c packed_key prior to any further processing.
+
+    - \c value A string containing the value if present.
+
+    - \c value_provided A boolean value indicating that the argument
+      contained a packed value. This is necessary because it is possible
+      to provide a empty value
+
+  This structure is intended to represent an unpacked argument, not it's
+  semantic value and is a byproduct of the may different ways that an
+  option argument can be packed together. For example: here are some
+  known ways that option arguments can be represented:
+
+      1) --foo bar    = long option, key=foo, value=bar
+                      : prefix = "--"
+                      : raw_key = "foo"
+                      : packed_key = value = ""
+                      : value_provided = false.
+                      : "bar" is not part of the option pack
+
+      2) --foo=bar    = long option, key=foo, value=bar
+                      : prefix = "--"
+                      : raw_key = "foo"
+                      : packed_key = ""
+                      : value = "bar"
+                      : value_provided = true
+
+      3) -foo bar     = long option, key=foo, value=bar
+                      : prefix = "-"
+                      : raw_key = "foo"
+                      : packed_key = value = ""
+                      : value_provided = false
+                      : "bar" is not part of the option pack
+
+      2) -foo=bar     = long option, key=foo, value=bar
+                      : prefix = "-"
+                      : raw_key = "foo"
+                      : packed_key = ""
+                      : value = "bar"
+                      : value_provided = true
+
+      5) -f bar       = short option, key=f, value=bar
+                      : prefix = "-"
+                      : raw_key = "f"
+                      : packed_key = value = ""
+                      : value_provided = false
+                      : "bar" is not part of the option pack
+
+      6) -fBar        = short option, key=f, value=Bar
+                      : prefix = "-"
+                      : raw_key = "f"
+                      : packed_key = value = ""
+                      : value = "Bar"
+                      : value_provided = true
+
+      7) -fbar        = 4 short options with keys: 'f', 'b', 'a', and 'r'
+                      : prefix = "-"
+                      : raw_key = "f"
+                      : packed_key = "bar"
+                      : value = ""
+                      : value_provided = false
+*/
+template<typename CharT>
+struct basic_option_pack {
+  typedef std::basic_string<CharT> string_type;
+
+  string_type prefix;
+  string_type raw_key;
+  string_type packed_key;
+  string_type value;
+  bool value_provided = false;
+};
+
+
+/*
+  Unpack long arguments in the form: "--key" or "--key=value"
+*/
+template<typename CharT>
+basic_option_pack<CharT> unpack_std_long(const std::basic_string<CharT> &str)
+{
+  typedef basic_option_pack<CharT> option_pack;
+  typedef std::basic_string<CharT> string_type;
+  typedef typename string_type::size_type size_type;
+
+  static const string_type prefix("--");
+  static const string_type assignment("=");
+
+  size_type loc = str.find(prefix);
+  if(loc == string_type::npos)
+    return option_pack();
+
+  loc = loc+prefix.size();
+  size_type asmt_loc = str.find(assignment,loc);
+  if(asmt_loc == string_type::npos)
+    return option_pack{prefix,str.substr(loc,asmt_loc)};
+
+  return option_pack{
+    prefix,str.substr(loc,asmt_loc),{},str.substr(asmt_loc+1),true};
+}
+
+/*
+  Unpack short arguments in the form: "-k" where 'k' is the key
+*/
+template<typename CharT>
+basic_option_pack<CharT> unpack_std_short(const std::basic_string<CharT> &str)
+{
+  typedef basic_option_pack<CharT> option_pack;
+  typedef std::basic_string<CharT> string_type;
+  typedef typename string_type::size_type size_type;
+
+  static const string_type prefix("-");
+
+  size_type loc = str.find(prefix);
+  if(loc == string_type::npos || loc+prefix.size()+1 == str.size())
+    return option_pack();
+
+  return option_pack{prefix,str.substr(loc+prefix.size())};
+}
+
+/*
+  A description for a single option
 */
 template<typename CharT>
 struct basic_option_description {
-  typedef CharT                                               char_type;
-  typedef std::basic_string<CharT>                            string_type;
-  typedef std::multimap<std::basic_string<CharT>,boost::any>  variable_map;
+  typedef CharT                     char_type;
+  typedef std::basic_string<CharT>  string_type;
+  typedef basic_variable_map<CharT> variable_map;
+  typedef basic_option_pack<CharT>  option_pack;
+
+  /*
+    Unpack the raw option argument pack. If \c unpack_argument is not
+    provided, then the this description is assumed to describe a
+    positional argument.
+
+    If the argument cannot be unpacked by this description, then return
+    the empty string in the \c raw_key position (or an empty option_pack).
+
+    This function is intended to essentially parse the option argument
+    into its constitute properties but it can also be used to inject
+    hidden options that can be useful. For example, if --foo is given
+    implies --bar, even if --bar was not provided, then the unpacked
+    argument for "foo" can return "bar" in the \c packed_key field.
+  */
+  std::function<option_pack(const string_type &arg)> unpack_argument;
 
   /*
     For the given long option (without the '--' prefix), return the mapped_key
@@ -226,7 +411,7 @@ struct basic_option_description {
     this description does not define the given positional option, then
     return the empty string.
   */
-  std::function<string_type(std::size_t)> implicit_key;
+  std::function<string_type(std::size_t i)> implicit_key;
 
 
   /*
@@ -244,7 +429,7 @@ struct basic_option_description {
       -- providing a value is mandatory (make_value exists, no implicit_value)
         -- use the one provided (calls make_value)
 
-    If set, return the implicit value of the option as a boost::any
+    If set, return the implicit value of the option as a any
     object. This value is used whenever the option either explicitly
     forbids a value or it is optional and one is not provided. If not
     set, the value defaults to \c string_type().
@@ -258,7 +443,7 @@ struct basic_option_description {
     presence or absence of the 'no' prefix.
   */
   std::function<
-    boost::any(const string_type &, const variable_map &)> implicit_value;
+    any(const string_type &key, const variable_map &vm)> implicit_value;
 
   /*
     Return the human-readable description for this option's implicit
@@ -274,7 +459,7 @@ struct basic_option_description {
       -- interpret the option value (make_value is set)
       -- use default constructed value (make_value is not set)
 
-    If set, return the value of the argument as a boost::any as
+    If set, return the value of the argument as a any as
     determined by the contents of the second parameter. If not set, the
     option explicitly forbids option values. I.e. --foo=bar or --foo bar
     will return an error unless the 'bar' is a valid positional option
@@ -310,7 +495,7 @@ struct basic_option_description {
   */
 
   std::function<
-    boost::any(const string_type &mapped_key,const string_type &value,
+    any(const string_type &mapped_key,const string_type &value,
       const variable_map &vm)> make_value;
 
   /*
@@ -328,10 +513,8 @@ struct basic_option_description {
 
 };
 
-
-
-
-
+template<typename CharT>
+using basic_options_group = std::vector<basic_option_description<CharT> >;
 
 
 
@@ -348,10 +531,9 @@ struct parse_options {
 
 template<typename CharT>
 std::pair<std::basic_string<CharT>,
-  typename std::vector<basic_option_description<CharT> >::const_iterator>
+  typename basic_options_group<CharT>::const_iterator>
 find_long_key(const std::basic_string<CharT> &key,
-  const std::vector<basic_option_description<CharT> > &grp,
-  const typename basic_option_description<CharT>::variable_map &vm)
+  const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm)
 {
   typedef std::basic_string<CharT> string_type;
 
@@ -373,10 +555,9 @@ find_long_key(const std::basic_string<CharT> &key,
 
 template<typename CharT>
 std::pair<std::basic_string<CharT>,
-  typename std::vector<basic_option_description<CharT> >::const_iterator>
+  typename basic_options_group<CharT>::const_iterator>
 find_short_key(const std::basic_string<CharT> &key,
-  const std::vector<basic_option_description<CharT> > &grp,
-  const typename basic_option_description<CharT>::variable_map &vm)
+  const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm)
 {
   typedef std::basic_string<CharT> string_type;
 
@@ -398,10 +579,9 @@ find_short_key(const std::basic_string<CharT> &key,
 
 template<typename CharT>
 std::pair<std::basic_string<CharT>,
-  typename std::vector<basic_option_description<CharT> >::const_iterator>
+  typename basic_options_group<CharT>::const_iterator>
 find_positional_key(std::size_t pos,
-  const std::vector<basic_option_description<CharT> > &grp,
-  const typename basic_option_description<CharT>::variable_map &vm)
+  const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm)
 {
   typedef std::basic_string<CharT> string_type;
 
@@ -424,14 +604,12 @@ find_positional_key(std::size_t pos,
 
 template<typename CharT>
 void parse_long(const CharT * const argv[], std::size_t &pos,
-  std::size_t argc, const std::vector<basic_option_description<CharT> > &grp,
-  typename basic_option_description<CharT>::variable_map &vm,
-  const parse_options<CharT> &opt)
+  std::size_t argc, const basic_options_group<CharT> &grp,
+  basic_variable_map<CharT> &vm, const parse_options<CharT> &opt)
 {
   typedef std::basic_string<CharT> string_type;
   typedef typename string_type::size_type size_type;
-  typedef std::vector<basic_option_description<CharT> > options_group_type;
-  typedef std::multimap<std::basic_string<CharT>,boost::any> variable_map;
+  typedef basic_options_group<CharT> options_group_type;
 
   // eat long_option_flag
   string_type arg(argv[pos]);
@@ -448,7 +626,7 @@ void parse_long(const CharT * const argv[], std::size_t &pos,
   if(desc == grp.end())
     throw command_option_error("unrecognized option '%@'");
 
-  boost::any mapped_value;
+  any mapped_value;
   if(!desc->make_value) {
     // key only, check to see if it has an '=' but shouldn't
     if(eqloc != string_type::npos)
@@ -515,20 +693,17 @@ void parse_long(const CharT * const argv[], std::size_t &pos,
 */
 template<typename CharT>
 void parse_short(const CharT * const argv[], std::size_t &pos,
-  std::size_t argc, const std::vector<basic_option_description<CharT> > &grp,
-  typename basic_option_description<CharT>::variable_map &vm,
-  const parse_options<CharT> &opt)
+  std::size_t argc, const basic_options_group<CharT> &grp,
+  basic_variable_map<CharT> &vm, const parse_options<CharT> &opt)
 {
   typedef std::basic_string<CharT> string_type;
-  typedef typename string_type::size_type size_type;
-  typedef std::vector<basic_option_description<CharT> > options_group_type;
-  typedef std::multimap<std::basic_string<CharT>,boost::any> variable_map;
+  typedef basic_options_group<CharT> options_group_type;
 
   string_type arg1(argv[pos]);
 
   // eat short_option_flag
   string_type key = arg1.substr(opt.short_option_flag.size());
-
+std::cerr << "KEY IS: " << key << "\n";
   auto &&mapped_key_desc = find_short_key(key,grp,vm);
   const string_type &mapped_key = mapped_key_desc.first;
   typename options_group_type::const_iterator desc = mapped_key_desc.second;
@@ -539,7 +714,7 @@ void parse_short(const CharT * const argv[], std::size_t &pos,
   string_type value =
     arg1.substr(opt.short_option_flag.size()+opt.short_option_length);
 
-  boost::any mapped_value;
+  any mapped_value;
   if(!desc->make_value) {
     // key only, check if it has arguments but shouldn't
     if(!value.empty())
@@ -597,16 +772,15 @@ void parse_short(const CharT * const argv[], std::size_t &pos,
   returned variable_map copied from \c vm.
 */
 template<typename CharT>
-typename basic_option_description<CharT>::variable_map
+basic_variable_map<CharT>
 parse_arguments(const CharT * const argv[], std::size_t argc,
-  std::size_t &endc, const std::vector<basic_option_description<CharT> > &grp,
-  const typename basic_option_description<CharT>::variable_map &vm,
-  const parse_options<CharT> &opt, bool partial)
+  std::size_t &endc, const basic_options_group<CharT> &grp,
+  const basic_variable_map<CharT> &vm, const parse_options<CharT> &opt,
+  bool partial)
 {
   typedef std::basic_string<CharT> string_type;
-  typedef typename string_type::size_type size_type;
-  typedef std::vector<basic_option_description<CharT> > options_group_type;
-  typedef std::multimap<std::basic_string<CharT>,boost::any> variable_map;
+  typedef basic_options_group<CharT> options_group_type;
+  typedef basic_variable_map<CharT> variable_map;
 
   variable_map _vm = vm;
 
@@ -668,7 +842,7 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
           if(desc == grp.end())
             throw command_option_error("unrecognized positional option '%@'");
 
-          boost::any mapped_value;
+          any mapped_value;
           if(desc->make_value)
             mapped_value = desc->make_value(mapped_key,arg,_vm);
 
@@ -684,8 +858,10 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
     }
 
     if(!partial) {
-      for(auto &desc : grp)
-        desc.finalize(_vm);
+      for(auto &desc : grp) {
+        if(desc.finalize)
+          desc.finalize(_vm);
+      }
     }
   }
   catch(const command_option_error &ex) {
@@ -701,76 +877,116 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
   return _vm;
 }
 
+/*
+  Parse the arguments contained in \c argv with size \c argc according
+  to the option description group \c grp with parse_options \c opt. If
+  \c partial is true, then finalize parsing. Options are returned in a
+  new variable map.
+*/
 template<typename CharT>
-inline std::multimap<std::basic_string<CharT>,boost::any>
+inline basic_variable_map<CharT>
 parse_arguments(const CharT * const argv[],
-  std::size_t argc, const std::vector<basic_option_description<CharT> > &grp,
+  std::size_t argc, const basic_options_group<CharT> &grp,
   const parse_options<CharT> &opt, bool partial = false)
 {
   std::size_t endc;
-  return parse_arguments(argv,argc,endc,grp,
-    std::multimap<std::basic_string<CharT>,boost::any>(),opt,partial);
+  return parse_arguments(argv,argc,endc,grp,basic_variable_map<CharT>(),
+    opt,partial);
 }
 
+/*
+  Parse the arguments contained in \c argv with size \c argc according
+  to the option description group \c grp with parse_options \c opt. If
+  \c partial is true, then finalize parsing. Options are added to a copy
+  of the variable map \c _vm and returned.
+*/
 template<typename CharT>
-inline std::multimap<std::basic_string<CharT>,boost::any>
-parse_arguments(const CharT * const argv[],
-  std::size_t argc, const std::vector<basic_option_description<CharT> > &grp,
-  const std::multimap<std::basic_string<CharT>,boost::any> &_vm,
+inline basic_variable_map<CharT>
+parse_arguments(const CharT * const argv[], std::size_t argc,
+  const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &_vm,
   bool partial = false)
 {
   std::size_t endc;
   return parse_arguments(argv,argc,endc,grp,_vm,parse_options<CharT>(),partial);
 }
 
+/*
+  Parse the arguments contained in \c argv with size \c argc according
+  to the option description group \c grp with default parse_options. If
+  \c partial is true, then finalize parsing. Options are returned in a
+  new variable map.
+*/
 template<typename CharT>
-inline std::multimap<std::basic_string<CharT>,boost::any>
+inline basic_variable_map<CharT>
 parse_arguments(const CharT * const argv[], std::size_t argc,
-  const std::vector<basic_option_description<CharT> > &grp,
-  bool partial = false)
+  const basic_options_group<CharT> &grp, bool partial = false)
 {
   std::size_t endc;
-  return parse_arguments(argv,argc,endc,grp,
-    std::multimap<std::basic_string<CharT>,boost::any>(),
+  return parse_arguments(argv,argc,endc,grp,basic_variable_map<CharT>(),
     parse_options<CharT>(),partial);
 }
 
-
+/*
+  Parse the arguments contained in \c argv with size \c argc according
+  to the option description group \c grp with parse_options \c opt. If
+  \c partial is true, then finalize parsing. Options are returned in a
+  new variable map. If parsing is halted due to a "end of parse"
+  indicator (normally '--') then \c endc is updated to the index of the
+  first non-parsed argument.
+*/
 template<typename CharT>
-inline std::multimap<std::basic_string<CharT>,boost::any>
+inline basic_variable_map<CharT>
 parse_arguments(const CharT * const argv[], std::size_t argc,
-  std::size_t &endc, const std::vector<basic_option_description<CharT> > &grp,
+  std::size_t &endc, const basic_options_group<CharT> &grp,
   const parse_options<CharT> &opt, bool partial = false)
 {
-  return parse_arguments(argv,argc,endc,grp,
-    std::multimap<std::basic_string<CharT>,boost::any>(),opt,partial);
+  return parse_arguments(argv,argc,endc,grp,basic_variable_map<CharT>(),
+    opt,partial);
 }
 
+/*
+  Parse the arguments contained in \c argv with size \c argc according
+  to the option description group \c grp with parse_options \c opt. If
+  \c partial is true, then finalize parsing. Options are added to a copy
+  of the variable map \c _vm and returned. If parsing is halted due to a
+  "end of parse" indicator (normally '--') then \c endc is updated to
+  the index of the first non-parsed argument.
+*/
 template<typename CharT>
-inline std::multimap<std::basic_string<CharT>,boost::any>
+inline basic_variable_map<CharT>
 parse_arguments(const CharT * const argv[], std::size_t argc,
-  std::size_t &endc, const std::vector<basic_option_description<CharT> > &grp,
-  const std::multimap<std::basic_string<CharT>,boost::any> &_vm,
-  bool partial = false)
+  std::size_t &endc, const basic_options_group<CharT> &grp,
+  const basic_variable_map<CharT> &_vm, bool partial = false)
 {
   return parse_arguments(argv,argc,endc,grp,_vm,parse_options<CharT>(),partial);
 }
 
+/*
+  Parse the arguments contained in \c argv with size \c argc according
+  to the option description group \c grp with default parse_options. If
+  \c partial is true, then finalize parsing. Options are returned in a
+  new variable map. If parsing is halted due to a
+  "end of parse" indicator (normally '--') then \c endc is updated to
+  the index of the first non-parsed argument.
+*/
 template<typename CharT>
-inline std::multimap<std::basic_string<CharT>,boost::any>
+inline basic_variable_map<CharT>
 parse_arguments(const CharT * const argv[], std::size_t argc,
-  std::size_t &endc, const std::vector<basic_option_description<CharT> > &grp,
+  std::size_t &endc, const basic_options_group<CharT> &grp,
   bool partial = false)
 {
   return parse_arguments(argv,argc,endc,grp,
-    std::multimap<std::basic_string<CharT>,boost::any>(),
-    parse_options<CharT>(),partial);
+    basic_variable_map<CharT>(),parse_options<CharT>(),partial);
 }
 
 
 typedef basic_option_description<char> option_description;
 typedef std::vector<basic_option_description<char> > options_group;
-typedef std::multimap<std::basic_string<char>,boost::any> variable_map;
+typedef std::multimap<std::basic_string<char>,any> variable_map;
+
+typedef basic_option_description<wchar_t> woption_description;
+typedef std::vector<basic_option_description<wchar_t> > woptions_group;
+typedef std::multimap<std::basic_string<wchar_t>,any> wvariable_map;
 
 
 
@@ -792,23 +1008,18 @@ typedef std::multimap<std::basic_string<char>,boost::any> variable_map;
   therefore lots of constructors that someone needs to be read.
 */
 
-template<typename T, typename CharT>
-struct basic_value {
-  typedef T value_type;
+
+template<typename CharT>
+struct constrain {
   typedef std::basic_string<CharT> string_type;
 
-  basic_value<T,CharT> & implicit_value(const T &value) {
-    _implicit_value = std::make_shared<T>(value);
-    return *this;
-  }
-
-  basic_value<T,CharT> & occurrences(std::size_t n)
+  constrain<CharT> & occurrences(std::size_t n)
   {
     _min = _max = n;
     return *this;
   }
 
-  basic_value<T,CharT> & occurrences(std::size_t n, std::size_t m)
+  constrain<CharT> & occurrences(std::size_t n, std::size_t m)
   {
     _min = n;
     _max = m;
@@ -816,32 +1027,38 @@ struct basic_value {
     return *this;
   }
 
-  basic_value<T,CharT> &
-  mutually_exclusive(const std::vector<string_type> &mapped_key_vec)
+  constrain<CharT> &
+  mutual_exclusion(const std::vector<string_type> &mapped_key_vec)
   {
-    _mutually_inclusive = mapped_key_vec;
+    _mutual_exclusion = mapped_key_vec;
     return *this;
   }
 
-  basic_value<T,CharT> &
-  mutually_inclusive(const std::vector<string_type> &mapped_key_vec)
+  constrain<CharT> &
+  mutual_inclusion(const std::vector<string_type> &mapped_key_vec)
   {
-    _mutually_inclusive = mapped_key_vec;
+    _mutual_inclusion = mapped_key_vec;
     return *this;
   }
 
-  std::shared_ptr<T> _implicit_value;
-  std::size_t _min = 1;
-  std::size_t _max = 1;
-  std::vector<string_type> _mutually_exclusive;
-  std::vector<string_type> _mutually_inclusive;
+  int _position = -1;
+  std::size_t _min = 0;
+  std::size_t _max = std::numeric_limits<std::size_t>::max();
+  std::vector<string_type> _mutual_exclusion;
+  std::vector<string_type> _mutual_inclusion;
 };
 
-template<typename T>
-using value = basic_value<T,char>;
 
 template<typename T>
-using wvalue = basic_value<T,wchar_t>;
+struct value {
+  typedef T value_type;
+
+  value(void) = default;
+  value(const T &val) :_implicit(std::make_shared<T>(val)) {}
+
+  std::shared_ptr<value_type> _implicit;
+};
+
 
 
 template <typename CharT>
@@ -889,274 +1106,708 @@ inline std::string as_utf8(const std::basic_string<CharT> &s)
   return converter.to_bytes(s);
 }
 
-template<typename CharT, typename T>
-basic_option_description<CharT> basic_make_option(
-  const std::basic_string<CharT> &long_opt,
-  const std::basic_string<CharT> &short_opt,
-  const std::basic_string<CharT> &extended_desc,
-  const basic_value<T,CharT> &val)
+
+
+
+
+
+
+
+namespace detail {
+
+template<bool hidden, typename CharT>
+inline void add_long_opt(const std::basic_string<CharT> &opt,
+  const std::basic_string<CharT> &key, basic_option_description<CharT> &desc)
 {
-  typedef basic_option_description<CharT> option_type;
-  typedef typename option_type::string_type string_type;
-  typedef typename option_type::variable_map variable_map;
+  typedef std::basic_string<CharT> string_type;
+  typedef basic_variable_map<CharT> variable_map;
 
-  option_type option;
-
-  option.map_long_key = [=](const string_type &option, const variable_map &vm)
-  {
-    if(option == long_opt)
-      return long_opt;
-
-    return string_type();
-  };
-
-  option.long_key_description = [=](void) {
-    return long_opt;
-  };
-
-  option.map_short_key = [=](const string_type &option, const variable_map &vm)
-  {
-    if(option == short_opt)
-      return long_opt;
-
-    return string_type();
-  };
-
-  option.short_key_description = [=](void) {
-    return short_opt;
-  };
-
-  option.extended_description = [=](void) {
-    return extended_desc;
-  };
-
-  if(val._implicit_value) {
-    option.implicit_value = [=](const string_type &,
-      const std::multimap<string_type,boost::any> &)
+  desc.map_long_key = [=](const string_type &_opt, const variable_map &)
     {
-      return boost::any(*(val._implicit_value));
+      return (_opt == opt ? key : string_type());
     };
 
-    option.implicit_value_description = [=](void) {
-      return to_xstring<CharT>(*(val._implicit_value));
+  if(!hidden) {
+    desc.long_key_description = [=](void) {
+      return opt;
+    };
+  }
+}
+
+template<bool hidden, typename CharT>
+inline void add_short_opt(const std::basic_string<CharT> &opt,
+  const std::basic_string<CharT> &key, basic_option_description<CharT> &desc)
+{
+  typedef std::basic_string<CharT> string_type;
+  typedef basic_variable_map<CharT> variable_map;
+
+  desc.map_short_key = [=](const string_type &_opt, const variable_map &)
+    {
+      return (_opt == opt ? key : string_type());
+    };
+
+  if(!hidden) {
+    desc.short_key_description = [=](void)
+      {
+        return opt;
+      };
+  }
+}
+
+template<typename CharT>
+inline void add_extended_desc(const std::basic_string<CharT> &str,
+  basic_option_description<CharT> &desc)
+{
+  desc.extended_description = [=](void) {
+    return str;
+  };
+}
+
+template<typename T, typename CharT>
+inline void add_value(const value<T> &val,
+  basic_option_description<CharT> &desc)
+{
+  typedef std::basic_string<CharT> string_type;
+  typedef basic_variable_map<CharT> variable_map;
+
+  if(val._implicit) {
+    desc.implicit_value = [=](const string_type &, const variable_map &)
+    {
+      return any(*(val._implicit));
+    };
+
+    desc.implicit_value_description = [=](void) {
+      return to_xstring<CharT>(*(val._implicit));
     };
   }
 
-  option.make_value = [](const string_type &mapped_key,const string_type &val,
-    const std::multimap<string_type,boost::any> &vm)
+  desc.make_value = [](const string_type &,const string_type &val,
+    const variable_map &)
   {
     T _val;
     std::basic_stringstream<CharT> in(val);
     in >> _val;
-    return boost::any(_val);
+    return any(_val);
   };
+}
 
-  option.finalize = [=](const variable_map &vm) {
+template<typename CharT>
+inline void add_key(const std::basic_string<CharT> &key, int pos,
+  basic_option_description<CharT> &desc)
+{
+  if(pos >= 0) {
+    desc.implicit_key = [=](std::size_t i) {
+      if(i == pos)
+        return key;
+      return std::basic_string<CharT>();
+    };
+  }
+  else {
+    desc.implicit_key = [=](std::size_t) {
+      return key;
+    };
+  }
+}
 
-    if(vm.count(long_opt) > val._max) {
+
+
+/*
+  Used for constraints on options. Cannot be empty string mapped keys.
+
+  Although \c mapped_key and long_opt are the same for the EZ
+  interface, it is separated here for completeness
+*/
+template<typename CharT>
+void add_option_constrains(const constrain<CharT> &cnts,
+  basic_option_description<CharT> &desc,
+  const std::basic_string<CharT> &mapped_key,
+  const std::basic_string<CharT> &long_opt,
+  const std::basic_string<CharT> &short_opt)
+{
+  desc.finalize = [=](const basic_variable_map<CharT> &vm) {
+
+    if(vm.count(mapped_key) > cnts._max) {
       std::stringstream err;
-      err << "option '%L" << as_utf8(long_opt) << "' ";
+      err << "option ";
+      if(!long_opt.empty())
+        err << "'%L" << as_utf8(long_opt) << "' ";
+      if(!long_opt.empty() && !short_opt.empty())
+        err << "or ";
       if(!short_opt.empty())
-        err << "or '%S" << as_utf8(short_opt) << "' ";
+        err << "'%S" << as_utf8(short_opt) << "' ";
       err << "cannot be specified more than "
-        << val._max << (val._max==1?" time":" times");
+        << cnts._max << (cnts._max==1?" time":" times");
       throw command_option_error(err.str());
     }
 
-    if(vm.count(long_opt) < val._min) {
+    if(vm.count(mapped_key) < cnts._min) {
       std::stringstream err;
-      err << "option '%L" << as_utf8(long_opt) << "' ";
+      err << "option ";
+      if(!long_opt.empty())
+        err << "'%L" << as_utf8(long_opt) << "' ";
+      if(!long_opt.empty() && !short_opt.empty())
+        err << "or ";
       if(!short_opt.empty())
-        err << "or '%S" << as_utf8(short_opt) << "' ";
+        err << "'%S" << as_utf8(short_opt) << "' ";
       err << "must be specified at least "
-        << val._min << (val._max==1?" time":" times");
+        << cnts._min << (cnts._max==1?" time":" times");
       throw command_option_error(err.str());
     }
 
-    for(auto &exclusive_key : val._mutually_exclusive) {
+    for(auto &exclusive_key : cnts._mutual_exclusion) {
       if(vm.count(exclusive_key) != 0) {
         std::stringstream err;
-        err << "option '%L" << as_utf8(long_opt) << "' ";
+        err << "option ";
+        if(!long_opt.empty())
+          err << "'%L" << as_utf8(long_opt) << "' ";
+        if(!long_opt.empty() && !short_opt.empty())
+          err << "and ";
         if(!short_opt.empty())
-          err << "and '%S" << as_utf8(short_opt) << "' ";
+          err << "'%S" << as_utf8(short_opt) << "' ";
         err << "cannot be specified along with '"
           << as_utf8(exclusive_key) << "'";
         throw command_option_error(err.str());
       }
     }
 
-    for(auto &inclusive_key : val._mutually_inclusive) {
+    for(auto &inclusive_key : cnts._mutual_inclusion) {
       if(vm.count(inclusive_key) != 0) {
         std::stringstream err;
-        err << "option '%L" << as_utf8(long_opt) << "' ";
+        err << "option ";
+        if(!long_opt.empty())
+          err << "'%L" << as_utf8(long_opt) << "' ";
+        if(!long_opt.empty() && !short_opt.empty())
+          err << "or ";
         if(!short_opt.empty())
-          err << "or '%S" << as_utf8(short_opt) << "' ";
+          err << "'%S" << as_utf8(short_opt) << "' ";
         err << "must be specified along with '"
           << as_utf8(inclusive_key) << "'";
         throw command_option_error(err.str());
       }
     }
   };
-
-  return option;
 }
 
 /*
-  The following two functions are only used to provide automatic type
-  deduction and therefore implicit conversion from string literals to
-  the basic_string equivalents
+  Used for constraints on positional. CAN be empty string mapped keys.
 */
-template<typename T>
-inline basic_option_description<char> make_option(
-  const std::basic_string<char> &long_opt,
-  const std::basic_string<char> &short_opt,
+template<typename CharT>
+void add_positional_constrains(const constrain<CharT> &cnts,
+  const std::basic_string<CharT> &mapped_key,
+  basic_option_description<CharT> &desc)
+{
+  desc.finalize = [=](const basic_variable_map<CharT> &vm) {
+    if(vm.count(mapped_key) > cnts._max) {
+      std::stringstream err;
+      err << "positional values cannot be specified more than "
+        << cnts._max << (cnts._max==1?" time":" times");
+      throw command_option_error(err.str());
+    }
+
+    if(vm.count(mapped_key) < cnts._min) {
+      std::stringstream err;
+      if(cnts._max==1)
+        err << "a positional value ";
+      else
+        err << "positional values ";
+      err << "must be specified at least "
+        << cnts._min << (cnts._max==1?" time":" times");
+      throw command_option_error(err.str());
+    }
+
+    for(auto &exclusive_key : cnts._mutual_exclusion) {
+      if(vm.count(exclusive_key) != 0) {
+        std::stringstream err;
+        err << "option '" << as_utf8(exclusive_key)
+            << "' is incompatible with the given positional options";
+        throw command_option_error(err.str());
+      }
+    }
+
+    for(auto &inclusive_key : cnts._mutual_inclusion) {
+      if(vm.count(inclusive_key) != 0) {
+        std::stringstream err;
+        err << "option '" << as_utf8(inclusive_key)
+            << "' must be provided with the given positional options";
+        throw command_option_error(err.str());
+      }
+    }
+  };
+}
+
+}
+
+
+
+
+template<typename CharT>
+inline std::pair<std::basic_string<CharT>,std::basic_string<CharT> >
+split(const std::basic_string<CharT> &str, CharT delim)
+{
+  typedef std::basic_string<CharT> string_type;
+
+  typename string_type::size_type loc = str.find(delim);
+  if(loc == string_type::npos)
+    return std::make_pair(str,string_type());
+
+  return std::make_pair(str.substr(0,loc),str.substr(loc+1));
+}
+
+/*
+  The following functions are for convenience only. They provide automatic
+  type deduction and therefore implicit conversion from string literals
+  to the basic_string equivalents as well as defaults for unused arguments.
+*/
+
+/*
+  Cases line 2, 4, 6
+*/
+inline basic_option_description<char>
+make_option(const std::basic_string<char> &opt_spec,
   const std::basic_string<char> &extended_desc,
-  const basic_value<T,char> &val)
+  const constrain<char> &cnts = constrain<char>(), char delim = ',')
 {
-  return basic_make_option<char,T>(long_opt,short_opt,extended_desc,val);
-}
+  std::basic_string<char> long_opt;
+  std::basic_string<char> short_opt;
+  std::tie(long_opt,short_opt) = split(opt_spec,delim);
 
-template<typename T>
-inline basic_option_description<wchar_t> make_woption(
-  const std::basic_string<wchar_t> &long_opt,
-  const std::basic_string<wchar_t> &short_opt,
-  const std::basic_string<wchar_t> &extended_desc,
-  const basic_value<T,wchar_t> &val)
-{
-  return basic_make_option<wchar_t,T>(long_opt,short_opt,extended_desc,val);
-}
+  basic_option_description<char> desc;
 
+  if(!long_opt.empty())
+    detail::add_long_opt<false>(long_opt,long_opt,desc);
+  if(!short_opt.empty())
+    detail::add_short_opt<false>(short_opt,long_opt,desc); // long_opt is key
 
+  detail::add_extended_desc(extended_desc,desc);
 
+  detail::add_option_constrains(cnts,desc,long_opt,long_opt,short_opt);
 
-
-template<typename CharT, typename T>
-basic_option_description<CharT> basic_make_hidden_option(
-  const std::basic_string<CharT> &long_opt,
-  const std::basic_string<CharT> &short_opt,
-  const basic_value<T,CharT> &val)
-{
-  typedef basic_option_description<CharT> option_type;
-  typedef typename option_type::string_type string_type;
-  typedef typename option_type::variable_map variable_map;
-
-  option_type option;
-
-  option.map_long_key = [=](const string_type &option, const variable_map &vm)
-  {
-    if(option == long_opt)
-      return long_opt;
-
-    return string_type();
-  };
-
-  option.map_short_key = [=](const string_type &option, const variable_map &vm)
-  {
-    if(option == short_opt)
-      return long_opt;
-
-    return string_type();
-  };
-
-  if(val._implicit_value) {
-    option.implicit_value = [=](const string_type &,
-      const std::multimap<string_type,boost::any> &)
-    {
-      return boost::any(*(val._implicit_value));
-    };
-
-    option.implicit_value_description = [=](void) {
-      return to_xstring<CharT>(*(val._implicit_value));
-    };
-  }
-
-  option.make_value = [](const string_type &mapped_key,const string_type &val,
-    const std::multimap<string_type,boost::any> &vm)
-  {
-    T _val;
-    std::basic_stringstream<CharT> in(val);
-    in >> _val;
-    return boost::any(_val);
-  };
-
-  option.finalize = [=](const variable_map &vm) {
-
-    if(vm.count(long_opt) > val._max) {
-      std::stringstream err;
-      err << "option '%L" << as_utf8(long_opt) << "' ";
-      if(!short_opt.empty())
-        err << "or '%S" << as_utf8(short_opt) << "' ";
-      err << "cannot be specified more than "
-        << val._max << (val._max==1?" time":" times");
-      throw command_option_error(err.str());
-    }
-
-    if(vm.count(long_opt) < val._min) {
-      std::stringstream err;
-      err << "option '%L" << as_utf8(long_opt) << "' ";
-      if(!short_opt.empty())
-        err << "or '%S" << as_utf8(short_opt) << "' ";
-      err << "must be specified at least "
-        << val._min << (val._max==1?" time":" times");
-      throw command_option_error(err.str());
-    }
-
-    for(auto &exclusive_key : val._mutually_exclusive) {
-      if(vm.count(exclusive_key) != 0) {
-        std::stringstream err;
-        err << "option '%L" << as_utf8(long_opt) << "' ";
-        if(!short_opt.empty())
-          err << "and '%S" << as_utf8(short_opt) << "' ";
-        err << "cannot be specified along with '"
-          << as_utf8(exclusive_key) << "'";
-        throw command_option_error(err.str());
-      }
-    }
-
-    for(auto &inclusive_key : val._mutually_inclusive) {
-      if(vm.count(inclusive_key) != 0) {
-        std::stringstream err;
-        err << "option '%L" << as_utf8(long_opt) << "' ";
-        if(!short_opt.empty())
-          err << "or '%S" << as_utf8(short_opt) << "' ";
-        err << "must be specified along with '"
-          << as_utf8(inclusive_key) << "'";
-        throw command_option_error(err.str());
-      }
-    }
-  };
-
-  return option;
+  return desc;
 }
 
 /*
-  The following two functions are only used to provide automatic type
-  deduction and therefore implicit conversion from string literals to
-  the basic_string equivalents
+  Cases line 3, 5, 7
+*/
+inline basic_option_description<char>
+make_hidden_option(const std::basic_string<char> &opt_spec,
+  const constrain<char> &cnts = constrain<char>(), char delim = ',')
+{
+  std::basic_string<char> long_opt;
+  std::basic_string<char> short_opt;
+  std::tie(long_opt,short_opt) = split(opt_spec,delim);
+
+  basic_option_description<char> desc;
+
+  if(!long_opt.empty())
+    detail::add_long_opt<true>(long_opt,long_opt,desc);
+  if(!short_opt.empty())
+    detail::add_short_opt<true>(short_opt,long_opt,desc); // long_opt is key
+
+  detail::add_option_constrains(cnts,desc,long_opt,long_opt,short_opt);
+
+  return desc;
+}
+
+/*
+  Case line 8 10 12 14 16 18
 */
 template<typename T>
-inline basic_option_description<char> make_hidden_option(
-  const std::basic_string<char> &long_opt,
-  const std::basic_string<char> &short_opt,
-  const basic_value<T,char> &val)
+inline basic_option_description<char>
+make_option(const std::basic_string<char> &opt_spec,
+  const value<T> &val, const std::basic_string<char> &extended_desc,
+  const constrain<char> &cnts = constrain<char>(), char delim = ',')
 {
-  return basic_make_hidden_option<char,T>(long_opt,short_opt,val);
+  std::basic_string<char> long_opt;
+  std::basic_string<char> short_opt;
+  std::tie(long_opt,short_opt) = split(opt_spec,delim);
+
+  basic_option_description<char> desc;
+
+  if(!long_opt.empty())
+    detail::add_long_opt<false>(long_opt,long_opt,desc);
+  if(!short_opt.empty())
+    detail::add_short_opt<false>(short_opt,long_opt,desc); // long_opt is key
+
+  detail::add_value(val,desc);
+
+  detail::add_extended_desc(extended_desc,desc);
+
+  detail::add_option_constrains(cnts,desc,long_opt,long_opt,short_opt);
+
+  return desc;
 }
 
+/*
+  Case line 9 11 13 15 17 19
+*/
 template<typename T>
-inline basic_option_description<wchar_t> make_hidden_woption(
-  const std::basic_string<wchar_t> &long_opt,
-  const std::basic_string<wchar_t> &short_opt,
-  const basic_value<T,wchar_t> &val)
+inline basic_option_description<char>
+make_hidden_option(const std::basic_string<char> &opt_spec, const value<T> &val,
+  const constrain<char> &cnts = constrain<char>(), char delim = ',')
 {
-  return basic_make_hidden_option<wchar_t,T>(long_opt,short_opt,val);
+  std::basic_string<char> long_opt;
+  std::basic_string<char> short_opt;
+  std::tie(long_opt,short_opt) = split(opt_spec,delim);
+
+  basic_option_description<char> desc;
+
+  if(!long_opt.empty())
+    detail::add_long_opt<true>(long_opt,long_opt,desc);
+  if(!short_opt.empty())
+    detail::add_short_opt<true>(short_opt,long_opt,desc); // long_opt is key
+
+  detail::add_value(val,desc);
+
+  detail::add_option_constrains(cnts,desc,long_opt,long_opt,short_opt);
+
+  return desc;
+}
+
+/*
+  Case line 20, 22
+*/
+inline basic_option_description<char>
+make_positional(const std::basic_string<char> &extended_desc,
+  const std::basic_string<char> &implicit_key = std::basic_string<char>(),
+  const constrain<char> &cnts = constrain<char>())
+{
+  basic_option_description<char> desc;
+
+  detail::add_extended_desc(extended_desc,desc);
+
+  if(!implicit_key.empty() || cnts._position >= 0)
+    detail::add_key(implicit_key,cnts._position,desc);
+
+  detail::add_positional_constrains(cnts,implicit_key,desc);
+
+  return desc;
+}
+
+/*
+  Case line 21, 23
+*/
+template<typename T>
+inline basic_option_description<char>
+make_positional(const std::basic_string<char> &extended_desc,
+  const value<T> &val,
+  const std::basic_string<char> &implicit_key = std::basic_string<char>(),
+  const constrain<char> &cnts = constrain<char>())
+{
+  basic_option_description<char> desc;
+
+  detail::add_extended_desc(extended_desc,desc);
+
+  detail::add_value(val,desc);
+
+  if(!implicit_key.empty() || cnts._position >= 0)
+    detail::add_key(implicit_key,cnts._position,desc);
+
+  detail::add_positional_constrains(cnts,implicit_key,desc);
+
+  return desc;
+}
+
+/*
+  Case line 24 is default constructor
+
+  Case line 24, 26
+*/
+inline basic_option_description<char>
+make_hidden_positional(
+  const std::basic_string<char> &implicit_key = std::basic_string<char>(),
+  const constrain<char> &cnts = constrain<char>())
+{
+  basic_option_description<char> desc;
+
+  if(!implicit_key.empty() || cnts._position >= 0)
+    detail::add_key(implicit_key,cnts._position,desc);
+
+  detail::add_positional_constrains(cnts,implicit_key,desc);
+
+  return desc;
+}
+
+/*
+  Case line 25, 27
+*/
+template<typename T>
+inline basic_option_description<char>
+make_hidden_positional(const value<T> &val,
+  const std::basic_string<char> &implicit_key = std::basic_string<char>(),
+  const constrain<char> &cnts = constrain<char>())
+{
+  basic_option_description<char> desc;
+
+  detail::add_value(val,desc);
+
+  if(!implicit_key.empty() || cnts._position >= 0)
+    detail::add_key(implicit_key,cnts._position,desc);
+
+  detail::add_positional_constrains(cnts,implicit_key,desc);
+
+  return desc;
 }
 
 
 
 
 
+/*
+  Specializations for wchar_t
+*/
+/*
+  Cases line 2, 4, 6
+*/
+inline basic_option_description<wchar_t>
+make_woption(const std::basic_string<wchar_t> &opt_spec,
+  const std::basic_string<wchar_t> &extended_desc,
+  const constrain<wchar_t> &cnts = constrain<wchar_t>(), wchar_t delim = L',')
+{
+  std::basic_string<wchar_t> long_opt;
+  std::basic_string<wchar_t> short_opt;
+  std::tie(long_opt,short_opt) = split(opt_spec,delim);
 
+  basic_option_description<wchar_t> desc;
+
+  if(!long_opt.empty())
+    detail::add_long_opt<false>(long_opt,long_opt,desc);
+  if(!short_opt.empty())
+    detail::add_short_opt<false>(short_opt,long_opt,desc); // long_opt is key
+
+  detail::add_extended_desc(extended_desc,desc);
+
+  detail::add_option_constrains(cnts,desc,long_opt,long_opt,short_opt);
+
+  return desc;
+}
+
+/*
+  Cases line 3, 5, 7
+*/
+inline basic_option_description<wchar_t>
+make_hidden_woption(const std::basic_string<wchar_t> &opt_spec,
+  const constrain<wchar_t> &cnts = constrain<wchar_t>(), wchar_t delim = L',')
+{
+  std::basic_string<wchar_t> long_opt;
+  std::basic_string<wchar_t> short_opt;
+  std::tie(long_opt,short_opt) = split(opt_spec,delim);
+
+  basic_option_description<wchar_t> desc;
+
+  if(!long_opt.empty())
+    detail::add_long_opt<true>(long_opt,long_opt,desc);
+  if(!short_opt.empty())
+    detail::add_short_opt<true>(short_opt,long_opt,desc); // long_opt is key
+
+  detail::add_option_constrains(cnts,desc,long_opt,long_opt,short_opt);
+
+  return desc;
+}
+
+/*
+  Case line 8 10 12 14 16 18
+*/
+template<typename T>
+inline basic_option_description<wchar_t>
+make_woption(const std::basic_string<wchar_t> &opt_spec,
+  const value<T> &val, const std::basic_string<wchar_t> &extended_desc,
+  const constrain<wchar_t> &cnts = constrain<wchar_t>(), wchar_t delim = L',')
+{
+  std::basic_string<wchar_t> long_opt;
+  std::basic_string<wchar_t> short_opt;
+  std::tie(long_opt,short_opt) = split(opt_spec,delim);
+
+  basic_option_description<wchar_t> desc;
+
+  if(!long_opt.empty())
+    detail::add_long_opt<false>(long_opt,long_opt,desc);
+  if(!short_opt.empty())
+    detail::add_short_opt<false>(short_opt,long_opt,desc); // long_opt is key
+
+  detail::add_value(val,desc);
+
+  detail::add_extended_desc(extended_desc,desc);
+
+  detail::add_option_constrains(cnts,desc,long_opt,long_opt,short_opt);
+
+  return desc;
+}
+
+/*
+  Case line 9 11 13 15 17 19
+*/
+template<typename T>
+inline basic_option_description<wchar_t>
+make_hidden_woption(const std::basic_string<wchar_t> &opt_spec,
+  const value<T> &val, const constrain<wchar_t> &cnts = constrain<wchar_t>(),
+  wchar_t delim = L',')
+{
+  std::basic_string<wchar_t> long_opt;
+  std::basic_string<wchar_t> short_opt;
+  std::tie(long_opt,short_opt) = split(opt_spec,delim);
+
+  basic_option_description<wchar_t> desc;
+
+  if(!long_opt.empty())
+    detail::add_long_opt<true>(long_opt,long_opt,desc);
+  if(!short_opt.empty())
+    detail::add_short_opt<true>(short_opt,long_opt,desc); // long_opt is key
+
+  detail::add_value(val,desc);
+
+  detail::add_option_constrains(cnts,desc,long_opt,long_opt,short_opt);
+
+  return desc;
+}
+
+/*
+  Case line 20, 22
+*/
+inline basic_option_description<wchar_t>
+make_wpositional(const std::basic_string<wchar_t> &extended_desc,
+  const std::basic_string<wchar_t> &implicit_key = std::basic_string<wchar_t>(),
+  const constrain<wchar_t> &cnts = constrain<wchar_t>())
+{
+  basic_option_description<wchar_t> desc;
+
+  detail::add_extended_desc(extended_desc,desc);
+
+  if(!implicit_key.empty() || cnts._position >= 0)
+    detail::add_key(implicit_key,cnts._position,desc);
+
+  detail::add_positional_constrains(cnts,implicit_key,desc);
+
+  return desc;
+}
+
+/*
+  Case line 21, 23
+*/
+template<typename T>
+inline basic_option_description<wchar_t>
+make_wpositional(const std::basic_string<wchar_t> &extended_desc,
+  const value<T> &val,
+  const std::basic_string<wchar_t> &implicit_key = std::basic_string<wchar_t>(),
+  const constrain<wchar_t> &cnts = constrain<wchar_t>())
+{
+  basic_option_description<wchar_t> desc;
+
+  detail::add_extended_desc(extended_desc,desc);
+
+  detail::add_value(val,desc);
+
+  if(!implicit_key.empty() || cnts._position >= 0)
+    detail::add_key(implicit_key,cnts._position,desc);
+
+  detail::add_positional_constrains(cnts,implicit_key,desc);
+
+  return desc;
+}
+
+/*
+  Case line 24 is default constructor
+
+  Case line 24, 26
+*/
+inline basic_option_description<wchar_t>
+make_hidden_wpositional(
+  const std::basic_string<wchar_t> &implicit_key = std::basic_string<wchar_t>(),
+  const constrain<wchar_t> &cnts = constrain<wchar_t>())
+{
+  basic_option_description<wchar_t> desc;
+
+  if(!implicit_key.empty() || cnts._position >= 0)
+    detail::add_key(implicit_key,cnts._position,desc);
+
+  detail::add_positional_constrains(cnts,implicit_key,desc);
+
+  return desc;
+}
+
+/*
+  Case line 25, 27
+*/
+template<typename T>
+inline basic_option_description<wchar_t>
+make_hidden_wpositional(const value<T> &val,
+  const std::basic_string<wchar_t> &implicit_key = std::basic_string<wchar_t>(),
+  const constrain<wchar_t> &cnts = constrain<wchar_t>())
+{
+  basic_option_description<wchar_t> desc;
+
+  detail::add_value(val,desc);
+
+  if(!implicit_key.empty() || cnts._position >= 0)
+    detail::add_key(implicit_key,cnts._position,desc);
+
+  detail::add_positional_constrains(cnts,implicit_key,desc);
+
+  return desc;
+}
+
+
+
+namespace detail {
+
+template<typename CharT>
+basic_options_group<CharT> make_universal_group(void)
+{
+  typedef std::basic_string<CharT> string_type;
+  typedef basic_options_group<CharT> options_group;
+  typedef basic_variable_map<CharT> variable_map;
+
+  basic_option_description<CharT> desc;
+
+  desc.map_long_key = desc.map_short_key =
+    [](const string_type &option, const variable_map &) { return option; };
+
+  desc.long_key_description = desc.short_key_description =
+    [](void) { return string_type("any"); };
+
+  desc.extended_description = [](void) {
+      return string_type(
+        "Accepts any form of long option (prefaced with '--') or short option "
+        "(prefaced with '-')"
+      );
+    };
+
+  desc.implicit_value =
+    [](const string_type &, const variable_map &) {
+      return any(string_type());
+    };
+
+  desc.make_value =
+    [](const string_type &, const string_type &value, const variable_map &) {
+        return any(value);
+      };
+
+  return options_group{desc};
+}
+
+}
+
+
+/*
+  Convenience default parser
+
+  Parse the arguments contained in \c argv with size \c argc. Options
+  are returned in a new variable map. Long options are prefaced with a
+  '--' and short options (single character) are prefaced with a '-'. In
+  each case, the option is stored as a key in the variable_map. If
+  parsing is halted due to a "end of parse" indicator '--' then \c endc
+  is updated to the index of the first non-parsed argument.
+*/
+template<typename CharT>
+basic_variable_map<CharT>
+parse_arguments(const CharT * const argv[], std::size_t argc,
+  std::size_t &endc)
+{
+  static const basic_options_group<CharT> grp =
+    detail::make_universal_group<CharT>();
+
+  return parse_arguments(argv,argc,endc,grp,
+    basic_variable_map<CharT>(),parse_options<CharT>(),false);
+}
 
 
 
@@ -1244,14 +1895,12 @@ option_to_string(const basic_option_description<CharT> &desc,
   if(desc.make_value) {
     if(desc.implicit_value) {
       // value is optional
-      out << "  [arg";
+      out << "  [arg]";
       if(desc.implicit_value_description)
         out << "=(" << desc.implicit_value_description() << ')';
-
-      out << ']';
     }
     else
-      out << "  arg";
+      out << "  <arg>";
   }
 
   return out.str();
@@ -1441,7 +2090,27 @@ to_string(const std::vector<basic_option_description<CharT> > &grp,
   return to_string(grp,opt,basic_cmd_option_fmt<CharT>());
 }
 
+template<typename CharT>
+inline std::basic_string<CharT>
+to_string_debug(const basic_option_description<CharT> &option)
+{
+  std::basic_ostringstream<CharT> out;
 
+  out
+    << "map_long_key: " << bool(option.map_long_key) << "\n"
+    << "long_key_description: " << bool(option.long_key_description) << "\n"
+    << "map_short_key: " << bool(option.map_short_key) << "\n"
+    << "short_key_description: " << bool(option.short_key_description) << "\n"
+    << "extended_description: " << bool(option.extended_description) << "\n"
+    << "implicit_key: " << bool(option.implicit_key) << "\n"
+    << "implicit_value: " << bool(option.implicit_value) << "\n"
+    << "implicit_value_description: "
+      << bool(option.implicit_value_description) << "\n"
+    << "make_value: " << bool(option.make_value) << "\n"
+    << "finalize: " << bool(option.finalize) << "\n";
+
+  return out.str();
+};
 
 
 

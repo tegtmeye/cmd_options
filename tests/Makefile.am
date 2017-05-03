@@ -23,13 +23,47 @@
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 #  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-if SINGLE_TESTSUITE
-MAYBE_TEST=
-else
-MAYBE_TEST=tests
-endif
+master_suite=$(top_srcdir)/tests/master_suite.cc
 
-SUBDIRS= \
-	$(MAYBE_TEST)                                                           
-pkginclude_HEADERS= \
-	cmd_options.h
+additional_cppflags= \
+	-pedantic -Wall -I.. \
+	$(SYSTEM_BOOST_CPPFLAGS)
+
+additional_cflags=
+
+additional_libs= \
+	$(BOOST_UNIT_TEST_FRAMEWORK_LIBS) \
+	$(BOOST_SYSTEM_LIBS) \
+	$(BOOST_FILESYSTEM_LIBS)
+
+additional_ldflags= \
+        $(BOOST_LDFLAGS) \
+        $(BOOST_UNIT_TEST_FRAMEWORK_LDFLAGS) \
+        $(BOOST_SYSTEM_LDFLAGS) \
+        $(BOOST_FILESYSTEM_LDFLAGS)
+
+
+check_PROGRAMS=\
+	basic_test \
+	parse_test
+
+basic_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	basic_test.cc 
+basic_test_CPPFLAGS=$(additional_cppflags)
+basic_test_LDFLAGS=$(additional_ldflags)
+basic_test_LDADD=$(additional_libs)
+
+parse_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	parse_test.cc 
+parse_test_CPPFLAGS=$(additional_cppflags)
+parse_test_LDFLAGS=$(additional_ldflags)
+parse_test_LDADD=$(additional_libs)
+
+TESTS=\
+	basic_test \
+	parse_test
+
+
+
