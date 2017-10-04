@@ -128,85 +128,52 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
 /**
   Check for proper POSIX option unpacking
  */
-BOOST_AUTO_TEST_CASE( posix_option_unpack_test )
+BOOST_AUTO_TEST_CASE( unpack_posix_test )
 {
   typedef co::basic_option_pack<char> option_pack;
 
-  BOOST_REQUIRE_MESSAGE((co::unpack_posix<char>("") == option_pack()),
+  BOOST_REQUIRE_MESSAGE((co::unpack_posix<char>("",true) == option_pack()),
     "unpack on empty string does not yield empty option_pack");
 
-  BOOST_REQUIRE_MESSAGE((co::unpack_posix<char>("-") == option_pack()),
+  BOOST_REQUIRE_MESSAGE((co::unpack_posix<char>("-",true) == option_pack()),
     "orphan '-' did not yield empty option pack");
 
   // simple flag
-  BOOST_REQUIRE((co::unpack_posix<char>("-f") ==
+  BOOST_REQUIRE((co::unpack_posix<char>("-f",true) ==
     option_pack{false,false,"-","f",{},{}}));
 
-  // simple flag with leading whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>(" -f") ==
-    option_pack{false,false,"-","f",{},{}}));
-
-  // simple flag with trailing whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>("-f ") ==
-    option_pack{false,false,"-","f",{},{}}));
-
-  // simple flag with leading and trailing whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>(" -f ") ==
+  BOOST_REQUIRE((co::unpack_posix<char>("-f",false) ==
     option_pack{false,false,"-","f",{},{}}));
 
   // orphan flag
-  BOOST_REQUIRE((co::unpack_posix<char>("-") == option_pack()));
+  BOOST_REQUIRE((co::unpack_posix<char>("-",true) == option_pack()));
 
-  // orphan flag with leading whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>(" -") == option_pack()));
-
-  // orphan flag with trailing whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>("- ") == option_pack()));
-
-  // orphan flag with leading and trailing whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>(" - ") == option_pack()));
+  BOOST_REQUIRE((co::unpack_posix<char>("-",false) == option_pack()));
 
   // value flag
-  BOOST_REQUIRE((co::unpack_posix<char>("-fbar") ==
+  BOOST_REQUIRE((co::unpack_posix<char>("-fbar",true) ==
     option_pack{false,true,"-","f",{},"bar"}));
 
-  // value flag with leading whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>(" -fbar") ==
-    option_pack{false,true,"-","f",{},"bar"}));
-
-  // value flag with leading whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>("-fbar ") ==
-    option_pack{false,true,"-","f",{},"bar"}));
-
-  // value flag with leading and trailing whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>(" -fbar ") ==
-    option_pack{false,true,"-","f",{},"bar"}));
+  BOOST_REQUIRE((co::unpack_posix<char>("-fbar",false) ==
+    option_pack{false,false,"-","f","bar",{}}));
 
   // value flag with trailing extra
-  BOOST_REQUIRE((co::unpack_gnu<char>("-f bar") ==
+  BOOST_REQUIRE((co::unpack_gnu<char>("-f bar",true) ==
     option_pack{false,true,"-","f",{}," bar"}));
+
+  BOOST_REQUIRE((co::unpack_gnu<char>("-f bar",false) ==
+    option_pack{false,false,"-","f"," bar",{}}));
 
 
   // cease flag
-  BOOST_REQUIRE((co::unpack_posix<char>("--") == option_pack{true}));
+  BOOST_REQUIRE((co::unpack_posix<char>("--",true) == option_pack{true}));
 
-  // cease flag with leading whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>(" --") == option_pack{true}));
-
-  // cease flag with trailing whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>(" --") == option_pack{true}));
-
-  // cease flag with leading and trailing whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>(" -- ") == option_pack{true}));
+  BOOST_REQUIRE((co::unpack_posix<char>("--",false) == option_pack{true}));
 
   // cease flag with extra chars
-  BOOST_REQUIRE((co::unpack_posix<char>(" --blah") == option_pack{true}));
+  BOOST_REQUIRE((co::unpack_posix<char>("--blah",true) == option_pack{true}));
 
-  // cease flag with extra chars and trailing whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>(" --blah ") == option_pack{true}));
-
-  // cease flag with extra chars and mid whitespace
-  BOOST_REQUIRE((co::unpack_posix<char>(" -- blah") == option_pack{true}));
+  BOOST_REQUIRE((co::unpack_posix<char>("--blah",false) == option_pack{true}));
 }
 
 
@@ -226,119 +193,81 @@ BOOST_AUTO_TEST_CASE( posix_option_unpack_test )
 /**
   Check for proper GNU option unpacking
  */
-BOOST_AUTO_TEST_CASE( gnu_option_unpack_test )
+BOOST_AUTO_TEST_CASE( unpack_gnu_test )
 {
   typedef co::basic_option_pack<char> option_pack;
 
-  BOOST_REQUIRE_MESSAGE((co::unpack_gnu<char>("") == option_pack()),
+  BOOST_REQUIRE_MESSAGE((co::unpack_gnu<char>("",true) == option_pack()),
     "unpack on empty string does not yield empty option_pack");
 
-  BOOST_REQUIRE_MESSAGE((co::unpack_gnu<char>("-") == option_pack()),
+  BOOST_REQUIRE_MESSAGE((co::unpack_gnu<char>("-",true) == option_pack()),
     "orphan '-' did not yield empty option pack");
 
   // simple flag
-  BOOST_REQUIRE((co::unpack_gnu<char>("-f") ==
+  BOOST_REQUIRE((co::unpack_gnu<char>("-f",true) ==
     option_pack{false,false,"-","f",{},{}}));
 
-  // simple flag with leading whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>(" -f") ==
-    option_pack{false,false,"-","f",{},{}}));
-
-  // simple flag with trailing whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>("-f ") ==
-    option_pack{false,false,"-","f",{},{}}));
-
-  // simple flag with leading and trailing whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>(" -f ") ==
+  BOOST_REQUIRE((co::unpack_gnu<char>("-f",false) ==
     option_pack{false,false,"-","f",{},{}}));
 
   // orphan flag
-  BOOST_REQUIRE((co::unpack_gnu<char>("-") == option_pack()));
+  BOOST_REQUIRE((co::unpack_gnu<char>("-",true) == option_pack()));
 
-  // orphan flag with leading whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>(" -") == option_pack()));
-
-  // orphan flag with trailing whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>("- ") == option_pack()));
-
-  // orphan flag with leading and trailing whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>(" - ") == option_pack()));
+  BOOST_REQUIRE((co::unpack_gnu<char>("-",false) == option_pack()));
 
   // value flag
-  BOOST_REQUIRE((co::unpack_gnu<char>("-fbar") ==
+  BOOST_REQUIRE((co::unpack_gnu<char>("-fbar",true) ==
     option_pack{false,true,"-","f",{},"bar"}));
 
-  // value flag with leading whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>(" -fbar") ==
-    option_pack{false,true,"-","f",{},"bar"}));
-
-  // value flag with leading whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>("-fbar ") ==
-    option_pack{false,true,"-","f",{},"bar"}));
-
-  // value flag with leading and trailing whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>(" -fbar ") ==
-    option_pack{false,true,"-","f",{},"bar"}));
+  BOOST_REQUIRE((co::unpack_gnu<char>("-fbar",false) ==
+    option_pack{false,false,"-","f","bar",{}}));
 
   // value flag with trailing extra
-  BOOST_REQUIRE((co::unpack_gnu<char>("-f bar") ==
+  BOOST_REQUIRE((co::unpack_gnu<char>("-f bar",true) ==
     option_pack{false,true,"-","f",{}," bar"}));
 
+  BOOST_REQUIRE((co::unpack_gnu<char>("-f bar",false) ==
+    option_pack{false,false,"-","f"," bar",{}}));
+
   // cease flag
-  BOOST_REQUIRE((co::unpack_gnu<char>("--") == option_pack{true}));
+  BOOST_REQUIRE((co::unpack_gnu<char>("--",true) == option_pack{true}));
 
-  // cease flag with leading whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>(" --") == option_pack{true}));
-
-  // cease flag with trailing whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>(" --") == option_pack{true}));
-
-  // cease flag with leading and trailing whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>(" -- ") == option_pack{true}));
+  BOOST_REQUIRE((co::unpack_gnu<char>("--",false) == option_pack{true}));
 
   // long flag
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo") ==
+  BOOST_REQUIRE((co::unpack_gnu<char>("--foo",true) ==
     option_pack{false,false,"--","foo",{},{}}));
 
-  // long flag with leading whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>(" --foo") ==
-    option_pack{false,false,"--","foo",{},{}}));
-
-  // long flag with trailing whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo ") ==
-    option_pack{false,false,"--","foo",{},{}}));
-
-  // long flag with leading and trailing whitespace
-  BOOST_REQUIRE((co::unpack_gnu<char>(" --foo ") ==
+  BOOST_REQUIRE((co::unpack_gnu<char>("--foo",false) ==
     option_pack{false,false,"--","foo",{},{}}));
 
   // long flag w/value
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo=bar") ==
+  BOOST_REQUIRE((co::unpack_gnu<char>("--foo=bar",true) ==
     option_pack{false,true,"--","foo",{},"bar"}));
 
-  // long flag with leading whitespace w/value
-  BOOST_REQUIRE((co::unpack_gnu<char>("  --foo=bar") ==
-    option_pack{false,true,"--","foo",{},"bar"}));
-
-  // long flag with trailing whitespace w/value
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo=bar  ") ==
-    option_pack{false,true,"--","foo",{},"bar"}));
-
-  // long flag with leading and trailing whitespace w/value
-  BOOST_REQUIRE((co::unpack_gnu<char>("  --foo=bar  ") ==
+  BOOST_REQUIRE((co::unpack_gnu<char>("--foo=bar",false) ==
     option_pack{false,true,"--","foo",{},"bar"}));
 
   // long flag with leading extra w/value
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo =bar  ") ==
-    option_pack{false,true,"--","foo ",{},"bar"}));
+  BOOST_REQUIRE((co::unpack_gnu<char>("--foo =bar  ",true) ==
+    option_pack{false,true,"--","foo ",{},"bar  "}));
+
+  BOOST_REQUIRE((co::unpack_gnu<char>("--foo =bar  ",false) ==
+    option_pack{false,true,"--","foo ",{},"bar  "}));
 
   // long flag with trailing extra w/value
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo= bar  ") ==
-    option_pack{false,true,"--","foo",{}," bar"}));
+  BOOST_REQUIRE((co::unpack_gnu<char>("--foo= bar  ",true) ==
+    option_pack{false,true,"--","foo",{}," bar  "}));
+
+  BOOST_REQUIRE((co::unpack_gnu<char>("--foo= bar  ",false) ==
+    option_pack{false,true,"--","foo",{}," bar  "}));
 
   // long flag with leading and trailing extra w/value
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo = bar  ") ==
-    option_pack{false,true,"--","foo ",{}," bar"}));
+  BOOST_REQUIRE((co::unpack_gnu<char>("--foo = bar  ",true) ==
+    option_pack{false,true,"--","foo ",{}," bar  "}));
+
+  BOOST_REQUIRE((co::unpack_gnu<char>("--foo = bar  ",false) ==
+    option_pack{false,true,"--","foo ",{}," bar  "}));
 }
 
 
