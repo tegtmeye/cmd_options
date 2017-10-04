@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
     detail::is_raw_isolated_option<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_option(), // line 5
+    co::make_hidden_option(""), // line 5
     detail::is_hidden_raw_isolated_option<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
@@ -76,204 +76,181 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
     detail::is_raw_mapped_optional_option<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_positional(co::value<std::string>(),"line 14"),
+    co::make_positional<std::string>("line 14"),
     detail::is_interpret_positional<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_positional(co::value<std::string>()), // line 15
+    co::make_hidden_positional<std::string>(), // line 15
     detail::is_hidden_interpret_positional<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_positional("foo",co::value<std::string>(),"line 16"),
+    co::make_positional<std::string>("key","line 16"),
     detail::is_keyed_interpret_positional<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_positional("foo",co::value<std::string>()), // line 17
+    co::make_hidden_positional<std::string>("key"), // line 17
     detail::is_hidden_keyed_interpret_positional<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_positional(co::value<std::string>("bar"),"line 18"),
-    detail::is_replace_positional<char>));
-
-  BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_positional(co::value<std::string>("bar")), // line 19
-    detail::is_hidden_replace_positional<char>));
-
-  BOOST_REQUIRE(detail::check_exclusive(
-    co::make_positional("foo",co::value<std::string>("bar"),"line 20"),
-    detail::is_keyed_replace_positional<char>));
-
-  BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_positional("foo",co::value<std::string>("bar")), // line 21
-    detail::is_hidden_keyed_replace_positional<char>));
-
-  BOOST_REQUIRE(detail::check_exclusive(
-    co::make_positional("line 22"),
+    co::make_positional("line 18"),
     detail::is_empty_positional<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_positional(), // line 23
+    co::make_hidden_positional(), // line 19
     detail::is_hidden_empty_positional<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_positional("foo","line 24"),
+    co::make_positional("key","line 20"),
     detail::is_empty_keyed_positional<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_positional("line 25"),
+    co::make_hidden_positional("key"), // line 21
     detail::is_hidden_empty_keyed_positional<char>));
 }
 
-
 /**
-  Check for proper POSIX option unpacking
+  Check for proper POSIX option flag unpacking
  */
-BOOST_AUTO_TEST_CASE( unpack_posix_test )
+BOOST_AUTO_TEST_CASE( unpack_posix_flag_test )
 {
   typedef co::basic_option_pack<char> option_pack;
 
-  BOOST_REQUIRE_MESSAGE((co::unpack_posix<char>("",true) == option_pack()),
+  BOOST_REQUIRE_MESSAGE((co::unpack_posix_flag<char>("") == option_pack()),
     "unpack on empty string does not yield empty option_pack");
 
-  BOOST_REQUIRE_MESSAGE((co::unpack_posix<char>("-",true) == option_pack()),
-    "orphan '-' did not yield empty option pack");
-
   // simple flag
-  BOOST_REQUIRE((co::unpack_posix<char>("-f",true) ==
-    option_pack{false,false,"-","f",{},{}}));
-
-  BOOST_REQUIRE((co::unpack_posix<char>("-f",false) ==
+  BOOST_REQUIRE((co::unpack_posix_flag<char>("-f") ==
     option_pack{false,false,"-","f",{},{}}));
 
   // orphan flag
-  BOOST_REQUIRE((co::unpack_posix<char>("-",true) == option_pack()));
+  BOOST_REQUIRE((co::unpack_posix_flag<char>("-") == option_pack()));
 
-  BOOST_REQUIRE((co::unpack_posix<char>("-",false) == option_pack()));
+  // packed flags
+  BOOST_REQUIRE((co::unpack_posix_flag<char>("-fbar") ==
+    option_pack{false,false,"-","f",{"-b","-a","-r"}}));
 
-  // value flag
-  BOOST_REQUIRE((co::unpack_posix<char>("-fbar",true) ==
-    option_pack{false,true,"-","f",{},"bar"}));
-
-  BOOST_REQUIRE((co::unpack_posix<char>("-fbar",false) ==
-    option_pack{false,false,"-","f","bar",{}}));
-
-  // value flag with trailing extra
-  BOOST_REQUIRE((co::unpack_gnu<char>("-f bar",true) ==
-    option_pack{false,true,"-","f",{}," bar"}));
-
-  BOOST_REQUIRE((co::unpack_gnu<char>("-f bar",false) ==
-    option_pack{false,false,"-","f"," bar",{}}));
-
+  // packed flag with trailing extra
+  BOOST_REQUIRE((co::unpack_posix_flag<char>("-f bar") ==
+    option_pack{false,false,"-","f",{"- ","-b","-a","-r"}}));
 
   // cease flag
-  BOOST_REQUIRE((co::unpack_posix<char>("--",true) == option_pack{true}));
-
-  BOOST_REQUIRE((co::unpack_posix<char>("--",false) == option_pack{true}));
+  BOOST_REQUIRE((co::unpack_posix_flag<char>("--") == option_pack{true}));
 
   // cease flag with extra chars
-  BOOST_REQUIRE((co::unpack_posix<char>("--blah",true) == option_pack{true}));
-
-  BOOST_REQUIRE((co::unpack_posix<char>("--blah",false) == option_pack{true}));
+  BOOST_REQUIRE(
+    (co::unpack_posix_flag<char>("--blah") == option_pack{true}));
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
-  Check for proper GNU option unpacking
+  Check for proper POSIX option with argument unpacking
  */
-BOOST_AUTO_TEST_CASE( unpack_gnu_test )
+BOOST_AUTO_TEST_CASE( unpack_posix_arg_test )
 {
   typedef co::basic_option_pack<char> option_pack;
 
-  BOOST_REQUIRE_MESSAGE((co::unpack_gnu<char>("",true) == option_pack()),
+  BOOST_REQUIRE_MESSAGE((co::unpack_posix_arg<char>("") == option_pack()),
     "unpack on empty string does not yield empty option_pack");
 
-  BOOST_REQUIRE_MESSAGE((co::unpack_gnu<char>("-",true) == option_pack()),
-    "orphan '-' did not yield empty option pack");
-
   // simple flag
-  BOOST_REQUIRE((co::unpack_gnu<char>("-f",true) ==
-    option_pack{false,false,"-","f",{},{}}));
-
-  BOOST_REQUIRE((co::unpack_gnu<char>("-f",false) ==
+  BOOST_REQUIRE((co::unpack_posix_arg<char>("-f") ==
     option_pack{false,false,"-","f",{},{}}));
 
   // orphan flag
-  BOOST_REQUIRE((co::unpack_gnu<char>("-",true) == option_pack()));
+  BOOST_REQUIRE((co::unpack_posix_arg<char>("-") == option_pack()));
 
-  BOOST_REQUIRE((co::unpack_gnu<char>("-",false) == option_pack()));
+  // packed flags
+  BOOST_REQUIRE((co::unpack_posix_arg<char>("-fbar") ==
+    option_pack{false,true,"-","f",{},{"bar"}}));
 
-  // value flag
-  BOOST_REQUIRE((co::unpack_gnu<char>("-fbar",true) ==
-    option_pack{false,true,"-","f",{},"bar"}));
-
-  BOOST_REQUIRE((co::unpack_gnu<char>("-fbar",false) ==
-    option_pack{false,false,"-","f","bar",{}}));
-
-  // value flag with trailing extra
-  BOOST_REQUIRE((co::unpack_gnu<char>("-f bar",true) ==
-    option_pack{false,true,"-","f",{}," bar"}));
-
-  BOOST_REQUIRE((co::unpack_gnu<char>("-f bar",false) ==
-    option_pack{false,false,"-","f"," bar",{}}));
+  // packed flag with trailing extra
+  BOOST_REQUIRE((co::unpack_posix_arg<char>("-f bar") ==
+    option_pack{false,true,"-","f",{},{" bar"}}));
 
   // cease flag
-  BOOST_REQUIRE((co::unpack_gnu<char>("--",true) == option_pack{true}));
+  BOOST_REQUIRE((co::unpack_posix_arg<char>("--") == option_pack{true}));
 
-  BOOST_REQUIRE((co::unpack_gnu<char>("--",false) == option_pack{true}));
+  // cease flag with extra chars
+  BOOST_REQUIRE(
+    (co::unpack_posix_arg<char>("--blah") == option_pack{true}));
+}
+
+/**
+  Check for proper GNU option flag unpacking
+ */
+BOOST_AUTO_TEST_CASE( unpack_gnu_flag_test )
+{
+  typedef co::basic_option_pack<char> option_pack;
+
+  BOOST_REQUIRE_MESSAGE((co::unpack_gnu_flag<char>("") == option_pack()),
+    "unpack on empty string does not yield empty option_pack");
+
+  // simple flag
+  BOOST_REQUIRE((co::unpack_gnu_flag<char>("-f") ==
+    option_pack{false,false,"-","f",{},{}}));
+
+  // orphan flag
+  BOOST_REQUIRE((co::unpack_gnu_flag<char>("-") == option_pack()));
+
+  // packed flags
+  BOOST_REQUIRE((co::unpack_gnu_flag<char>("-fbar") ==
+    option_pack{false,false,"-","f",{"-b","-a","-r"}}));
+
+  // packed flag with trailing extra
+  BOOST_REQUIRE((co::unpack_gnu_flag<char>("-f bar") ==
+    option_pack{false,false,"-","f",{"- ","-b","-a","-r"}}));
+
+  // cease flag
+  BOOST_REQUIRE((co::unpack_gnu_flag<char>("--") == option_pack{true}));
 
   // long flag
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo",true) ==
+  BOOST_REQUIRE((co::unpack_gnu_flag<char>("--foo") ==
     option_pack{false,false,"--","foo",{},{}}));
+}
 
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo",false) ==
-    option_pack{false,false,"--","foo",{},{}}));
+/**
+  Check for proper GNU option with argument unpacking
+ */
+BOOST_AUTO_TEST_CASE( unpack_gnu_arg_test )
+{
+  typedef co::basic_option_pack<char> option_pack;
+
+  BOOST_REQUIRE_MESSAGE((co::unpack_gnu_arg<char>("") == option_pack()),
+    "unpack on empty string does not yield empty option_pack");
+
+  // simple flag
+  BOOST_REQUIRE((co::unpack_gnu_arg<char>("-f") ==
+    option_pack{false,false,"-","f",{},{}}));
+
+  // orphan flag
+  BOOST_REQUIRE((co::unpack_gnu_arg<char>("-") == option_pack()));
+
+  // packed flags
+  BOOST_REQUIRE((co::unpack_gnu_arg<char>("-fbar") ==
+    option_pack{false,true,"-","f",{},{"bar"}}));
+
+  // packed flag with trailing extra
+  BOOST_REQUIRE((co::unpack_gnu_arg<char>("-f bar") ==
+    option_pack{false,true,"-","f",{},{" bar"}}));
+
+  // cease flag
+  BOOST_REQUIRE((co::unpack_gnu_arg<char>("--") == option_pack{true}));
 
   // long flag w/value
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo=bar",true) ==
-    option_pack{false,true,"--","foo",{},"bar"}));
-
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo=bar",false) ==
+  BOOST_REQUIRE((co::unpack_gnu_arg<char>("--foo=bar") ==
     option_pack{false,true,"--","foo",{},"bar"}));
 
   // long flag with leading extra w/value
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo =bar  ",true) ==
-    option_pack{false,true,"--","foo ",{},"bar  "}));
-
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo =bar  ",false) ==
+  BOOST_REQUIRE((co::unpack_gnu_arg<char>("--foo =bar  ") ==
     option_pack{false,true,"--","foo ",{},"bar  "}));
 
   // long flag with trailing extra w/value
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo= bar  ",true) ==
-    option_pack{false,true,"--","foo",{}," bar  "}));
-
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo= bar  ",false) ==
+  BOOST_REQUIRE((co::unpack_gnu_arg<char>("--foo= bar  ") ==
     option_pack{false,true,"--","foo",{}," bar  "}));
 
   // long flag with leading and trailing extra w/value
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo = bar  ",true) ==
-    option_pack{false,true,"--","foo ",{}," bar  "}));
-
-  BOOST_REQUIRE((co::unpack_gnu<char>("--foo = bar  ",false) ==
+  BOOST_REQUIRE((co::unpack_gnu_arg<char>("--foo = bar  ") ==
     option_pack{false,true,"--","foo ",{}," bar  "}));
 }
-
-
-
-
-
 
 
 

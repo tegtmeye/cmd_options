@@ -14,7 +14,7 @@ bool operator==(const basic_option_pack<CharT> &lhs,
     && lhs.value_provided == rhs.value_provided
     && lhs.prefix == rhs.prefix
     && lhs.raw_key == rhs.raw_key
-    && lhs.packed_key == rhs.packed_key
+    && lhs.packed_arguments == rhs.packed_arguments
     && lhs.value == rhs.value;
 }
 
@@ -177,41 +177,6 @@ inline bool is_hidden_keyed_interpret_positional(
 }
 
 template<typename CharT>
-inline bool is_replace_positional(
-  const co::basic_option_description<CharT> &desc)
-{
-  return (!desc.unpack_option && desc.extended_description
-    && desc.make_value && desc.implicit_value && !desc.implicit_key);
-}
-
-template<typename CharT>
-inline bool is_hidden_replace_positional(
-  const co::basic_option_description<CharT> &desc)
-{
-  return (!desc.unpack_option && !desc.extended_description
-    && desc.make_value && desc.implicit_value && !desc.implicit_key);
-}
-
-/*
-  Row 20
-*/
-template<typename CharT>
-inline bool is_keyed_replace_positional(
-  const co::basic_option_description<CharT> &desc)
-{
-  return (!desc.unpack_option && desc.extended_description
-    && desc.make_value && desc.implicit_value && desc.implicit_key);
-}
-
-template<typename CharT>
-inline bool is_hidden_keyed_replace_positional(
-  const co::basic_option_description<CharT> &desc)
-{
-  return (!desc.unpack_option && !desc.extended_description
-    && desc.make_value && desc.implicit_value && desc.implicit_key);
-}
-
-template<typename CharT>
 inline bool is_empty_positional(
   const co::basic_option_description<CharT> &desc)
 {
@@ -227,6 +192,9 @@ inline bool is_hidden_empty_positional(
     && !desc.make_value && !desc.implicit_key);
 }
 
+/*
+  Row 20
+*/
 template<typename CharT>
 inline bool is_empty_keyed_positional(
   const co::basic_option_description<CharT> &desc)
@@ -235,9 +203,6 @@ inline bool is_empty_keyed_positional(
     && !desc.make_value && desc.implicit_key);
 }
 
-/*
-  Row 25
-*/
 template<typename CharT>
 inline bool is_hidden_empty_keyed_positional(
   const co::basic_option_description<CharT> &desc)
@@ -245,6 +210,13 @@ inline bool is_hidden_empty_keyed_positional(
   return (!desc.unpack_option && !desc.extended_description
     && !desc.make_value && desc.implicit_key);
 }
+
+
+
+
+
+
+
 
 
 
@@ -313,15 +285,11 @@ bool check_exclusive(const co::basic_option_description<CharT> &desc,
     {"is_keyed_interpret_positional",is_keyed_interpret_positional<CharT>},
     {"is_hidden_keyed_interpret_positional",
       is_hidden_keyed_interpret_positional<CharT>},
-    {"is_replace_positional",is_replace_positional<CharT>},
-    {"is_hidden_replace_positional",is_hidden_replace_positional<CharT>},
-    {"is_keyed_replace_positional",is_keyed_replace_positional<CharT>},
-    {"is_hidden_keyed_replace_positional",
-      is_hidden_keyed_replace_positional<CharT>},
     {"is_empty_positional",is_empty_positional<CharT>},
     {"is_hidden_empty_positional",is_hidden_empty_positional<CharT>},
     {"is_empty_keyed_positional",is_empty_keyed_positional<CharT>},
-    {"is_hidden_empty_keyed_positional",is_hidden_empty_keyed_positional<CharT>}
+    {"is_hidden_empty_keyed_positional",
+      is_hidden_empty_keyed_positional<CharT>}
   };
 
   std::vector<pair_type> exclusive = cases;
@@ -356,6 +324,50 @@ bool check_exclusive(const co::basic_option_description<CharT> &desc,
     [&](const pair_type &val) {return val.second(desc);});
 }
 
+template<typename T, typename VariableMap>
+bool contents_equal(const VariableMap &lhs, const VariableMap &rhs)
+{
+  typename VariableMap::const_iterator lcur = lhs.begin();
+  typename VariableMap::const_iterator rcur = rhs.begin();
+
+  while(lcur != lhs.end() && rcur != rhs.end()) {
+    if(lcur->first != rcur->first) {
+       std::cerr << "lhs vm key '" << lcur->first << "' != rhs vm key '"
+         << rcur->first << "'\n";
+      return false;
+    }
+
+    if(!(co::is_empty(lcur->second) && co::is_empty(rcur->second))) {
+      if(co::is_empty(lcur->second) && !co::is_empty(rcur->second)) {
+         std::cerr << "lhs vm value for key '" << lcur->first
+           << "' is empty but rhs vm value for key '" << rcur->first
+           << "' is not\n";
+        return false;
+      }
+
+      if(!co::is_empty(lcur->second) && co::is_empty(rcur->second)) {
+         std::cerr << "lhs vm value for key '" << lcur->first
+           << "' is not empty but rhs vm value for key '" << rcur->first
+           << "' is\n";
+        return false;
+      }
+
+      try {
+        if(co::any_cast<T>(lcur->second) != co::any_cast<T>(rcur->second))
+          return false;
+      }
+      catch(const co::bad_any_cast &ex) {
+        std::cerr << "vm values are not given type T: " << ex.what() << "\n";
+        throw;
+      }
+    }
+
+    ++lcur;
+    ++rcur;
+  }
+
+  return lcur == lhs.end() && rcur == rhs.end();
+}
 
 
 

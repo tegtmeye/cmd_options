@@ -10,51 +10,6 @@ BOOST_AUTO_TEST_SUITE( parse_test_suite )
 
 namespace co = lemma::cmd_options;
 
-template<typename T, typename VariableMap>
-bool contents_equal(const VariableMap &lhs, const VariableMap &rhs)
-{
-  typename VariableMap::const_iterator lcur = lhs.begin();
-  typename VariableMap::const_iterator rcur = rhs.begin();
-
-  while(lcur != lhs.end() && rcur != rhs.end()) {
-    if(lcur->first != rcur->first) {
-       std::cerr << "lhs vm key '" << lcur->first << "' != rhs vm key '"
-         << rcur->first << "'\n";
-      return false;
-    }
-
-    if(!(co::is_empty(lcur->second) && co::is_empty(rcur->second))) {
-      if(co::is_empty(lcur->second) && !co::is_empty(rcur->second)) {
-         std::cerr << "lhs vm value for key '" << lcur->first
-           << "' is empty but rhs vm value for key '" << rcur->first
-           << "' is not\n";
-        return false;
-      }
-
-      if(!co::is_empty(lcur->second) && co::is_empty(rcur->second)) {
-         std::cerr << "lhs vm value for key '" << lcur->first
-           << "' is not empty but rhs vm value for key '" << rcur->first
-           << "' is\n";
-        return false;
-      }
-
-      try {
-        if(co::any_cast<T>(lcur->second) != co::any_cast<T>(rcur->second))
-          return false;
-      }
-      catch(const co::bad_any_cast &ex) {
-        std::cerr << "vm values are not given type T: " << ex.what() << "\n";
-        throw;
-      }
-    }
-
-    ++lcur;
-    ++rcur;
-  }
-
-  return lcur == lhs.end() && rcur == rhs.end();
-}
-
 
 /**
   case 2, strictly no value
@@ -81,7 +36,7 @@ BOOST_AUTO_TEST_CASE( case2_parse_test )
 
 //   std::cerr << detail::to_string<std::string>(vm);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{{"foo",{}},{"foo",{}}}));
 
   BOOST_REQUIRE_THROW(
@@ -112,7 +67,7 @@ BOOST_AUTO_TEST_CASE( case3_parse_test )
   co::variable_map vm =
     co::parse_arguments(argv_good.data(),argv_good.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{{"foo",{}},{"foo",{}}}));
 
   BOOST_REQUIRE_THROW(
@@ -145,7 +100,7 @@ BOOST_AUTO_TEST_CASE( case4_parse_test )
 
 //   std::cerr << detail::to_string<std::string>(vm);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{{"foo",{}},{"f",{}}}));
 
   BOOST_REQUIRE_THROW(
@@ -176,7 +131,7 @@ BOOST_AUTO_TEST_CASE( case5_parse_test )
   co::variable_map vm =
     co::parse_arguments(argv_good.data(),argv_good.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{{"foo",{}},{"f",{}}}));
 
   BOOST_REQUIRE_THROW(
@@ -209,7 +164,7 @@ BOOST_AUTO_TEST_CASE( case6_parse_test )
   co::variable_map vm =
     co::parse_arguments(argv_good.data(),argv_good.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"foo",{std::string("bar")}},
       {"foo",{std::string("42")}}
@@ -249,7 +204,7 @@ BOOST_AUTO_TEST_CASE( case7_parse_test )
   co::variable_map vm =
     co::parse_arguments(argv_good.data(),argv_good.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"foo",{std::string("bar")}},
       {"foo",{std::string("42")}}
@@ -289,7 +244,7 @@ BOOST_AUTO_TEST_CASE( case8_parse_test )
   co::variable_map vm =
     co::parse_arguments(argv_good.data(),argv_good.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"foo",{std::string("bar")}},
       {"f",{std::string("42")}}
@@ -329,7 +284,7 @@ BOOST_AUTO_TEST_CASE( case9_parse_test )
   co::variable_map vm =
     co::parse_arguments(argv_good.data(),argv_good.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"foo",{std::string("bar")}},
       {"f",{std::string("42")}}
@@ -366,7 +321,7 @@ BOOST_AUTO_TEST_CASE( case10_parse_test )
   co::variable_map vm =
     co::parse_arguments(argv1.data(),argv1.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"foo",{std::string("bar")}},
       {"foo",{std::string("42")}}
@@ -378,7 +333,7 @@ BOOST_AUTO_TEST_CASE( case10_parse_test )
 
 //   std::cerr << detail::to_string<std::string>(vm);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"foo",{std::string("blarp")}},
       {"foo",{std::string("blarp")}}
@@ -407,7 +362,7 @@ BOOST_AUTO_TEST_CASE( case11_parse_test )
   co::variable_map vm =
     co::parse_arguments(argv1.data(),argv1.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"foo",{std::string("bar")}},
       {"foo",{std::string("42")}}
@@ -415,7 +370,7 @@ BOOST_AUTO_TEST_CASE( case11_parse_test )
 
   vm = co::parse_arguments(argv2.data(),argv2.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"foo",{std::string("blarp")}},
       {"foo",{std::string("blarp")}}
@@ -444,7 +399,7 @@ BOOST_AUTO_TEST_CASE( case12_parse_test )
   co::variable_map vm =
     co::parse_arguments(argv1.data(),argv1.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"foo",{std::string("bar")}},
       {"f",{std::string("42")}}
@@ -452,7 +407,7 @@ BOOST_AUTO_TEST_CASE( case12_parse_test )
 
   vm = co::parse_arguments(argv2.data(),argv2.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"foo",{std::string("blarp")}},
       {"f",{std::string("blarp")}}
@@ -481,7 +436,7 @@ BOOST_AUTO_TEST_CASE( case13_parse_test )
   co::variable_map vm =
     co::parse_arguments(argv1.data(),argv1.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"foo",{std::string("bar")}},
       {"f",{std::string("42")}}
@@ -489,7 +444,7 @@ BOOST_AUTO_TEST_CASE( case13_parse_test )
 
   vm = co::parse_arguments(argv2.data(),argv2.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"foo",{std::string("blarp")}},
       {"f",{std::string("blarp")}}
@@ -525,7 +480,7 @@ BOOST_AUTO_TEST_CASE( case14_parse_test )
 
 //   std::cerr << detail::to_string<std::string>(vm);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"",{std::string("--foo=bar14")}},
       {"",{std::string("-f42")}}
@@ -533,7 +488,7 @@ BOOST_AUTO_TEST_CASE( case14_parse_test )
 
   vm = co::parse_arguments(argv2.data(),argv2.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"",{std::string("--foo")}},
       {"",{std::string("-f")}}
@@ -597,7 +552,7 @@ BOOST_AUTO_TEST_CASE( case15_parse_test )
 
 //   std::cerr << detail::to_string<std::string>(vm);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"",{std::string("--foo=bar14")}},
       {"",{std::string("-f42")}}
@@ -605,7 +560,7 @@ BOOST_AUTO_TEST_CASE( case15_parse_test )
 
   vm = co::parse_arguments(argv2.data(),argv2.size(),options);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"",{std::string("--foo")}},
       {"",{std::string("-f")}}
@@ -633,7 +588,7 @@ BOOST_AUTO_TEST_CASE( case16_parse_test )
 
 //   std::cerr << detail::to_string<std::string>(vm);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"key1",{std::string("--foo=bar14")}},
       {"key1",{std::string("-f42")}},
@@ -652,7 +607,7 @@ BOOST_AUTO_TEST_CASE( case16_parse_test )
 
   // std::cerr << detail::to_string<std::string>(vm);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"key1",{std::string("--foo=bar14")}},
       {"key2",{std::string("-f42")}}
@@ -670,7 +625,7 @@ BOOST_AUTO_TEST_CASE( case16_parse_test )
 
   vm = co::parse_arguments(argv.data(),argv.size(),options3);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"key1",{std::string("--foo=bar14")}},
       {"key2",{std::string("-f42")}},
@@ -700,7 +655,7 @@ BOOST_AUTO_TEST_CASE( case17_parse_test )
 
 //   std::cerr << detail::to_string<std::string>(vm);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"key1",{std::string("--foo=bar14")}},
       {"key1",{std::string("-f42")}},
@@ -719,7 +674,7 @@ BOOST_AUTO_TEST_CASE( case17_parse_test )
 
   // std::cerr << detail::to_string<std::string>(vm);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"key1",{std::string("--foo=bar14")}},
       {"key2",{std::string("-f42")}}
@@ -737,7 +692,7 @@ BOOST_AUTO_TEST_CASE( case17_parse_test )
 
   vm = co::parse_arguments(argv.data(),argv.size(),options3);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"key1",{std::string("--foo=bar14")}},
       {"key2",{std::string("-f42")}},
@@ -767,7 +722,7 @@ BOOST_AUTO_TEST_CASE( case18_parse_test )
 
 //   std::cerr << detail::to_string<std::string>(vm);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"",{}},
       {"",{}},
@@ -797,7 +752,7 @@ BOOST_AUTO_TEST_CASE( case19_parse_test )
 
 //   std::cerr << detail::to_string<std::string>(vm);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"",{}},
       {"",{}},
@@ -829,7 +784,7 @@ BOOST_AUTO_TEST_CASE( case20_parse_test )
     co::parse_arguments(argv.data(),argv.size(),options);
 
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"key1",{}},
       {"key2",{}},
@@ -856,7 +811,7 @@ BOOST_AUTO_TEST_CASE( case20_parse_test )
 
   vm = co::parse_arguments(argv.data(),argv.size(),options3);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"key1",{}},
       {"key2",{}},
@@ -888,7 +843,7 @@ BOOST_AUTO_TEST_CASE( case21_parse_test )
     co::parse_arguments(argv.data(),argv.size(),options);
 
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"key1",{}},
       {"key2",{}},
@@ -915,7 +870,7 @@ BOOST_AUTO_TEST_CASE( case21_parse_test )
 
   vm = co::parse_arguments(argv.data(),argv.size(),options3);
 
-  BOOST_REQUIRE(contents_equal<std::string>(vm,
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
       {"key1",{}},
       {"key2",{}},
