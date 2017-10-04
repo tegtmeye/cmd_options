@@ -540,6 +540,390 @@ BOOST_AUTO_TEST_CASE( case14_parse_test )
     }));
 }
 
+/**
+  case 14.2,
+ */
+BOOST_AUTO_TEST_CASE( case14_2_parse_test )
+{
+  std::vector<const char *> argv1{
+    "--foo=bar14",
+    "-f42"
+  };
+
+  std::vector<const char *> argv2{
+    "--foo",
+    "-f"
+  };
+
+  co::options_group options{
+    co::make_positional<std::string>("line 14"),
+    co::make_options_error()
+  };
+
+  co::variable_map vm;
+
+  BOOST_REQUIRE_THROW(
+    (vm = co::parse_arguments(argv1.data(),argv1.size(),options)),
+    co::command_option_error);
+
+//   std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE_THROW(
+    (vm = co::parse_arguments(argv2.data(),argv2.size(),options)),
+    co::command_option_error);
+}
+
+/**
+  case 15,
+ */
+BOOST_AUTO_TEST_CASE( case15_parse_test )
+{
+  std::vector<const char *> argv1{
+    "--foo=bar14",
+    "-f42"
+  };
+
+  std::vector<const char *> argv2{
+    "--foo",
+    "-f"
+  };
+
+  co::options_group options{
+    co::make_hidden_positional<std::string>(),
+  };
+
+  co::variable_map vm =
+    co::parse_arguments(argv1.data(),argv1.size(),options);
+
+//   std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"",{std::string("--foo=bar14")}},
+      {"",{std::string("-f42")}}
+    }));
+
+  vm = co::parse_arguments(argv2.data(),argv2.size(),options);
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"",{std::string("--foo")}},
+      {"",{std::string("-f")}}
+    }));
+}
+
+/**
+  case 16,
+ */
+BOOST_AUTO_TEST_CASE( case16_parse_test )
+{
+  std::vector<const char *> argv{
+    "--foo=bar14",
+    "-f42",
+    "--foo",
+    "-f"
+  };
+
+  co::options_group options{
+    co::make_positional<std::string>("key1","line 16")
+  };
+
+  co::variable_map vm =
+    co::parse_arguments(argv.data(),argv.size(),options);
+
+//   std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"key1",{std::string("--foo=bar14")}},
+      {"key1",{std::string("-f42")}},
+      {"key1",{std::string("--foo")}},
+      {"key1",{std::string("-f")}}
+    }));
+
+
+  co::options_group options2{
+    co::make_positional<std::string>("key1","line 16",0),
+    co::make_positional<std::string>("key2","line 16",1)
+  };
+
+  vm =
+    co::parse_arguments(argv.data(),2,options2);
+
+  // std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"key1",{std::string("--foo=bar14")}},
+      {"key2",{std::string("-f42")}}
+    }));
+
+  BOOST_REQUIRE_THROW(
+    (vm = co::parse_arguments(argv.data(),argv.size(),options2)),
+    co::command_option_error);
+
+  co::options_group options3{
+    co::make_positional<std::string>("key1","line 16",0),
+    co::make_positional<std::string>("key2","line 16",1),
+    co::make_positional<std::string>("default","line 16",-1)
+  };
+
+  vm = co::parse_arguments(argv.data(),argv.size(),options3);
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"key1",{std::string("--foo=bar14")}},
+      {"key2",{std::string("-f42")}},
+      {"default",{std::string("--foo")}},
+      {"default",{std::string("-f")}}
+      }));
+}
+
+/**
+  case 17,
+ */
+BOOST_AUTO_TEST_CASE( case17_parse_test )
+{
+  std::vector<const char *> argv{
+    "--foo=bar14",
+    "-f42",
+    "--foo",
+    "-f"
+  };
+
+  co::options_group options{
+    co::make_hidden_positional<std::string>("key1")
+  };
+
+  co::variable_map vm =
+    co::parse_arguments(argv.data(),argv.size(),options);
+
+//   std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"key1",{std::string("--foo=bar14")}},
+      {"key1",{std::string("-f42")}},
+      {"key1",{std::string("--foo")}},
+      {"key1",{std::string("-f")}}
+    }));
+
+
+  co::options_group options2{
+    co::make_hidden_positional<std::string>("key1",0),
+    co::make_hidden_positional<std::string>("key2",1)
+  };
+
+  vm =
+    co::parse_arguments(argv.data(),2,options2);
+
+  // std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"key1",{std::string("--foo=bar14")}},
+      {"key2",{std::string("-f42")}}
+    }));
+
+  BOOST_REQUIRE_THROW(
+    (vm = co::parse_arguments(argv.data(),argv.size(),options2)),
+    co::command_option_error);
+
+  co::options_group options3{
+    co::make_hidden_positional<std::string>("key1",0),
+    co::make_hidden_positional<std::string>("key2",1),
+    co::make_hidden_positional<std::string>("default",-1)
+  };
+
+  vm = co::parse_arguments(argv.data(),argv.size(),options3);
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"key1",{std::string("--foo=bar14")}},
+      {"key2",{std::string("-f42")}},
+      {"default",{std::string("--foo")}},
+      {"default",{std::string("-f")}}
+      }));
+}
+
+/**
+  case 18,
+ */
+BOOST_AUTO_TEST_CASE( case18_parse_test )
+{
+  std::vector<const char *> argv{
+    "--foo=bar14",
+    "-f42",
+    "--foo",
+    "-f"
+  };
+
+  co::options_group options{
+    co::make_positional("line 18"),
+  };
+
+  co::variable_map vm =
+    co::parse_arguments(argv.data(),argv.size(),options);
+
+//   std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"",{}},
+      {"",{}},
+      {"",{}},
+      {"",{}}
+    }));
+}
+
+/**
+  case 19,
+ */
+BOOST_AUTO_TEST_CASE( case19_parse_test )
+{
+  std::vector<const char *> argv{
+    "--foo=bar14",
+    "-f42",
+    "--foo",
+    "-f"
+  };
+
+  co::options_group options{
+    co::make_hidden_positional(),
+  };
+
+  co::variable_map vm =
+    co::parse_arguments(argv.data(),argv.size(),options);
+
+//   std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"",{}},
+      {"",{}},
+      {"",{}},
+      {"",{}}
+    }));
+}
+
+/**
+  case 20,
+ */
+BOOST_AUTO_TEST_CASE( case20_parse_test )
+{
+  std::vector<const char *> argv{
+    "--foo=bar14",
+    "-f42",
+    "--foo",
+    "-f"
+  };
+
+  co::options_group options{
+    co::make_positional("key1","line 20",0),
+    co::make_positional("key2","line 20",1),
+    co::make_positional("key3","line 20",2),
+    co::make_positional("key4","line 20",3)
+  };
+
+  co::variable_map vm =
+    co::parse_arguments(argv.data(),argv.size(),options);
+
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"key1",{}},
+      {"key2",{}},
+      {"key3",{}},
+      {"key4",{}}
+    }));
+
+  co::options_group options2{
+    co::make_positional("key1","line 20",0),
+    co::make_positional("key2","line 20",1),
+  };
+
+//   std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE_THROW(
+    (vm = co::parse_arguments(argv.data(),argv.size(),options2)),
+    co::command_option_error);
+
+  co::options_group options3{
+    co::make_positional("key1","line 20",0),
+    co::make_positional("key2","line 20",1),
+    co::make_positional("default","line 20",-1)
+  };
+
+  vm = co::parse_arguments(argv.data(),argv.size(),options3);
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"key1",{}},
+      {"key2",{}},
+      {"default",{}},
+      {"default",{}}
+      }));
+}
+
+/**
+  case 21,
+ */
+BOOST_AUTO_TEST_CASE( case21_parse_test )
+{
+  std::vector<const char *> argv{
+    "--foo=bar14",
+    "-f42",
+    "--foo",
+    "-f"
+  };
+
+  co::options_group options{
+    co::make_hidden_positional("key1",0),
+    co::make_hidden_positional("key2",1),
+    co::make_hidden_positional("key3",2),
+    co::make_hidden_positional("key4",3)
+  };
+
+  co::variable_map vm =
+    co::parse_arguments(argv.data(),argv.size(),options);
+
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"key1",{}},
+      {"key2",{}},
+      {"key3",{}},
+      {"key4",{}}
+    }));
+
+  co::options_group options2{
+    co::make_hidden_positional("key1",0),
+    co::make_hidden_positional("key2",1),
+  };
+
+//   std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE_THROW(
+    (vm = co::parse_arguments(argv.data(),argv.size(),options2)),
+    co::command_option_error);
+
+  co::options_group options3{
+    co::make_hidden_positional("key1",0),
+    co::make_hidden_positional("key2",1),
+    co::make_hidden_positional("default",-1)
+  };
+
+  vm = co::parse_arguments(argv.data(),argv.size(),options3);
+
+  BOOST_REQUIRE(contents_equal<std::string>(vm,
+    co::variable_map{
+      {"key1",{}},
+      {"key2",{}},
+      {"default",{}},
+      {"default",{}}
+      }));
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

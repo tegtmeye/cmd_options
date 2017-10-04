@@ -657,7 +657,8 @@ basic_option_pack<CharT> unpack_gnu_arg(const std::basic_string<CharT> &str)
 }
 
 template<typename CharT>
-inline void throw_unknown_option(const std::basic_string<CharT> &arg)
+[[noreturn]] inline void
+throw_unknown_option(const std::basic_string<CharT> &arg)
 {
   std::basic_stringstream<CharT> err;
   err
@@ -666,7 +667,8 @@ inline void throw_unknown_option(const std::basic_string<CharT> &arg)
 }
 
 template<typename CharT>
-inline void throw_missing_argument(const std::basic_string<CharT> &arg)
+[[noreturn]] inline void
+throw_missing_argument(const std::basic_string<CharT> &arg)
 {
   std::basic_stringstream<CharT> err;
   err
@@ -675,7 +677,8 @@ inline void throw_missing_argument(const std::basic_string<CharT> &arg)
 }
 
 template<typename CharT>
-inline void throw_packed_missing_argument(const std::basic_string<CharT> &arg)
+[[noreturn]] inline void
+throw_packed_missing_argument(const std::basic_string<CharT> &arg)
 {
   std::basic_stringstream<CharT> err;
   err
@@ -684,7 +687,8 @@ inline void throw_packed_missing_argument(const std::basic_string<CharT> &arg)
 }
 
 template<typename CharT>
-inline void throw_unexpected_argument(const std::basic_string<CharT> &arg,
+[[noreturn]] inline void
+throw_unexpected_argument(const std::basic_string<CharT> &arg,
   const std::basic_string<CharT> &unexpected)
 {
   std::basic_stringstream<CharT> err;
@@ -695,8 +699,8 @@ inline void throw_unexpected_argument(const std::basic_string<CharT> &arg,
 }
 
 template<typename CharT>
-inline
-void throw_packed_unexpected_argument(const std::basic_string<CharT> &arg,
+[[noreturn]] inline void
+throw_packed_unexpected_argument(const std::basic_string<CharT> &arg,
   const std::basic_string<CharT> &unexpected)
 {
   std::basic_stringstream<CharT> err;
@@ -708,7 +712,8 @@ void throw_packed_unexpected_argument(const std::basic_string<CharT> &arg,
 
 
 template<typename CharT>
-inline void throw_packed_unknown_option(const std::basic_string<CharT> &arg)
+[[noreturn]] inline void
+throw_packed_unknown_option(const std::basic_string<CharT> &arg)
 {
   std::basic_stringstream<CharT> err;
   err
@@ -717,7 +722,8 @@ inline void throw_packed_unknown_option(const std::basic_string<CharT> &arg)
 }
 
 template<typename CharT>
-inline void throw_strict_noaccept_value(const std::basic_string<CharT> &arg)
+[[noreturn]] inline void
+throw_strict_noaccept_value(const std::basic_string<CharT> &arg)
 {
   std::basic_stringstream<CharT> err;
   err
@@ -726,8 +732,8 @@ inline void throw_strict_noaccept_value(const std::basic_string<CharT> &arg)
 }
 
 template<typename CharT>
-inline
-void throw_packed_strict_noaccept_value(const std::basic_string<CharT> &arg)
+[[noreturn]] inline void
+throw_packed_strict_noaccept_value(const std::basic_string<CharT> &arg)
 {
   std::basic_stringstream<CharT> err;
   err
@@ -736,7 +742,8 @@ void throw_packed_strict_noaccept_value(const std::basic_string<CharT> &arg)
 }
 
 template<typename CharT>
-inline void throw_unexpected_positional(const std::basic_string<CharT> &arg)
+[[noreturn]] inline void
+throw_unexpected_positional(const std::basic_string<CharT> &arg)
 {
   std::basic_stringstream<CharT> err;
   err
@@ -1819,6 +1826,19 @@ make_hidden_positional(const std::basic_string<char> &implicit_key,
   detail::add_positional_constrains(cnts,implicit_key,desc);
 
   return desc;
+}
+
+/*
+  Convenience function to intercept options to make them errors. This is only needed in the case where there are only positional arguments and you don't want to accept anything that looks like a option. If there are _any_ descriptions that have uppack_option set and the option is unrecognized, then parsing will complain. For example, on my machine, the command 'echo' takes one option, '-n' (nonconforming to POSIX actually). If the command 'echo -f' is given, the string '-f' is printed. If using this library you would rather an error be generated that states '-f' was unrecognized, use the \c make_options_error function and do not include any other non-positional descriptions.
+*/
+inline basic_option_description<char> make_options_error(void)
+{
+  typedef std::basic_string<char> string_type;
+
+  return basic_option_description<char>{unpack_gnu_arg<char>,
+    [](const string_type &raw_key,const variable_map &) -> string_type {
+      throw_unknown_option(raw_key);
+    }};
 }
 
 
