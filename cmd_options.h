@@ -28,7 +28,9 @@
 #ifndef LEMMA_CMD_OPTIONS_H
 #define LEMMA_CMD_OPTIONS_H
 
+#if __cplusplus < 201703L
 #include <boost/any.hpp>
+#endif
 
 #include <map>
 #include <regex>
@@ -49,54 +51,64 @@ namespace lemma {
 namespace cmd_options {
 
 /*
-  Exception class that is inherited from std::runtime error used to
+  Currently uses boost::any but will eventually transition to std::any in C++17
+*/
+#if __cplusplus < 201703L
+  using any = boost::any;
+
+  /*
+    Checking if any has a value is different between boost and C++17.
+
+    Provide an abstraction
+  */
+  inline bool is_empty(const any &_val)
+  {
+    return _val.empty();
+  }
+
+  /*
+    Convenience syntax for any_cast between boost::any and std::any
+
+    Would rather use a "using any_cast = boost::any_cast" syntax but aliases
+    are not available for functions
+  */
+  template<typename T, typename AnyT>
+  inline T any_cast(AnyT && _val)
+  {
+    return boost::any_cast<T>(std::forward<AnyT>(_val));
+  }
+
+  /*
+    Convenience for bad_any_cast between boost::any and std::any
+  */
+  using bad_any_cast = boost::bad_any_cast;
+#else
+  using any = std::any;
+#endif
+
+namespace detail {
+
+// In the future (post C++14) use std::mismatch
+template<class InputIt1, class InputIt2>
+std::pair<InputIt1, InputIt2>
+    mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2)
+{
+    while (first1 != last1 && first2 != last2 && *first1 == *first2) {
+        ++first1, ++first2;
+    }
+    return std::make_pair(first1, first2);
+}
+
+}
+
+/*
+  Exception class hierarchy inherited from std::runtime error used to
   indicate command option errors.
 
-  Errors thrown from the cmd_options library are caught and certain
-  sequences are replaced with a substitution string depending on where
-  it was thrown. These sequences are:
-
-   - '%@' : This string is replaced with the command argument as provided
-   - '%L' : This string is replaced by parse_options.long_option_flag
-   - '%S' : This string is replaced by parse_options.short_option_flag
-
-  Not all sequences are available everywhere. For example, if an error
-  is observed in an option_description finalize function, the '%@'
-  sequence is not available because this function is called at the end
-  of command option processing and therefore is not associated with any
-  particular option. See the documentation for each individual function
-  for availability of these sequences.
-
-  These substitutions are available because some error processing only
-  has knowledge of a variable_map key or because argument processing is
-  agnostic of the given long_ or short_option_flag.
-
-  Examples:
-
-    - If the 'foo' key associated with the '--foo' or '-f' option is
-    required and not seen in the finalize function. The finalize
-    function doesn't care about the configured long_ and
-    short_option_flag but needs it to provide informative feedback. Thus
-    the following exception could be thrown from finalize():
-
-      throw command_option_error("missing %Lfoo or %Sf");
-
-    Which is rethrown as:
-
-      command_option_error("missing --foo or -f");
-
-
-    - Suppose a case-insensitive command option that maps to the
-    variable_map key 'foo'. Further suppose that the make_value function
-    expects a string convertible to an integer but the conversion fails.
-    The following exception could be thrown from make_value():
-
-      throw command_option_error("option %@ is expecting and integer argument");
-
-    Given the argument '--FoO', the exception is rethrown as:
-
-      command_option_error("option --FoO is expecting and integer argument");
-
+  In the single argument versions, the \c option or \c argument method
+  is simply a mapping to \c std::runtime_error's what() method. In
+  \c unexpected_argument_error, the unexpected argument is contained in
+  a private string accessible via the \c argument method.
 */
 class command_option_error : public std::runtime_error {
   public:
@@ -104,38 +116,56 @@ class command_option_error : public std::runtime_error {
         :std::runtime_error(what) {}
 };
 
+class unknown_option_error : public command_option_error {
+  public:
+    unknown_option_error(const std::string &option)
+        :command_option_error(option) {}
 
-/*
-  Currently uses boost::any but will eventually transition to std::any in C++17
-*/
-using any = boost::any;
+    const char * option(void) const noexcept {
+      return what();
+    }
+};
 
-/*
-  Checking if any has a value is different between boost and C++17.
+class missing_argument_error : public command_option_error {
+  public:
+    missing_argument_error(const std::string &option)
+        :command_option_error(option) {}
 
-  Provide an abstraction
-*/
-inline bool is_empty(const any &_val)
-{
-  return _val.empty();
-}
+    const char * option(void) const noexcept {
+      return what();
+    }
+};
 
-/*
-  Convenience syntax for any_cast between boost::any and std::any
+class unexpected_argument_error : public command_option_error {
+  public:
+    unexpected_argument_error(const std::string &option,
+      const std::string &arg) :command_option_error(option), _arg(arg) {}
 
-  Would rather use a "using any_cast = boost::any_cast" syntax but aliases
-  are not available for functions
-*/
-template<typename T, typename AnyT>
-inline T any_cast(AnyT && _val)
-{
-  return boost::any_cast<T>(std::forward<AnyT>(_val));
-}
+    const char * option(void) const noexcept {
+      return what();
+    }
 
-/*
-  Convenience for bad_any_cast between boost::any and std::any
-*/
-using bad_any_cast = boost::bad_any_cast;
+    const char * argument(void) const noexcept {
+      return _arg.c_str();
+    }
+
+  private:
+    std::string _arg;
+};
+
+class unexpected_positional_error : public command_option_error {
+  public:
+    unexpected_positional_error(const std::string &arg)
+        :command_option_error(arg) {}
+
+    const char * positional(void) const noexcept {
+      return what();
+    }
+};
+
+
+
+
 
 
 template<typename CharT>
@@ -144,7 +174,7 @@ using basic_variable_map = std::multimap<std::basic_string<CharT>,any>;
 /*
   Structure describing an unpacked argument.
 
-  bool cease_processing;
+  bool end_of_options;
   bool value_provided;
   string_type prefix;
   string_type raw_key;
@@ -152,8 +182,8 @@ using basic_variable_map = std::multimap<std::basic_string<CharT>,any>;
   string_type value;
 
   The elements represent:
-    - \c cease_processing A boolean value indicating that this argument
-      should be ignored and further processing argument should cease.
+    - \c end_of_options A boolean value indicating that this argument
+      should be ignored and further option processing should cease.
 
     - \c value_provided A boolean value indicating that the argument
       contained a packed value. This is necessary because it is possible
@@ -244,7 +274,7 @@ struct basic_option_pack {
   typedef std::basic_string<CharT> string_type;
   typedef std::vector<string_type> packed_arg_seq;
 
-  bool cease_processing;
+  bool end_of_options;
   bool value_provided;
   string_type prefix;
   string_type raw_key;
@@ -257,7 +287,7 @@ std::ostream & operator<<(std::ostream &out,
   const basic_option_pack<CharT> &option_pack)
 {
   out << "process opt:\n"
-    << "\tcease_processing: '" << option_pack.cease_processing << "'\n"
+    << "\tend_of_options: '" << option_pack.end_of_options << "'\n"
     << "\tvalue_provided: '" << option_pack.value_provided << "'\n"
     << "\tprefix: '" << option_pack.prefix << "'\n"
     << "\traw_key: '" << option_pack.raw_key << "'\n"
@@ -468,16 +498,26 @@ template<typename CharT>
 using basic_options_group = std::vector<basic_option_description<CharT> >;
 
 
-
-
-
-
 /*
-  POSIX flag syntax. Unpack arguments in the form:
+  POSIX flag syntax. Unpack alphanumeric arguments in the form:
 
     "-f", "-fabcde"
 
   Where "-fabcde" is equivalent to "-f -a -b -c -d -e"
+
+  The Single Unix Specification Utility Syntax Guideline 3 states that a
+  POSIX option name should be a single alphanumeric character from the
+  portable character set. A question then arises what does it mean when
+  a non-alphanumeric character is encountered? If the unpack function
+  chooses to report that it cannot unpack the option, then the option
+  may get picked up as a positional which would be incorrect unless
+  there is some "fall-through" handler that intercepts the incorrect
+  option and indicates the error.  If, on the other hand, this
+  unpack-function reports it as an error, then it precludes the
+  possibility of some later, non-SUS conforming unpack function handling
+  the option. The solution here is that this function will unpack the
+  flag and let the option description determine if it will accept the
+  non-conforming option or not.
 
   N.B. any leading and trailing whitespace is assumed to be handled
     appropriately prior to this call. That is, " -f" is not the same as "-f".
@@ -492,30 +532,23 @@ basic_option_pack<CharT> unpack_posix_flag(const std::basic_string<CharT> &str)
   static const string_type cease("--");
   static const string_type sprefix("-");
 
-  if(str.empty())
+  auto &&res =
+    detail::mismatch(sprefix.begin(),sprefix.end(),str.begin(),str.end());
+  if(res.first != sprefix.end() || res.second == str.end())
     return option_pack();
 
-  if(str.find(cease) == 0)
+  if(str == cease)
     return option_pack{true};
 
-  if(str.find(sprefix) == 0) {
-    typename string_type::const_iterator first = str.begin()+sprefix.size();
+  if(res.second+1 == str.end())
+    return option_pack{false,false,sprefix,{res.second,res.second+1},{},{}};
 
-    if(first == str.end()) // orphan '-'
-      return option_pack();
+  string_type raw_key{res.second,++res.second};
+  packed_arg_seq packed_arguments;
+  while(res.second != str.end())
+    packed_arguments.push_back(sprefix+(*(res.second++)));
 
-    if(first+1 == str.end())
-      return option_pack{false,false,sprefix,{first,first+1},{},{}};
-
-    string_type raw_key{first,++first};
-    packed_arg_seq packed_arguments;
-    while(first != str.end())
-      packed_arguments.push_back(sprefix+(*(first++)));
-
-    return option_pack{false,false,sprefix,raw_key,packed_arguments};
-  }
-
-  return option_pack();
+  return option_pack{false,false,sprefix,raw_key,packed_arguments};
 }
 
 /*
@@ -539,30 +572,24 @@ basic_option_pack<CharT> unpack_posix_arg(const std::basic_string<CharT> &str)
   static const string_type cease("--");
   static const string_type sprefix("-");
 
-  if(str.empty())
+  auto &&res =
+    detail::mismatch(sprefix.begin(),sprefix.end(),str.begin(),str.end());
+  if(res.first != sprefix.end() || res.second == str.end())
     return option_pack();
 
-  if(str.find(cease) == 0)
+  if(str == cease)
     return option_pack{true};
 
-  if(str.find(sprefix) == 0) {
-    typename string_type::const_iterator first = str.begin()+sprefix.size();
+  if(res.second+1 == str.end())
+    return option_pack{false,false,sprefix,{res.second,res.second+1},{},{}};
 
-    if(first == str.end()) // orphan '-'
-      return option_pack();
-
-    if(first+1 == str.end())
-      return option_pack{false,false,sprefix,{first,first+1},{},{}};
-
-    return option_pack{false,true,sprefix,{first,first+1},{},
-      {first+1,str.end()}};
-  }
-
-  return option_pack();
+  return option_pack{false,true,sprefix,{res.second,res.second+1},{},
+    {res.second+1,str.end()}};
 }
 
 /*
-  GNU extension to POSIX argument syntax. Unpack arguments in the form:
+  GNU extension (long option) to POSIX argument syntax. Unpack arguments in the
+  form:
 
   POSIX:
     "-f", "-fabcde"
@@ -582,33 +609,18 @@ basic_option_pack<CharT> unpack_gnu_flag(const std::basic_string<CharT> &str)
   typedef std::basic_string<CharT> string_type;
 
   static const string_type lprefix("--");
-  static const string_type assignment("=");
 
-  if(str.empty())
-    return option_pack();
+  auto &&res =
+    detail::mismatch(lprefix.begin(),lprefix.end(),str.begin(),str.end());
+  if(res.first != lprefix.end() || res.second == str.end())
+    return unpack_posix_flag(str);
 
-  // must check for long option first
-  if(str.find(lprefix) == 0) {
-    typename string_type::const_iterator first = str.begin()+lprefix.size();
-
-    if(first == str.end()) // orphan '--' or cease
-      return option_pack{true};
-
-    typename string_type::const_iterator assign_loc =
-      std::search(first,str.end(),assignment.begin(),assignment.end());
-
-    if(assign_loc == str.end())
-      return option_pack{false,false,lprefix,{first,str.end()},{},{}};
-
-    return option_pack{false,true,lprefix,{first,assign_loc},{},
-      {assign_loc+1,str.end()}};
-  }
-
-  return unpack_posix_flag(str);
+  return option_pack{false,false,lprefix,{res.second,str.end()},{},{}};
 }
 
 /*
-  GNU extension to POSIX argument syntax. Unpack arguments in the form:
+  GNU extension (long option) to POSIX argument syntax. Unpack arguments in the
+  form:
 
   POSIX:
     "-f", "-fabcde"
@@ -633,132 +645,26 @@ basic_option_pack<CharT> unpack_gnu_arg(const std::basic_string<CharT> &str)
   static const string_type lprefix("--");
   static const string_type assignment("=");
 
-  if(str.empty())
-    return option_pack();
+  auto &&res =
+    detail::mismatch(lprefix.begin(),lprefix.end(),str.begin(),str.end());
+  if(res.first != lprefix.end() || res.second == str.end())
+    return unpack_posix_arg(str);
 
-  // must check for long option first
-  if(str.find(lprefix) == 0) {
-    typename string_type::const_iterator first = str.begin()+lprefix.size();
+  typename string_type::const_iterator assign_loc =
+    std::search(res.second,str.end(),assignment.begin(),assignment.end());
 
-    if(first == str.end()) // orphan '--' or cease
-      return option_pack{true};
+  if(assign_loc == str.end())
+    return option_pack{false,false,lprefix,{res.second,str.end()},{},{}};
 
-    typename string_type::const_iterator assign_loc =
-      std::search(first,str.end(),assignment.begin(),assignment.end());
-
-    if(assign_loc == str.end())
-      return option_pack{false,false,lprefix,{first,str.end()},{},{}};
-
-    return option_pack{false,true,lprefix,{first,assign_loc},{},
-      {assign_loc+1,str.end()}};
-  }
-
-  return unpack_posix_arg(str);
+  return option_pack{false,true,lprefix,{res.second,assign_loc},{},
+    {assign_loc+1,str.end()}};
 }
-
-template<typename CharT>
-[[noreturn]] inline void
-throw_unknown_option(const std::basic_string<CharT> &arg)
-{
-  std::basic_stringstream<CharT> err;
-  err
-    << "unknown option '" << arg << "'";
-  throw command_option_error(err.str());
-}
-
-template<typename CharT>
-[[noreturn]] inline void
-throw_missing_argument(const std::basic_string<CharT> &arg)
-{
-  std::basic_stringstream<CharT> err;
-  err
-    << "option '" << arg << "' requires an argument";
-  throw command_option_error(err.str());
-}
-
-template<typename CharT>
-[[noreturn]] inline void
-throw_packed_missing_argument(const std::basic_string<CharT> &arg)
-{
-  std::basic_stringstream<CharT> err;
-  err
-    << "packed option '" << arg << "' requires an argument";
-  throw command_option_error(err.str());
-}
-
-template<typename CharT>
-[[noreturn]] inline void
-throw_unexpected_argument(const std::basic_string<CharT> &arg,
-  const std::basic_string<CharT> &unexpected)
-{
-  std::basic_stringstream<CharT> err;
-  err
-    << "option '" << arg << "' requires an argument, received '"
-    << unexpected << "'";
-  throw command_option_error(err.str());
-}
-
-template<typename CharT>
-[[noreturn]] inline void
-throw_packed_unexpected_argument(const std::basic_string<CharT> &arg,
-  const std::basic_string<CharT> &unexpected)
-{
-  std::basic_stringstream<CharT> err;
-  err
-    << "packed option '" << arg << "' requires an argument, received '"
-    << unexpected << "'";
-  throw command_option_error(err.str());
-}
-
-
-template<typename CharT>
-[[noreturn]] inline void
-throw_packed_unknown_option(const std::basic_string<CharT> &arg)
-{
-  std::basic_stringstream<CharT> err;
-  err
-    << "unknown packed option '" << arg << "'";
-  throw command_option_error(err.str());
-}
-
-template<typename CharT>
-[[noreturn]] inline void
-throw_strict_noaccept_value(const std::basic_string<CharT> &arg)
-{
-  std::basic_stringstream<CharT> err;
-  err
-    << "option '" << arg << "' strictly does not accept values";
-  throw command_option_error(err.str());
-}
-
-template<typename CharT>
-[[noreturn]] inline void
-throw_packed_strict_noaccept_value(const std::basic_string<CharT> &arg)
-{
-  std::basic_stringstream<CharT> err;
-  err
-    << "packed option '" << arg << "' strictly does not accept values";
-  throw command_option_error(err.str());
-}
-
-template<typename CharT>
-[[noreturn]] inline void
-throw_unexpected_positional(const std::basic_string<CharT> &arg)
-{
-  std::basic_stringstream<CharT> err;
-  err
-    << "unexpected positional argument '" << arg << "'";
-  throw command_option_error(err.str());
-}
-
 
 /*
   Parse the arguments contained in \c argv with size \c argc according
   to the option description group \c grp. If \c partial is false, then
   finalize parsing. Options are added to a copy of the variable map
-  \c _vm and returned. If parsing is halted due to a "end of parse"
-  indicator (normally '--') or due to an error then \c endc is updated
-  to the index of the first non-parsed argument.
+  \c _vm and returned.
 
   Weird cases:
 
@@ -780,6 +686,7 @@ throw_unexpected_positional(const std::basic_string<CharT> &arg)
   can successfully unpack "-b" then "-b" is considered an option and not an
   option_argument even if it is an invalid option
 */
+// NO! -- means end of options not end of parse!
 template<typename CharT>
 basic_variable_map<CharT>
 parse_arguments(const CharT * const argv[], std::size_t argc,
@@ -791,11 +698,13 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
   typedef basic_options_group<CharT> options_group_type;
   typedef basic_variable_map<CharT> variable_map;
 
-  typedef std::deque<string_type> packed_args_type;
-  typedef std::stack<packed_args_type> packed_arg_stack_type;
+  typedef std::stack<string_type,std::vector<string_type> > packed_args_type;
+  typedef std::stack<packed_args_type,
+    std::vector<packed_args_type> > packed_arg_stack_type;
 
   variable_map _vm = vm;
 
+try {
   packed_arg_stack_type packed_args_stack;
 
    std::size_t pos_count = 0;
@@ -807,7 +716,7 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
   while(endc<argc) {
     string_type arg(argv[endc++]);
 
-// std::cerr << "Processing cmd arg: " << arg << "\n";
+std::cerr << "Processing cmd arg: " << arg << "\n";
 
     // find a desc that can unpack the arg. if found, then it is an option
     // and not a positional
@@ -819,7 +728,7 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
 
       option_pack = std::move(desc->unpack_option(arg));
 
-      if(option_pack.cease_processing)
+      if(option_pack.end_of_options)
         return _vm;
 
       if(option_pack.raw_key.empty())
@@ -836,23 +745,25 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
       }
     }
 
-// std::cerr << "mapped_key for '" << arg << "' is '" << mapped_key << "'\n";
+std::cerr << "mapped_key for '" << option_pack.raw_key
+  << "' is '" << mapped_key << "'\n";
 
     if(desc != grp.end()) {
       // arg was an option
-// std::cerr << "'" << arg << "' is an option\n";
+std::cerr << "'" << option_pack.raw_key << "' is an option\n";
       if(!desc->make_value) {
-// std::cerr << "'" << arg << "' strictly takes no values\n";
+std::cerr << "'" << option_pack.raw_key << "' strictly takes no values\n";
         // strictly no values
         if(option_pack.value_provided)
-            throw_strict_noaccept_value(arg);
-// std::cerr << "'" << arg << "' is a flag. adding to _vm\n";
+          throw unexpected_argument_error(arg,option_pack.value);
+
+std::cerr << "'" << option_pack.raw_key << "' is a flag. adding to _vm\n";
         // handle the flag only
         _vm.emplace(mapped_key,any());
       }
       else {
         // required or optional value
-// std::cerr << "'" << arg << "' requires or has optional value\n";
+std::cerr << "'" << option_pack.raw_key << "' requires or has optional value\n";
 
         // is it embedded in the option pack?
         if(option_pack.value_provided) {
@@ -865,7 +776,7 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
           if(desc->implicit_value)
             _vm.emplace(mapped_key,desc->implicit_value(mapped_key,_vm));
           else
-            throw_missing_argument(arg);
+            throw missing_argument_error(arg);
         }
         else {
           // try to use the next argument on the command list. If any
@@ -887,7 +798,7 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
             if(desc->implicit_value)
               _vm.emplace(mapped_key,desc->implicit_value(mapped_key,_vm));
             else
-              throw_unexpected_argument(arg,string_type(argv[endc]));
+              throw unexpected_argument_error(arg,string_type(argv[endc]));
           }
           else {
             _vm.emplace(mapped_key,
@@ -896,30 +807,36 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
         }
       }
 
-// std::cerr << "Checking '" << arg << "' for packed arguments\n";
+std::cerr << option_pack << "\n";
 
       // add any new packed arguments to the stack if they exist
       if(!option_pack.packed_arguments.empty()) {
+        std::reverse(option_pack.packed_arguments.begin(),
+          option_pack.packed_arguments.end());
         packed_args_stack.push(
-          packed_args_type{option_pack.packed_arguments.begin(),
-            option_pack.packed_arguments.end()});
+          packed_args_type{option_pack.packed_arguments});
+
+std::cerr << "'" << option_pack.raw_key << "' has packed options\n";
 
         while(!packed_args_stack.empty()) {
           // pull from packed_stack, always an option and not a positional
-          arg = packed_args_stack.top().front();
-          packed_args_stack.top().pop_front();
+          arg = packed_args_stack.top().top();
+          packed_args_stack.top().pop();
+          if(packed_args_stack.top().empty())
+            packed_args_stack.pop();
 
+std::cerr << "Processing packed option '" << arg << "'\n";
           for(desc = grp.begin(); desc != grp.end(); ++desc) {
             if(!desc->unpack_option)
               continue;
 
             option_pack = std::move(desc->unpack_option(arg));
 
-            if(option_pack.cease_processing)
+            if(option_pack.end_of_options)
               return _vm;
 
-            if(!option_pack.raw_key.empty())
-              break;
+            if(option_pack.raw_key.empty())
+              continue;
 
             if(desc->mapped_key) {
               mapped_key = desc->mapped_key(option_pack.raw_key,_vm);
@@ -932,19 +849,25 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
             }
           }
 
-          if(desc == grp.end())
-            throw_packed_unknown_option(arg);
+std::cerr << "mapped_key for '" << option_pack.raw_key
+  << "' is '" << mapped_key << "'\n";
 
+          if(desc == grp.end())
+            throw unknown_option_error(arg);
+std::cerr << "Found description to handle packed option '" << arg << "'\n";
           if(!desc->make_value) {
+std::cerr << "packed option '" << arg << "' strictly takes no values\n";
             // strictly no values
             if(option_pack.value_provided)
-              throw_packed_strict_noaccept_value(arg);
+              throw unexpected_argument_error(arg,option_pack.value);
 
+std::cerr << "packed opton '" << arg << "' is a flag. adding to _vm\n";
             // handle the flag only
             _vm.emplace(mapped_key,any());
           }
           else {
             // required or optional value
+std::cerr << "packed option '" << arg << "' requires or has optional value\n";
 
             // is it embedded in the option pack?
             if(option_pack.value_provided) {
@@ -957,7 +880,7 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
               if(desc->implicit_value)
                 _vm.emplace(mapped_key,desc->implicit_value(mapped_key,_vm));
               else
-                throw_packed_missing_argument(arg);
+                throw missing_argument_error(arg);
             }
             else {
               // try to use the next argument on the current pack. If any
@@ -969,7 +892,7 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
                   continue;
 
                 option_pack = std::move(
-                    next->unpack_option(packed_args_stack.top().front()));
+                    next->unpack_option(packed_args_stack.top().top()));
 
                 if(!option_pack.raw_key.empty())
                   break;
@@ -979,28 +902,32 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
                 if(desc->implicit_value)
                   _vm.emplace(mapped_key,desc->implicit_value(mapped_key,_vm));
                 else
-                  throw_packed_unexpected_argument(arg,
-                    packed_args_stack.top().front());
+                  throw unexpected_argument_error(arg,
+                    packed_args_stack.top().top());
               }
               else {
                 _vm.emplace(mapped_key,desc->make_value(
-                    mapped_key,packed_args_stack.top().front(),_vm));
-                packed_args_stack.top().pop_front();
+                    mapped_key,packed_args_stack.top().top(),_vm));
+                packed_args_stack.top().pop();
               }
             }
           }
 
+std::cerr << option_pack << "\n";
+
           // add any new packed arguments to the stack if they exist
           if(!option_pack.packed_arguments.empty()) {
+std::cerr << "packed option '" << arg << "' has packed options\n";
+            std::reverse(option_pack.packed_arguments.begin(),
+              option_pack.packed_arguments.end());
             packed_args_stack.push(
-              packed_args_type{option_pack.packed_arguments.begin(),
-                option_pack.packed_arguments.end()});
+              packed_args_type{option_pack.packed_arguments});
           }
         }
       }
     }
     else if(is_option) {
-      throw_unknown_option(arg);
+      throw unknown_option_error(arg);
     }
     else {
 // std::cerr << "'" << arg << "' is a positional value\n";
@@ -1028,12 +955,16 @@ parse_arguments(const CharT * const argv[], std::size_t argc,
       }
 
       if(desc == grp.end())
-        throw_unexpected_positional(arg);
+        throw unexpected_positional_error(arg);
     }
   }
 
 // std::cerr << "parse complete\n";
-
+}
+catch (const command_option_error &err) {
+  std::cerr << err.what() << "\n";
+  throw;
+}
   return _vm;
 }
 
@@ -1837,7 +1768,7 @@ inline basic_option_description<char> make_options_error(void)
 
   return basic_option_description<char>{unpack_gnu_arg<char>,
     [](const string_type &raw_key,const variable_map &) -> string_type {
-      throw_unknown_option(raw_key);
+      throw unknown_option_error(raw_key);
     }};
 }
 
