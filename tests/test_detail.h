@@ -10,8 +10,7 @@ template<typename CharT>
 bool operator==(const basic_option_pack<CharT> &lhs,
   const basic_option_pack<CharT> &rhs)
 {
-  return lhs.cease_processing == rhs.cease_processing
-    && lhs.value_provided == rhs.value_provided
+  return lhs.value_provided == rhs.value_provided
     && lhs.prefix == rhs.prefix
     && lhs.raw_key == rhs.raw_key
     && lhs.packed_arguments == rhs.packed_arguments

@@ -46,6 +46,7 @@ additional_ldflags= \
 check_PROGRAMS=\
 	basic_test \
 	parse_test \
+	accept_test \
 	case2_test
 
 basic_test_SOURCES=$(master_suite) \
@@ -62,6 +63,13 @@ parse_test_CPPFLAGS=$(additional_cppflags)
 parse_test_LDFLAGS=$(additional_ldflags)
 parse_test_LDADD=$(additional_libs)
 
+accept_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	accept_test.cc 
+accept_test_CPPFLAGS=$(additional_cppflags)
+accept_test_LDFLAGS=$(additional_ldflags)
+accept_test_LDADD=$(additional_libs)
+
 case2_test_SOURCES=$(master_suite) \
 	test_detail.h \
 	case2_test.cc 
@@ -72,6 +80,7 @@ case2_test_LDADD=$(additional_libs)
 TESTS=\
 	basic_test \
 	parse_test \
+	accept_test \
 	case2_test
 
 
