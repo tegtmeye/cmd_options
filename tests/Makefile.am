@@ -47,7 +47,26 @@ check_PROGRAMS=\
 	basic_test \
 	parse_test \
 	accept_test \
-	case2_test
+	case2_test \
+	case3_test \
+	case4_test \
+	case5_test \
+	case6_test \
+	case7_test \
+	case8_test \
+	case9_test \
+	case10_test \
+	case11_test \
+	case12_test \
+	case13_test \
+	case14_test \
+	case15_test \
+	case16_test \
+	case17_test \
+	case18_test \
+	case19_test \
+	case20_test \
+	case21_test
 
 basic_test_SOURCES=$(master_suite) \
 	test_detail.h \
@@ -77,11 +96,160 @@ case2_test_CPPFLAGS=$(additional_cppflags)
 case2_test_LDFLAGS=$(additional_ldflags)
 case2_test_LDADD=$(additional_libs)
 
+case3_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case3_test.cc 
+case3_test_CPPFLAGS=$(additional_cppflags)
+case3_test_LDFLAGS=$(additional_ldflags)
+case3_test_LDADD=$(additional_libs)
+
+case4_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case4_test.cc 
+case4_test_CPPFLAGS=$(additional_cppflags)
+case4_test_LDFLAGS=$(additional_ldflags)
+case4_test_LDADD=$(additional_libs)
+
+case5_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case5_test.cc 
+case5_test_CPPFLAGS=$(additional_cppflags)
+case5_test_LDFLAGS=$(additional_ldflags)
+case5_test_LDADD=$(additional_libs)
+
+case6_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case6_test.cc 
+case6_test_CPPFLAGS=$(additional_cppflags)
+case6_test_LDFLAGS=$(additional_ldflags)
+case6_test_LDADD=$(additional_libs)
+
+case7_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case7_test.cc 
+case7_test_CPPFLAGS=$(additional_cppflags)
+case7_test_LDFLAGS=$(additional_ldflags)
+case7_test_LDADD=$(additional_libs)
+
+case8_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case8_test.cc 
+case8_test_CPPFLAGS=$(additional_cppflags)
+case8_test_LDFLAGS=$(additional_ldflags)
+case8_test_LDADD=$(additional_libs)
+
+case9_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case9_test.cc 
+case9_test_CPPFLAGS=$(additional_cppflags)
+case9_test_LDFLAGS=$(additional_ldflags)
+case9_test_LDADD=$(additional_libs)
+
+case10_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case10_test.cc 
+case10_test_CPPFLAGS=$(additional_cppflags)
+case10_test_LDFLAGS=$(additional_ldflags)
+case10_test_LDADD=$(additional_libs)
+
+case11_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case11_test.cc 
+case11_test_CPPFLAGS=$(additional_cppflags)
+case11_test_LDFLAGS=$(additional_ldflags)
+case11_test_LDADD=$(additional_libs)
+
+case12_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case12_test.cc 
+case12_test_CPPFLAGS=$(additional_cppflags)
+case12_test_LDFLAGS=$(additional_ldflags)
+case12_test_LDADD=$(additional_libs)
+
+case13_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case13_test.cc 
+case13_test_CPPFLAGS=$(additional_cppflags)
+case13_test_LDFLAGS=$(additional_ldflags)
+case13_test_LDADD=$(additional_libs)
+
+case14_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case14_test.cc 
+case14_test_CPPFLAGS=$(additional_cppflags)
+case14_test_LDFLAGS=$(additional_ldflags)
+case14_test_LDADD=$(additional_libs)
+
+case15_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case15_test.cc 
+case15_test_CPPFLAGS=$(additional_cppflags)
+case15_test_LDFLAGS=$(additional_ldflags)
+case15_test_LDADD=$(additional_libs)
+
+case16_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case16_test.cc 
+case16_test_CPPFLAGS=$(additional_cppflags)
+case16_test_LDFLAGS=$(additional_ldflags)
+case16_test_LDADD=$(additional_libs)
+
+case17_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case17_test.cc 
+case17_test_CPPFLAGS=$(additional_cppflags)
+case17_test_LDFLAGS=$(additional_ldflags)
+case17_test_LDADD=$(additional_libs)
+
+case18_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case18_test.cc 
+case18_test_CPPFLAGS=$(additional_cppflags)
+case18_test_LDFLAGS=$(additional_ldflags)
+case18_test_LDADD=$(additional_libs)
+
+case19_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case19_test.cc 
+case19_test_CPPFLAGS=$(additional_cppflags)
+case19_test_LDFLAGS=$(additional_ldflags)
+case19_test_LDADD=$(additional_libs)
+
+case20_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case20_test.cc 
+case20_test_CPPFLAGS=$(additional_cppflags)
+case20_test_LDFLAGS=$(additional_ldflags)
+case20_test_LDADD=$(additional_libs)
+
+case21_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	case21_test.cc 
+case21_test_CPPFLAGS=$(additional_cppflags)
+case21_test_LDFLAGS=$(additional_ldflags)
+case21_test_LDADD=$(additional_libs)
+
 TESTS=\
 	basic_test \
 	parse_test \
 	accept_test \
-	case2_test
-
-
-
+	case2_test \
+	case3_test \
+	case4_test \
+	case5_test \
+	case6_test \
+	case7_test \
+	case8_test \
+	case9_test \
+	case10_test \
+	case11_test \
+	case12_test \
+	case13_test \
+	case14_test \
+	case15_test \
+	case16_test \
+	case17_test \
+	case18_test \
+	case19_test \
+	case20_test \
+	case21_test

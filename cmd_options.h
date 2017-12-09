@@ -766,9 +766,12 @@ std::cerr << option_pack << "\n";
           _vm.emplace(mapped_key,any());
         }
         else {
+  std::cerr << "'" << option_pack.raw_key << "' has an optional or required value\n";
           // required or optional value
           // is it embedded in the option pack?
           if(option_pack.value_provided) {
+  std::cerr << "'" << option_pack.raw_key << "' has embedded value '"
+    << option_pack.value << "' adding to _vm\n";
             // handle the provided value
             _vm.emplace(mapped_key,
               desc->make_value(mapped_key,option_pack.value,_vm));
@@ -800,7 +803,7 @@ std::cerr << option_pack << "\n";
               if(desc->implicit_value)
                 _vm.emplace(mapped_key,desc->implicit_value(mapped_key,_vm));
               else
-                throw unexpected_argument_error(arg,string_type(arg));
+                throw missing_argument_error(arg);
             }
             else {
               _vm.emplace(mapped_key,
@@ -1099,7 +1102,7 @@ typename std::enable_if<std::is_same<CharT, char>::value, std::string>::type
 
 template <typename CharT, typename T>
 inline
-typename std::enable_if<!std::is_same<CharT, char>::value, std::wstring>::type
+typename std::enable_if<std::is_same<CharT, wchar_t>::value, std::wstring>::type
     to_xstring(const T &t)
 {
     return std::to_wstring(t);
@@ -1256,9 +1259,26 @@ add_hidden_option_spec(const std::basic_string<CharT> &opt_spec,
 
 
 
+template <typename T, typename CharT>
+inline typename std::enable_if<
+  std::is_same<T,std::basic_string<CharT> >::value,any>::type
+to_value(const std::basic_string<CharT> &,
+  const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
+{
+    return any(val);
+}
 
-
-
+template <typename T, typename CharT>
+inline typename std::enable_if<
+  !std::is_same<T,std::basic_string<CharT> >::value,any>::type
+to_value(const std::basic_string<CharT> &,
+  const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
+{
+  T _val;
+  std::basic_stringstream<CharT> in(val);
+  in >> _val;
+  return any(_val);
+}
 
 template<typename T, typename CharT>
 inline void add_value(const value<T> &val,
@@ -1278,13 +1298,10 @@ inline void add_value(const value<T> &val,
     };
   }
 
-  desc.make_value = [](const string_type &,const string_type &val,
-    const variable_map &)
+  desc.make_value = [](const string_type &mapped_key, const string_type &value,
+      const variable_map &vm)
   {
-    T _val;
-    std::basic_stringstream<CharT> in(val);
-    in >> _val;
-    return any(_val);
+    return to_value<T>(mapped_key,value,vm);
   };
 }
 
