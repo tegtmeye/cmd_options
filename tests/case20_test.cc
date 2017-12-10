@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE( all_key_value_test )
   };
 
   options = co::options_group{
-    co::make_positional("positional_key","case 20")
+    co::make_operand("positional_key","case 20")
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_positional_test )
 
   options = co::options_group{
     co::make_option("",co::value<std::string>("floo"),"case 18"),
-    co::make_positional("positional_key","case 20")
+    co::make_operand("positional_key","case 20")
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);

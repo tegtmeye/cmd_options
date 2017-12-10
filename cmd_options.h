@@ -90,13 +90,13 @@ namespace detail {
 
 // In the future (post C++14) use std::mismatch
 template<class InputIt1, class InputIt2>
-std::pair<InputIt1, InputIt2>
-    mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2)
+inline std::pair<InputIt1, InputIt2>
+mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2)
 {
-    while (first1 != last1 && first2 != last2 && *first1 == *first2) {
-        ++first1, ++first2;
-    }
-    return std::make_pair(first1, first2);
+  while (first1 != last1 && first2 != last2 && *first1 == *first2) {
+      ++first1, ++first2;
+  }
+  return std::make_pair(first1, first2);
 }
 
 }
@@ -153,9 +153,9 @@ class unexpected_argument_error : public command_option_error {
     std::string _arg;
 };
 
-class unexpected_positional_error : public command_option_error {
+class unexpected_operand_error : public command_option_error {
   public:
-    unexpected_positional_error(const std::string &arg)
+    unexpected_operand_error(const std::string &arg)
         :command_option_error(arg) {}
 
     const char * positional(void) const noexcept {
@@ -174,6 +174,7 @@ using basic_variable_map = std::multimap<std::basic_string<CharT>,any>;
 /*
   Structure describing an unpacked argument.
 
+  bool did_unpack;
   bool value_provided;
   string_type prefix;
   string_type raw_key;
@@ -181,14 +182,17 @@ using basic_variable_map = std::multimap<std::basic_string<CharT>,any>;
   string_type value;
 
   The elements represent:
+    - \c did_unpack A boolean value indicating that the structure
+    contains the result of unpacking the given argument into its
+    constitute properties.
+
     - \c value_provided A boolean value indicating that the argument
       contained a packed value. This is necessary because it is possible
       to explicitly provide an empty value
 
     - \c prefix A string specifying the option prefix, ie '-' or '--'
 
-    - \c raw_key A string containing the raw key. Return the empty string to
-    indicate that this option does not handle this option.
+    - \c raw_key A string containing the raw key.
 
     - \c packed_arguments A vector of strings containing any remaining
     packed arguments if present. If the arguments require a prefix, they
@@ -205,7 +209,7 @@ using basic_variable_map = std::multimap<std::basic_string<CharT>,any>;
 
 
   This structure is intended to represent an unpacked argument, not it's
-  semantic value and is a byproduct of the may different ways that an
+  semantic value and is a byproduct of the many different ways that an
   option argument can be packed together. For example: here are some
   known ways that option arguments can be represented:
 
@@ -270,6 +274,7 @@ struct basic_option_pack {
   typedef std::basic_string<CharT> string_type;
   typedef std::vector<string_type> packed_arg_seq;
 
+  bool did_unpack;
   bool value_provided;
   string_type prefix;
   string_type raw_key;
@@ -282,6 +287,7 @@ std::ostream & operator<<(std::ostream &out,
   const basic_option_pack<CharT> &option_pack)
 {
   out << "process opt:\n"
+    << "\tdid_unpack: '" << option_pack.did_unpack << "'\n"
     << "\tvalue_provided: '" << option_pack.value_provided << "'\n"
     << "\tprefix: '" << option_pack.prefix << "'\n"
     << "\traw_key: '" << option_pack.raw_key << "'\n"
@@ -311,7 +317,7 @@ struct basic_option_description {
     positional argument.
 
     If the option cannot be unpacked by this description, then return
-    the empty string in the \c raw_key position (or an empty option_pack).
+    false in the \c did_unpack field (or an empty option_pack).
 
     This function is intended to essentially parse the option
     into its constitute properties but it can also be used to inject
@@ -320,31 +326,55 @@ struct basic_option_description {
     option for "foo" can return "bar" in the \c packed_arguments field.
 
     A note on positional values... If the options group _only_ contains
-    descriptions that do not have the \c unpack_option set, then any
-    argument is considered a positional---even if looks like an option.
-    For example, if there are no option_descriptions with
-    \c unpack_option set, then '--foo', which looks like a option flag,
-    is considered a positional. This may not be what was intended.
+    positionals--or descriptions that do not have the \c unpack_option
+    set--then any argument is considered a positional---even if looks
+    like an option. For example, if there are no option_descriptions
+    with \c unpack_option set, then '--foo', which looks like a option
+    flag, is considered a positional. This may not be what was intended.
     Reasonable machinery in this case is to include a 'dummy' option
-    that has \c unpack_option set and where \c mapped_key throws a
-    \c command_option_error indicating the unknown option.
+    that has \c unpack_option set and where \c mapped_key throws a \c
+    command_option_error indicating the unknown option.
   */
   std::function<option_pack(const string_type &option)> unpack_option;
 
   /*
-    For the given raw key (without any prefix), return the mapped_key
-    that is placed in the the corresponding variable_map if the raw_key
-    is associated with this option_description or the empty string
-    otherwise. If \c mapped_key is not set, then this description will
-    use the raw key as the mapped_key. The byproduct of omitting \c
-    mapped_key is that this option_description will match any option
-    that the provided \c unpack_option accepts. For example, to accept
-    all unknown options, then provide an option_description with the
-    appropriate \c unpack_option and no \c mapped_key set as the
-    last description in an \c options_group.
+    If this description is can handle the given argument, return true
+    and the key that will be used in the variable map to represent this
+    option or operand depending on the presence or absence of
+    \c unpack_option.
+
+    If unpack_option is set and can successfully unpack the argument,
+    then the argument is an option and \c mapped_key should return the
+    mapped key for the given raw key (without any prefix) as provided by
+    the \c option_pack.
+
+    If unpack_option is not set, then the argument is an operand and
+    mapped_key should return the appropriate mapped key. In the case of
+    an operand, the raw_key will always be the default operand key
+    (currently the empty string, but may be user configurable in the
+    future).
+
+    If \c mapped_key is not set then this description will be marked to
+    handle the argument and \c raw_key will be used for the key in the
+    variable map. This means that this description will match all
+    options is \c unpack_option is set (ie accept all unknown options
+    able to be unpacked by \c unpack_option) and will match all operands
+    if \c unpack_option is not set (ie accept an indefinite list of
+    operands).
+
+    Regardless of whether or not the argument is an option or an
+    operand, the implementation of \c mapped_key can selectively choose
+    to handle or not to handle the argument based on the option's or
+    operand's position in the argument list. \c posn is the ith option
+    or operand in the argument list and \c argn is the current argument
+    number. A common use case is for some utility:
+
+      foo infile outfile
+
+    Where \c infile is always first and \outfile is always second.
   */
-  std::function<string_type(const string_type &raw_key,
-    const variable_map &vm)> mapped_key;
+  std::function<std::pair<bool,string_type>(const string_type &raw_key,
+    std::size_t posn, std::size_t argn, const variable_map &vm)> mapped_key;
 
   /*
     Return the human-readable description for this option. This does not
@@ -367,27 +397,6 @@ struct basic_option_description {
     functionality.
   */
   std::function<string_type(void)> extended_description;
-
-  /*
-    If \c unpack_option is not provided, then the option is a \c
-    positional option. In this case, the option may mean different
-    things based on where it exists in the option list. The argument to
-    the given function is the number of the positional option not
-    including the non-positional options. For example, in the option
-    list where '--foo', '--bar', '-f', and '-g' do not take options:
-      "--foo one --bar two -f -g three"
-    the positional options are: one, two, and three with position 1, 2,
-    and 3 respectively. If set, the function can return a unique key
-    that will appear in the variable_map for each positional option or
-    the same if users choose to. If the function is not set, then all
-    positional options will be available using the default-constructed
-    \c string_type as the variable_map key. Like \c mapped_key, if this
-    description does not define the given positional option, then return
-    the empty string. For example, if this description handles only the
-    XXth positional option.
-  */
-  std::function<string_type(std::size_t i)> implicit_key;
-
 
   /*
     Non-positional option cases:
@@ -534,10 +543,10 @@ basic_option_pack<CharT> unpack_posix(const std::basic_string<CharT> &str)
   auto &&res =
     detail::mismatch(sprefix.begin(),sprefix.end(),str.begin(),str.end());
   if(res.first != sprefix.end() || res.second == str.end())
-    return option_pack();
+    return option_pack{false};
 
   if(res.second+1 == str.end())
-    return option_pack{false,sprefix,{res.second,res.second+1},{},{}};
+    return option_pack{true,false,sprefix,{res.second,res.second+1},{},{}};
 
   if(uses_packed_flags) {
     string_type raw_key{res.second,++res.second};
@@ -545,10 +554,10 @@ basic_option_pack<CharT> unpack_posix(const std::basic_string<CharT> &str)
     while(res.second != str.end())
       packed_arguments.push_back(sprefix+(*(res.second++)));
 
-    return option_pack{false,sprefix,raw_key,packed_arguments};
+    return option_pack{true,false,sprefix,raw_key,packed_arguments};
   }
 
-  return option_pack{true,sprefix,{res.second,res.second+1},{},
+  return option_pack{true,true,sprefix,{res.second,res.second+1},{},
     {res.second+1,str.end()}};
 }
 
@@ -614,9 +623,9 @@ basic_option_pack<CharT> unpack_gnu(const std::basic_string<CharT> &str)
     std::search(res.second,str.end(),assignment.begin(),assignment.end());
 
   if(assign_loc == str.end())
-    return option_pack{false,lprefix,{res.second,str.end()},{},{}};
+    return option_pack{true,false,lprefix,{res.second,str.end()},{},{}};
 
-  return option_pack{true,lprefix,{res.second,assign_loc},{},
+  return option_pack{true,true,lprefix,{res.second,assign_loc},{},
     {assign_loc+1,str.end()}};
 }
 
@@ -671,7 +680,9 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
     }
   };
 
-  std::size_t pos_count = 0;
+  std::size_t arg_count = 0;
+  std::size_t operand_count = 0;
+  std::size_t option_count = 0;
 
   string_type arg;
   string_type mapped_key;
@@ -681,15 +692,15 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
 
   int state = 0;
   while(!cmd_stack.empty()) {
-std::cerr << "cmd stack\n";
-int depth = 0;
-for(auto &al : cmd_stack) {
-  std::cerr << std::string(depth,' ') << ": ";
-  for(auto &cmd : al)
-    std::cerr << cmd << ", ";
-  std::cerr << "\n";
-  ++depth;
-}
+// std::cerr << "cmd stack\n";
+// int depth = 0;
+// for(auto &al : cmd_stack) {
+//   std::cerr << std::string(depth,' ') << ": ";
+//   for(auto &cmd : al)
+//     std::cerr << cmd << ", ";
+//   std::cerr << "\n";
+//   ++depth;
+// }
 
 
     args_list &current_cmdlist = cmd_stack.back();
@@ -698,22 +709,23 @@ for(auto &al : cmd_stack) {
       continue;
     }
 
-    std::cerr << "state=" << state << "\n";
+//     std::cerr << "state=" << state << "\n";
     switch(state) {
       case 0: {
         // pull arg off cmdlist and determine if it is an option or a
         // positional
 
-        std::cerr << "Processing cmd arg: " << current_cmdlist.back() << "\n";
+//         std::cerr << "Processing cmd arg: " << current_cmdlist.back() << "\n";
 
         if(cmd_stack.size() == 1 && current_cmdlist.back() == end_of_options) {
           current_cmdlist.pop_back();
-          state = 5;
-std::cerr << "end of options: " << option_pack << "\n";
+          ++arg_count;
+          state = 4;
+// std::cerr << "end of options: " << option_pack << "\n";
           break;
         }
 
-        state = 4; // assume a positional
+        state = 3; // assume a positional
 
         for(desc = grp.begin(); desc != grp.end(); ++desc) {
           if(!desc->unpack_option)
@@ -721,13 +733,15 @@ std::cerr << "end of options: " << option_pack << "\n";
 
           option_pack = std::move(desc->unpack_option(current_cmdlist.back()));
 
-          if(option_pack.raw_key.empty())
+          if(!option_pack.did_unpack)
             continue;
-std::cerr << option_pack << "\n";
+// std::cerr << option_pack << "\n";
           if(desc->mapped_key) {
 // std::cerr << "A\n";
-            mapped_key = desc->mapped_key(option_pack.raw_key,_vm);
-            if(!mapped_key.empty()) {
+            bool handles_arg = false;
+            std::tie(handles_arg,mapped_key) =
+              desc->mapped_key(option_pack.raw_key,option_count,arg_count,_vm);
+            if(handles_arg) {
               state = 1;
               break;
             }
@@ -740,9 +754,9 @@ std::cerr << option_pack << "\n";
             break;
           }
 
-          std::cerr << "cmd arg: '" << option_pack.raw_key
-            << "' has mapped_key '"
-            << mapped_key << "'\n";
+//           std::cerr << "cmd arg: '" << option_pack.raw_key
+//             << "' has mapped_key '"
+//             << mapped_key << "'\n";
 
           state = 2; // is option
         }
@@ -752,26 +766,27 @@ std::cerr << option_pack << "\n";
         // option is found pull off and handle it
         arg = std::move(current_cmdlist.back());
         current_cmdlist.pop_back();
+        ++arg_count;
 
         if(!desc->make_value) {
-  std::cerr << "'" << option_pack.raw_key << "' strictly takes no values\n";
+//   std::cerr << "'" << option_pack.raw_key << "' strictly takes no values\n";
           // strictly no values
           if(option_pack.value_provided)
             throw unexpected_argument_error(option_pack.raw_key,
               option_pack.value);
 
-  std::cerr << "'" << option_pack.raw_key
-    << "' is a flag. adding to _vm as '" << mapped_key << "'\n";
+//   std::cerr << "'" << option_pack.raw_key
+//     << "' is a flag. adding to _vm as '" << mapped_key << "'\n";
           // handle the flag only
           _vm.emplace(mapped_key,any());
         }
         else {
-  std::cerr << "'" << option_pack.raw_key << "' has an optional or required value\n";
+//   std::cerr << "'" << option_pack.raw_key << "' has an optional or required value\n";
           // required or optional value
           // is it embedded in the option pack?
           if(option_pack.value_provided) {
-  std::cerr << "'" << option_pack.raw_key << "' has embedded value '"
-    << option_pack.value << "' adding to _vm\n";
+//   std::cerr << "'" << option_pack.raw_key << "' has embedded value '"
+//     << option_pack.value << "' adding to _vm\n";
             // handle the provided value
             _vm.emplace(mapped_key,
               desc->make_value(mapped_key,option_pack.value,_vm));
@@ -795,7 +810,7 @@ std::cerr << option_pack << "\n";
               option_pack =
                 std::move(next->unpack_option(current_cmdlist.back()));
 
-              if(!option_pack.raw_key.empty())
+              if(option_pack.did_unpack)
                 break;
             }
 
@@ -812,13 +827,13 @@ std::cerr << option_pack << "\n";
             }
           }
         }
-//        state = 3;
+
         // see if there were any packed options
         if(!option_pack.packed_arguments.empty()) {
-std::cerr << "Adding packed args: \n";
-for(auto &arg : option_pack.packed_arguments)
-  std::cerr << arg << ", ";
-std::cerr << "\n";
+// std::cerr << "Adding packed args: \n";
+// for(auto &arg : option_pack.packed_arguments)
+//   std::cerr << arg << ", ";
+// std::cerr << "\n";
 
           std::reverse(option_pack.packed_arguments.begin(),
             option_pack.packed_arguments.end());
@@ -832,58 +847,46 @@ std::cerr << "\n";
         throw unknown_option_error(arg);
       } break;
 
-#if 0
-      case 3: {
-        // see if there were any packed options
-        if(!option_pack.packed_arguments.empty()) {
-std::cerr << "Adding packed args: \n";
-for(auto &arg : option_pack.packed_arguments)
-  std::cerr << arg << "\n";
-std::cerr << "\n";
 
-          std::reverse(option_pack.packed_arguments.begin(),
-            option_pack.packed_arguments.end());
-          cmd_stack.emplace_back(std::move(option_pack.packed_arguments));
-        }
+      case 3:
         state = 0;
-      } break;
-#endif
+        // note the fall through so only execute case 4 once
 
-      case 4:
-        state = 0;
-        // note the fall through so only execute case 5 once
-
-      case 5: {
+      case 4: {
         // positional, if end_of_option is set, then we continually repeat here
         arg = std::move(current_cmdlist.back());
         current_cmdlist.pop_back();
+        ++arg_count;
 
-        // always process as positional, try to find desc to handle it
+        // always process as operand, try to find desc to handle it
         for(desc = grp.begin(); desc != grp.end(); ++desc) {
           if(desc->unpack_option)
             continue;
 
-          string_type pos_key;
+          std::pair<bool,string_type> operand_key;
 
-          if(desc->implicit_key) {
-            pos_key = desc->implicit_key(pos_count);
-            if(pos_key.empty())
+          if(desc->mapped_key) {
+            operand_key =
+              desc->mapped_key(string_type(),operand_count,arg_count,_vm);
+            if(!operand_key.first)
               continue;
           }
 
-          // handle this positional option
-          if(desc->make_value)
-            _vm.emplace(pos_key,desc->make_value(pos_key,arg,_vm));
+          // handle this operand
+          if(desc->make_value) {
+            _vm.emplace(operand_key.second,
+              desc->make_value(operand_key.second,arg,_vm));
+          }
           else
-            _vm.emplace(pos_key,any());
+            _vm.emplace(operand_key.second,any());
 
-          ++pos_count;
+          ++operand_count;
 
           break;
         }
 
         if(desc == grp.end())
-          throw unexpected_positional_error(arg);
+          throw unexpected_operand_error(arg);
       } break;
 
       default:
@@ -974,10 +977,10 @@ typedef std::multimap<std::basic_string<wchar_t>,any> wvariable_map;
   EZ interface
 
   Be overly descriptive. ie use
-    value<int>().occurrences(1,2).mutually_exclusive({"foo"}).
+    basic_constraint<CharT>().occurrences(1,2).mutually_exclusive({"foo"}).
       mutually_inclusive({"bar"});
   rather than
-    value<int>{1,2,{"foo"},{"foo"}};
+    basic_constraint<CharT>{1,2,{"foo"},{"foo"}};
 
   ie is "foo" inclusive or exclusive? what if don't want to use range?
   therefore lots of constructors that someone needs to be read.
@@ -985,16 +988,16 @@ typedef std::multimap<std::basic_string<wchar_t>,any> wvariable_map;
 
 
 template<typename CharT>
-struct constrain {
+struct basic_constraint {
   typedef std::basic_string<CharT> string_type;
 
-  constrain<CharT> & occurrences(std::size_t n)
+  basic_constraint<CharT> & occurrences(std::size_t n)
   {
     _min = _max = n;
     return *this;
   }
 
-  constrain<CharT> & occurrences(std::size_t n, std::size_t m)
+  basic_constraint<CharT> & occurrences(std::size_t n, std::size_t m)
   {
     _min = n;
     _max = m;
@@ -1002,21 +1005,43 @@ struct constrain {
     return *this;
   }
 
-  constrain<CharT> &
+  basic_constraint<CharT> &
   mutual_exclusion(const std::vector<string_type> &mapped_key_vec)
   {
     _mutual_exclusion = mapped_key_vec;
     return *this;
   }
 
-  constrain<CharT> &
+  basic_constraint<CharT> &
   mutual_inclusion(const std::vector<string_type> &mapped_key_vec)
   {
     _mutual_inclusion = mapped_key_vec;
     return *this;
   }
 
+  /*
+    Negative indicates no constraint
+  */
+  basic_constraint<CharT> &
+  at_position(int n)
+  {
+    _position = n;
+    return *this;
+  }
+
+  /*
+    Negative indicates no constraint
+  */
+  basic_constraint<CharT> &
+  at_argument(int n)
+  {
+    _argument = n;
+    return *this;
+  }
+
   int _position = -1;
+  int _argument = -1;
+
   std::size_t _min = 0;
   std::size_t _max = std::numeric_limits<std::size_t>::max();
   std::vector<string_type> _mutual_exclusion;
@@ -1160,35 +1185,38 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
         + default_short_prefix<CharT>() + "[all]";
   }
   else if(!long_opt.empty() && !short_opt.empty()) {
-    desc.mapped_key = [=](const string_type &_opt, const variable_map &)
+    desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
+      const variable_map &)
       {
         if(_opt == long_opt || _opt == short_opt)
-          return long_opt;
+          return std::make_pair(true,long_opt);
 
-        return string_type();
+        return std::make_pair(false,string_type());
       };
 
     key_desc = default_long_prefix<CharT>() + long_opt + " ,  "
         + default_short_prefix<CharT>() + short_opt;
   }
   else if(!long_opt.empty()) {
-    desc.mapped_key = [=](const string_type &_opt, const variable_map &)
+    desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
+      const variable_map &)
       {
         if(_opt == long_opt)
-          return _opt;
+          return std::make_pair(true,_opt);
 
-        return string_type();
+        return std::make_pair(false,string_type());
       };
 
     key_desc = default_long_prefix<CharT>() + long_opt;
   }
   else {
-    desc.mapped_key = [=](const string_type &_opt, const variable_map &)
+    desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
+      const variable_map &)
       {
         if(_opt == short_opt)
-          return _opt;
+          return std::make_pair(true,_opt);
 
-        return string_type();
+        return std::make_pair(false,string_type());
       };
 
     key_desc = default_short_prefix<CharT>() + short_opt;
@@ -1225,30 +1253,33 @@ add_hidden_option_spec(const std::basic_string<CharT> &opt_spec,
     If none are provided, then it is unmapped_key
   */
   if(!long_opt.empty() && !short_opt.empty()) {
-    desc.mapped_key = [=](const string_type &_opt, const variable_map &)
+    desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
+      const variable_map &)
       {
         if(_opt == long_opt || _opt == short_opt)
-          return long_opt;
+          return std::make_pair(true,long_opt);
 
-        return string_type();
+        return std::make_pair(false,string_type());
       };
   }
   else if(!long_opt.empty()) {
-    desc.mapped_key = [=](const string_type &_opt, const variable_map &)
+    desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
+      const variable_map &)
       {
         if(_opt == long_opt)
-          return _opt;
+          return std::make_pair(true,_opt);
 
-        return string_type();
+        return std::make_pair(false,string_type());
       };
   }
   else if(!short_opt.empty()){
-    desc.mapped_key = [=](const string_type &_opt, const variable_map &)
+    desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
+      const variable_map &)
       {
         if(_opt == short_opt)
-          return _opt;
+          return std::make_pair(true,_opt);
 
-        return string_type();
+        return std::make_pair(false,string_type());
       };
   }
 
@@ -1306,21 +1337,25 @@ inline void add_value(const value<T> &val,
 }
 
 template<typename CharT>
-inline void add_key(const std::basic_string<CharT> &key, int position,
-  basic_option_description<CharT> &desc)
+inline void add_operand_key(const std::basic_string<CharT> &key, int posn,
+  int argn, basic_option_description<CharT> &desc)
 {
-  assert(!key.empty());
+  typedef std::basic_string<CharT> string_type;
 
-  if(position >= 0) {
-    desc.implicit_key = [=](std::size_t i) {
-      if(i == position)
-        return key;
-      return std::basic_string<CharT>();
+  if(posn >= 0 || argn >= 0) {
+    desc.mapped_key = [=](const string_type &, std::size_t _posn,
+      std::size_t _argn, const variable_map &)
+    {
+      if((posn<0 || posn == _posn) && (argn<0 || argn == _argn))
+        return std::make_pair(true,key);
+      return std::make_pair(false,std::basic_string<CharT>());
     };
   }
   else {
-    desc.implicit_key = [=](std::size_t) {
-      return key;
+    desc.mapped_key = [=](const string_type &, std::size_t, std::size_t,
+      const variable_map &)
+    {
+      return std::make_pair(true,key);
     };
   }
 }
@@ -1334,7 +1369,7 @@ inline void add_key(const std::basic_string<CharT> &key, int position,
   interface, it is separated here for completeness
 */
 template<typename CharT>
-void add_option_constrains(const constrain<CharT> &cnts,
+void add_option_constraints(const basic_constraint<CharT> &cnts,
   basic_option_description<CharT> &desc,
   const std::basic_string<CharT> &mapped_key,
   const std::basic_string<CharT> &long_opt,
@@ -1408,7 +1443,7 @@ void add_option_constrains(const constrain<CharT> &cnts,
   Used for constraints on positional. CAN be empty string mapped keys.
 */
 template<typename CharT>
-void add_positional_constrains(const constrain<CharT> &cnts,
+void add_positional_constraints(const basic_constraint<CharT> &cnts,
   const std::basic_string<CharT> &mapped_key,
   basic_option_description<CharT> &desc)
 {
@@ -1458,7 +1493,8 @@ void add_positional_constrains(const constrain<CharT> &cnts,
 
 
 
-
+typedef basic_constraint<char> constrain;
+typedef basic_constraint<wchar_t> wconstrain;
 
 
 /*
@@ -1473,7 +1509,8 @@ void add_positional_constrains(const constrain<CharT> &cnts,
 inline basic_option_description<char>
 make_option(const std::basic_string<char> &opt_spec,
   const std::basic_string<char> &extended_desc,
-  const constrain<char> &cnts = constrain<char>(), char delim = ',')
+  const basic_constraint<char> &cnts = basic_constraint<char>(),
+  char delim = ',')
 {
   typedef std::basic_string<char> string_type;
 
@@ -1483,7 +1520,7 @@ make_option(const std::basic_string<char> &opt_spec,
   string_type short_opt;
   std::tie(long_opt,short_opt) = detail::add_option_spec(opt_spec,delim,desc);
 
-  detail::add_option_constrains(cnts,desc,long_opt,long_opt,short_opt);
+  detail::add_option_constraints(cnts,desc,long_opt,long_opt,short_opt);
 
   return desc;
 }
@@ -1493,7 +1530,8 @@ make_option(const std::basic_string<char> &opt_spec,
 */
 inline basic_option_description<char>
 make_hidden_option(const std::basic_string<char> &opt_spec,
-  const constrain<char> &cnts = constrain<char>(), char delim = ',')
+  const basic_constraint<char> &cnts = basic_constraint<char>(),
+  char delim = ',')
 {
   typedef std::basic_string<char> string_type;
 
@@ -1504,7 +1542,7 @@ make_hidden_option(const std::basic_string<char> &opt_spec,
   std::tie(long_opt,short_opt) =
     detail::add_hidden_option_spec(opt_spec,delim,desc);
 
-  detail::add_option_constrains(cnts,desc,long_opt,long_opt,short_opt);
+  detail::add_option_constraints(cnts,desc,long_opt,long_opt,short_opt);
 
   return desc;
 }
@@ -1516,7 +1554,8 @@ template<typename T>
 inline basic_option_description<char>
 make_option(const std::basic_string<char> &opt_spec,
   const value<T> &val, const std::basic_string<char> &extended_desc,
-  const constrain<char> &cnts = constrain<char>(), char delim = ',')
+  const basic_constraint<char> &cnts = basic_constraint<char>(),
+  char delim = ',')
 {
   typedef std::basic_string<char> string_type;
 
@@ -1530,7 +1569,7 @@ make_option(const std::basic_string<char> &opt_spec,
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  detail::add_option_constrains(cnts,desc,long_opt,long_opt,short_opt);
+  detail::add_option_constraints(cnts,desc,long_opt,long_opt,short_opt);
 
   return desc;
 }
@@ -1541,7 +1580,8 @@ make_option(const std::basic_string<char> &opt_spec,
 template<typename T>
 inline basic_option_description<char>
 make_hidden_option(const std::basic_string<char> &opt_spec, const value<T> &val,
-  const constrain<char> &cnts = constrain<char>(), char delim = ',')
+  const basic_constraint<char> &cnts = basic_constraint<char>(),
+  char delim = ',')
 {
   typedef std::basic_string<char> string_type;
 
@@ -1554,7 +1594,7 @@ make_hidden_option(const std::basic_string<char> &opt_spec, const value<T> &val,
 
   detail::add_value(val,desc);
 
-  detail::add_option_constrains(cnts,desc,long_opt,long_opt,short_opt);
+  detail::add_option_constraints(cnts,desc,long_opt,long_opt,short_opt);
 
   return desc;
 }
@@ -1564,8 +1604,8 @@ make_hidden_option(const std::basic_string<char> &opt_spec, const value<T> &val,
 */
 template<typename T>
 inline basic_option_description<char>
-make_positional(const std::basic_string<char> &extended_desc,
-  const constrain<char> &cnts = constrain<char>())
+make_operand(const std::basic_string<char> &extended_desc,
+  const basic_constraint<char> &cnts = basic_constraint<char>())
 {
   basic_option_description<char> desc;
 
@@ -1573,7 +1613,7 @@ make_positional(const std::basic_string<char> &extended_desc,
 
   detail::add_value(value<T>(),desc);
 
-  detail::add_positional_constrains(cnts,std::basic_string<char>(),desc);
+  detail::add_positional_constraints(cnts,std::basic_string<char>(),desc);
 
   return desc;
 }
@@ -1583,13 +1623,14 @@ make_positional(const std::basic_string<char> &extended_desc,
 */
 template<typename T>
 inline basic_option_description<char>
-make_hidden_positional(const constrain<char> &cnts = constrain<char>())
+make_hidden_operand(
+  const basic_constraint<char> &cnts = basic_constraint<char>())
 {
   basic_option_description<char> desc;
 
   detail::add_value(value<T>(),desc);
 
-  detail::add_positional_constrains(cnts,std::basic_string<char>(),desc);
+  detail::add_positional_constraints(cnts,std::basic_string<char>(),desc);
 
   return desc;
 }
@@ -1599,9 +1640,9 @@ make_hidden_positional(const constrain<char> &cnts = constrain<char>())
 */
 template<typename T>
 inline basic_option_description<char>
-make_positional(const std::basic_string<char> &implicit_key,
+make_operand(const std::basic_string<char> &implicit_key,
   const std::basic_string<char> &extended_desc,
-  int position = -1, const constrain<char> &cnts = constrain<char>())
+  const basic_constraint<char> &cnts = basic_constraint<char>())
 {
   basic_option_description<char> desc;
 
@@ -1609,9 +1650,9 @@ make_positional(const std::basic_string<char> &implicit_key,
 
   detail::add_value(value<T>(),desc);
 
-  detail::add_key(implicit_key,position,desc);
+  detail::add_operand_key(implicit_key,cnts._position,cnts._argument,desc);
 
-  detail::add_positional_constrains(cnts,implicit_key,desc);
+  detail::add_positional_constraints(cnts,implicit_key,desc);
 
   return desc;
 }
@@ -1621,16 +1662,16 @@ make_positional(const std::basic_string<char> &implicit_key,
 */
 template<typename T>
 inline basic_option_description<char>
-make_hidden_positional(const std::basic_string<char> &implicit_key,
-  int position = -1, const constrain<char> &cnts = constrain<char>())
+make_hidden_operand(const std::basic_string<char> &implicit_key,
+  const basic_constraint<char> &cnts = basic_constraint<char>())
 {
   basic_option_description<char> desc;
 
   detail::add_value(value<T>(),desc);
 
-  detail::add_key(implicit_key,position,desc);
+  detail::add_operand_key(implicit_key,cnts._position,cnts._argument,desc);
 
-  detail::add_positional_constrains(cnts,implicit_key,desc);
+  detail::add_positional_constraints(cnts,implicit_key,desc);
 
   return desc;
 }
@@ -1639,14 +1680,14 @@ make_hidden_positional(const std::basic_string<char> &implicit_key,
   Case line 18
 */
 inline basic_option_description<char>
-make_positional(const std::basic_string<char> &extended_desc,
-  const constrain<char> &cnts = constrain<char>())
+make_operand(const std::basic_string<char> &extended_desc,
+  const basic_constraint<char> &cnts = basic_constraint<char>())
 {
   basic_option_description<char> desc;
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  detail::add_positional_constrains(cnts,std::basic_string<char>(),desc);
+  detail::add_positional_constraints(cnts,std::basic_string<char>(),desc);
 
   return desc;
 }
@@ -1655,11 +1696,12 @@ make_positional(const std::basic_string<char> &extended_desc,
   Case line 19
 */
 inline basic_option_description<char>
-make_hidden_positional(const constrain<char> &cnts = constrain<char>())
+make_hidden_operand(
+  const basic_constraint<char> &cnts = basic_constraint<char>())
 {
   basic_option_description<char> desc;
 
-  detail::add_positional_constrains(cnts,std::basic_string<char>(),desc);
+  detail::add_positional_constraints(cnts,std::basic_string<char>(),desc);
 
   return desc;
 }
@@ -1668,17 +1710,17 @@ make_hidden_positional(const constrain<char> &cnts = constrain<char>())
   Case line 20
 */
 inline basic_option_description<char>
-make_positional(const std::basic_string<char> &implicit_key,
+make_operand(const std::basic_string<char> &implicit_key,
   const std::basic_string<char> &extended_desc,
-  int position = -1, const constrain<char> &cnts = constrain<char>())
+  const basic_constraint<char> &cnts = basic_constraint<char>())
 {
   basic_option_description<char> desc;
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  detail::add_key(implicit_key,position,desc);
+  detail::add_operand_key(implicit_key,cnts._position,cnts._argument,desc);
 
-  detail::add_positional_constrains(cnts,implicit_key,desc);
+  detail::add_positional_constraints(cnts,implicit_key,desc);
 
   return desc;
 }
@@ -1687,21 +1729,21 @@ make_positional(const std::basic_string<char> &implicit_key,
   Case line 21
 */
 inline basic_option_description<char>
-make_hidden_positional(const std::basic_string<char> &implicit_key,
-  int position = -1, const constrain<char> &cnts = constrain<char>())
+make_hidden_operand(const std::basic_string<char> &implicit_key,
+  const basic_constraint<char> &cnts = basic_constraint<char>())
 {
   basic_option_description<char> desc;
 
-  detail::add_key(implicit_key,position,desc);
+  detail::add_operand_key(implicit_key,cnts._position,cnts._argument,desc);
 
-  detail::add_positional_constrains(cnts,implicit_key,desc);
+  detail::add_positional_constraints(cnts,implicit_key,desc);
 
   return desc;
 }
 
 /*
   Convenience function to intercept options to make them errors. This is
-  only needed in the case where there are only positional arguments and
+  only needed in the case where there are only operands and
   you don't want to accept anything that looks like a option.
 
   For example, If there are _any_ descriptions that have uppack_option
@@ -1709,18 +1751,18 @@ make_hidden_positional(const std::basic_string<char> &implicit_key,
   example, on my machine, the command 'echo' takes one option, '-n'
   (nonconforming to POSIX actually). If the command 'echo -f' is given,
   the string '-f' is printed meaning that '-f' is interpreted as a
-  positional operand and not an invalid option. If when using this
+  operand and not an invalid option. If when using this
   library you would rather an error be generated that states '-f' was
   unrecognized, use the \c make_options_error function and do not
-  include any other non-positional descriptions.
+  include any other non-operand descriptions.
 */
 inline basic_option_description<char> make_options_error(void)
 {
   typedef std::basic_string<char> string_type;
 
   return basic_option_description<char>{unpack_gnu<false,char>,
-    [](const string_type &raw_key,const variable_map &) -> string_type {
-      throw unknown_option_error(raw_key);
+    [](const string_type &raw_key,int,int,const variable_map &) {
+      return std::make_pair(false,string_type());
     }};
 }
 

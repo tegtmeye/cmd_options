@@ -30,7 +30,7 @@ inline bool is_empty(const co::basic_option_description<CharT> &desc)
   return (
     !desc.unpack_option && !desc.mapped_key &&
     !desc.key_description && !desc.extended_description &&
-    !desc.implicit_key & !desc.implicit_value &&
+    !desc.implicit_value &&
     !desc.implicit_value_description && !desc.make_value &&
     !desc.finalize);
 }
@@ -141,73 +141,73 @@ inline bool is_raw_mapped_optional_option(
 }
 
 template<typename CharT>
-inline bool is_interpret_positional(
+inline bool is_interpret_operand(
   const co::basic_option_description<CharT> &desc)
 {
-  return (!desc.unpack_option && desc.extended_description
-    && desc.make_value && !desc.implicit_value && !desc.implicit_key);
+  return (!desc.unpack_option && !desc.mapped_key && desc.extended_description
+    && desc.make_value && !desc.implicit_value);
 }
 
 /*
   Row 15
 */
 template<typename CharT>
-inline bool is_hidden_interpret_positional(
+inline bool is_hidden_interpret_operand(
   const co::basic_option_description<CharT> &desc)
 {
-  return (!desc.unpack_option && !desc.extended_description
-    && desc.make_value && !desc.implicit_value && !desc.implicit_key);
+  return (!desc.unpack_option && !desc.mapped_key && !desc.extended_description
+    && desc.make_value && !desc.implicit_value);
 }
 
 template<typename CharT>
-inline bool is_keyed_interpret_positional(
+inline bool is_keyed_interpret_operand(
   const co::basic_option_description<CharT> &desc)
 {
-  return (!desc.unpack_option && desc.extended_description
-    && desc.make_value && !desc.implicit_value && desc.implicit_key);
+  return (!desc.unpack_option && desc.mapped_key && desc.extended_description
+    && desc.make_value && !desc.implicit_value);
 }
 
 template<typename CharT>
-inline bool is_hidden_keyed_interpret_positional(
+inline bool is_hidden_keyed_interpret_operand(
   const co::basic_option_description<CharT> &desc)
 {
-  return (!desc.unpack_option && !desc.extended_description
-    && desc.make_value && !desc.implicit_value && desc.implicit_key);
+  return (!desc.unpack_option && desc.mapped_key && !desc.extended_description
+    && desc.make_value && !desc.implicit_value);
 }
 
 template<typename CharT>
-inline bool is_empty_positional(
+inline bool is_empty_operand(
   const co::basic_option_description<CharT> &desc)
 {
-  return (!desc.unpack_option && desc.extended_description
-    && !desc.make_value && !desc.implicit_key);
+  return (!desc.unpack_option && !desc.mapped_key && desc.extended_description
+    && !desc.make_value);
 }
 
 template<typename CharT>
-inline bool is_hidden_empty_positional(
+inline bool is_hidden_empty_operand(
   const co::basic_option_description<CharT> &desc)
 {
-  return (!desc.unpack_option && !desc.extended_description
-    && !desc.make_value && !desc.implicit_key);
+  return (!desc.unpack_option && !desc.mapped_key && !desc.extended_description
+    && !desc.make_value);
 }
 
 /*
   Row 20
 */
 template<typename CharT>
-inline bool is_empty_keyed_positional(
+inline bool is_empty_keyed_operand(
   const co::basic_option_description<CharT> &desc)
 {
-  return (!desc.unpack_option && desc.extended_description
-    && !desc.make_value && desc.implicit_key);
+  return (!desc.unpack_option && desc.mapped_key && desc.extended_description
+    && !desc.make_value);
 }
 
 template<typename CharT>
-inline bool is_hidden_empty_keyed_positional(
+inline bool is_hidden_empty_keyed_operand(
   const co::basic_option_description<CharT> &desc)
 {
-  return (!desc.unpack_option && !desc.extended_description
-    && !desc.make_value && desc.implicit_key);
+  return (!desc.unpack_option && desc.mapped_key && !desc.extended_description
+    && !desc.make_value);
 }
 
 
@@ -230,7 +230,6 @@ inline std::string to_string(const co::basic_option_description<char> &desc)
     << "mapped_key: " << bool(desc.mapped_key) << "\n"
     << "key_description: " << bool(desc.key_description) << "\n"
     << "extended_description: " << bool(desc.extended_description) << "\n"
-    << "implicit_key: " << bool(desc.implicit_key) << "\n"
     << "implicit_value: " << bool(desc.implicit_value) << "\n"
     << "implicit_value_description: "
       << bool(desc.implicit_value_description) << "\n"
@@ -279,16 +278,16 @@ bool check_exclusive(const co::basic_option_description<CharT> &desc,
       is_hidden_mapped_optional_option<CharT>},
     {"is_raw_optional_option",is_raw_optional_option<CharT>},
     {"is_raw_mapped_optional_option",is_raw_mapped_optional_option<CharT>},
-    {"is_interpret_positional",is_interpret_positional<CharT>},
-    {"is_hidden_interpret_positional",is_hidden_interpret_positional<CharT>},
-    {"is_keyed_interpret_positional",is_keyed_interpret_positional<CharT>},
-    {"is_hidden_keyed_interpret_positional",
-      is_hidden_keyed_interpret_positional<CharT>},
-    {"is_empty_positional",is_empty_positional<CharT>},
-    {"is_hidden_empty_positional",is_hidden_empty_positional<CharT>},
-    {"is_empty_keyed_positional",is_empty_keyed_positional<CharT>},
-    {"is_hidden_empty_keyed_positional",
-      is_hidden_empty_keyed_positional<CharT>}
+    {"is_interpret_operand",is_interpret_operand<CharT>},
+    {"is_hidden_interpret_operand",is_hidden_interpret_operand<CharT>},
+    {"is_keyed_interpret_operand",is_keyed_interpret_operand<CharT>},
+    {"is_hidden_keyed_interpret_operand",
+      is_hidden_keyed_interpret_operand<CharT>},
+    {"is_empty_operand",is_empty_operand<CharT>},
+    {"is_hidden_empty_operand",is_hidden_empty_operand<CharT>},
+    {"is_empty_keyed_operand",is_empty_keyed_operand<CharT>},
+    {"is_hidden_empty_keyed_operand",
+      is_hidden_empty_keyed_operand<CharT>}
   };
 
   std::vector<pair_type> exclusive = cases;

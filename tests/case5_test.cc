@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
 
   options = co::options_group{
     co::make_hidden_option(""),
-    co::make_positional<std::string>("accept all positionals")
+    co::make_operand<std::string>("accept all positionals")
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
 
   options = co::options_group{
     co::make_hidden_option(""),
-    co::make_positional<std::string>("accept all positionals")
+    co::make_operand<std::string>("accept all positionals")
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -199,7 +199,7 @@ BOOST_AUTO_TEST_CASE( flags_invalid_posarg_test )
 
   BOOST_REQUIRE_THROW(
     (vm = co::parse_arguments(argv.size(),argv.data(),options)),
-      co::unexpected_positional_error);
+      co::unexpected_operand_error);
 }
 
 /**

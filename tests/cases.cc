@@ -426,7 +426,7 @@ BOOST_AUTO_TEST_CASE( case14_parse_test )
   };
 
   co::options_group options{
-    co::make_positional<std::string>("line 14"),
+    co::make_operand<std::string>("line 14"),
   };
 
   co::variable_map vm =
@@ -465,7 +465,7 @@ BOOST_AUTO_TEST_CASE( case14_2_parse_test )
   };
 
   co::options_group options{
-    co::make_positional<std::string>("line 14"),
+    co::make_operand<std::string>("line 14"),
     co::make_options_error()
   };
 
@@ -498,7 +498,7 @@ BOOST_AUTO_TEST_CASE( case15_parse_test )
   };
 
   co::options_group options{
-    co::make_hidden_positional<std::string>(),
+    co::make_hidden_operand<std::string>(),
   };
 
   co::variable_map vm =
@@ -534,7 +534,7 @@ BOOST_AUTO_TEST_CASE( case16_parse_test )
   };
 
   co::options_group options{
-    co::make_positional<std::string>("key1","line 16")
+    co::make_operand<std::string>("key1","line 16")
   };
 
   co::variable_map vm =
@@ -552,8 +552,8 @@ BOOST_AUTO_TEST_CASE( case16_parse_test )
 
 
   co::options_group options2{
-    co::make_positional<std::string>("key1","line 16",0),
-    co::make_positional<std::string>("key2","line 16",1)
+    co::make_operand<std::string>("key1","line 16",0),
+    co::make_operand<std::string>("key2","line 16",1)
   };
 
   vm =
@@ -572,9 +572,9 @@ BOOST_AUTO_TEST_CASE( case16_parse_test )
     co::command_option_error);
 
   co::options_group options3{
-    co::make_positional<std::string>("key1","line 16",0),
-    co::make_positional<std::string>("key2","line 16",1),
-    co::make_positional<std::string>("default","line 16",-1)
+    co::make_operand<std::string>("key1","line 16",0),
+    co::make_operand<std::string>("key2","line 16",1),
+    co::make_operand<std::string>("default","line 16",-1)
   };
 
   vm = co::parse_arguments(argv.data(),argv.size(),options3);
@@ -601,7 +601,7 @@ BOOST_AUTO_TEST_CASE( case17_parse_test )
   };
 
   co::options_group options{
-    co::make_hidden_positional<std::string>("key1")
+    co::make_hidden_operand<std::string>("key1")
   };
 
   co::variable_map vm =
@@ -619,8 +619,8 @@ BOOST_AUTO_TEST_CASE( case17_parse_test )
 
 
   co::options_group options2{
-    co::make_hidden_positional<std::string>("key1",0),
-    co::make_hidden_positional<std::string>("key2",1)
+    co::make_hidden_operand<std::string>("key1",0),
+    co::make_hidden_operand<std::string>("key2",1)
   };
 
   vm =
@@ -639,9 +639,9 @@ BOOST_AUTO_TEST_CASE( case17_parse_test )
     co::command_option_error);
 
   co::options_group options3{
-    co::make_hidden_positional<std::string>("key1",0),
-    co::make_hidden_positional<std::string>("key2",1),
-    co::make_hidden_positional<std::string>("default",-1)
+    co::make_hidden_operand<std::string>("key1",0),
+    co::make_hidden_operand<std::string>("key2",1),
+    co::make_hidden_operand<std::string>("default",-1)
   };
 
   vm = co::parse_arguments(argv.data(),argv.size(),options3);
@@ -668,7 +668,7 @@ BOOST_AUTO_TEST_CASE( case18_parse_test )
   };
 
   co::options_group options{
-    co::make_positional("line 18"),
+    co::make_operand("line 18"),
   };
 
   co::variable_map vm =
@@ -698,7 +698,7 @@ BOOST_AUTO_TEST_CASE( case19_parse_test )
   };
 
   co::options_group options{
-    co::make_hidden_positional(),
+    co::make_hidden_operand(),
   };
 
   co::variable_map vm =
@@ -728,10 +728,10 @@ BOOST_AUTO_TEST_CASE( case20_parse_test )
   };
 
   co::options_group options{
-    co::make_positional("key1","line 20",0),
-    co::make_positional("key2","line 20",1),
-    co::make_positional("key3","line 20",2),
-    co::make_positional("key4","line 20",3)
+    co::make_operand("key1","line 20",0),
+    co::make_operand("key2","line 20",1),
+    co::make_operand("key3","line 20",2),
+    co::make_operand("key4","line 20",3)
   };
 
   co::variable_map vm =
@@ -747,8 +747,8 @@ BOOST_AUTO_TEST_CASE( case20_parse_test )
     }));
 
   co::options_group options2{
-    co::make_positional("key1","line 20",0),
-    co::make_positional("key2","line 20",1),
+    co::make_operand("key1","line 20",0),
+    co::make_operand("key2","line 20",1),
   };
 
 //   std::cerr << detail::to_string<std::string>(vm);
@@ -758,9 +758,9 @@ BOOST_AUTO_TEST_CASE( case20_parse_test )
     co::command_option_error);
 
   co::options_group options3{
-    co::make_positional("key1","line 20",0),
-    co::make_positional("key2","line 20",1),
-    co::make_positional("default","line 20",-1)
+    co::make_operand("key1","line 20",0),
+    co::make_operand("key2","line 20",1),
+    co::make_operand("default","line 20",-1)
   };
 
   vm = co::parse_arguments(argv.data(),argv.size(),options3);
@@ -787,10 +787,10 @@ BOOST_AUTO_TEST_CASE( case21_parse_test )
   };
 
   co::options_group options{
-    co::make_hidden_positional("key1",0),
-    co::make_hidden_positional("key2",1),
-    co::make_hidden_positional("key3",2),
-    co::make_hidden_positional("key4",3)
+    co::make_hidden_operand("key1",0),
+    co::make_hidden_operand("key2",1),
+    co::make_hidden_operand("key3",2),
+    co::make_hidden_operand("key4",3)
   };
 
   co::variable_map vm =
@@ -806,8 +806,8 @@ BOOST_AUTO_TEST_CASE( case21_parse_test )
     }));
 
   co::options_group options2{
-    co::make_hidden_positional("key1",0),
-    co::make_hidden_positional("key2",1),
+    co::make_hidden_operand("key1",0),
+    co::make_hidden_operand("key2",1),
   };
 
 //   std::cerr << detail::to_string<std::string>(vm);
@@ -817,9 +817,9 @@ BOOST_AUTO_TEST_CASE( case21_parse_test )
     co::command_option_error);
 
   co::options_group options3{
-    co::make_hidden_positional("key1",0),
-    co::make_hidden_positional("key2",1),
-    co::make_hidden_positional("default",-1)
+    co::make_hidden_operand("key1",0),
+    co::make_hidden_operand("key2",1),
+    co::make_hidden_operand("default",-1)
   };
 
   vm = co::parse_arguments(argv.data(),argv.size(),options3);

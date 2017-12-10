@@ -19,11 +19,12 @@ typedef co::basic_variable_map<char> variable_map;
 option_description nested1{
   [](const string_type &option) -> option_pack {
     if(option == "-foo")
-      return option_pack{false,"-","foo",{"-a","-bar","-c"}};
+      return option_pack{true,false,"-","foo",{"-a","-bar","-c"}};
     return option_pack();
   },
-  [](const string_type &raw_key, const variable_map &) -> string_type {
-    return raw_key;
+  [](const string_type &raw_key, std::size_t, std::size_t, const variable_map &)
+  {
+    return std::make_pair(true,raw_key);
   },
   [](void) -> string_type {
     return "test nested";
@@ -33,11 +34,12 @@ option_description nested1{
 option_description nested2{
   [](const string_type &option) -> option_pack {
     if(option == "-bar")
-      return option_pack{false,"-","bar",{"-d","-e","-f"}};
+      return option_pack{true,false,"-","bar",{"-d","-e","-f"}};
     return option_pack();
   },
-  [](const string_type &raw_key, const variable_map &) -> string_type {
-    return raw_key;
+  [](const string_type &raw_key, std::size_t, std::size_t, const variable_map &)
+  {
+    return std::make_pair(true,raw_key);
   },
   [](void) -> string_type {
     return "test nested2";
@@ -47,19 +49,20 @@ option_description nested2{
 option_description nested3{
   [](const string_type &option) -> option_pack {
     if(option == "-bar")
-      return option_pack{false,"-","bar",{"-d","pos","-f"}};
+      return option_pack{true,false,"-","bar",{"-d","pos","-f"}};
     return option_pack();
   },
-  [](const string_type &raw_key, const variable_map &) -> string_type {
-    return raw_key;
+  [](const string_type &raw_key, std::size_t, std::size_t, const variable_map &)
+  {
+    return std::make_pair(true,raw_key);
   },
   [](void) -> string_type {
     return "test nested3";
   }
 };
 
-option_description all_positional{
-  {},{},{},{},{},{},{},
+option_description all_operands{
+  {},{},{},{},{},{},
   [](const string_type &mapped_key, const string_type &value,
     const variable_map &) -> co::any
   {
@@ -130,7 +133,7 @@ BOOST_AUTO_TEST_CASE( parse_nested_positional_test )
     co::make_option(",c","case 2"),
     co::make_option(",d","case 2"),
     co::make_option(",f","case 2"),
-    all_positional
+    all_operands
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
