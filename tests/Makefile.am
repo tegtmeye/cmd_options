@@ -176,7 +176,9 @@ case13_test_LDADD=$(additional_libs)
 case14_test_SOURCES=$(master_suite) \
 	test_detail.h \
 	case14_test.cc 
-case14_test_CPPFLAGS=$(additional_cppflags)
+case14_test_CPPFLAGS= \
+	-DCMD_OPTIONS_DEFAULT_OPERAND_KEY=alt_key \
+	$(additional_cppflags)
 case14_test_LDFLAGS=$(additional_ldflags)
 case14_test_LDADD=$(additional_libs)
 

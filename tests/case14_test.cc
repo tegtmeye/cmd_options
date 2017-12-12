@@ -39,10 +39,10 @@ BOOST_AUTO_TEST_CASE( all_key_value_test )
 
   BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
-      {"",{std::string("-f")}},
-      {"",{std::string("-f42")}},
-      {"",{std::string("--bar")}},
-      {"",{std::string("--bar=43")}},
+      {co::default_operand_key,{std::string("-f")}},
+      {co::default_operand_key,{std::string("-f42")}},
+      {co::default_operand_key,{std::string("--bar")}},
+      {co::default_operand_key,{std::string("--bar=43")}},
     }));
 }
 
@@ -81,11 +81,11 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_positional_test )
 
   BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
-      {"",{std::string("positional1")}},
-      {"",{std::string("positional2")}},
-      {"",{std::string("positional3")}},
-      {"",{std::string("positional4")}},
-      {"",{std::string("positional5")}},
+      {co::default_operand_key,{std::string("positional1")}},
+      {co::default_operand_key,{std::string("positional2")}},
+      {co::default_operand_key,{std::string("positional3")}},
+      {co::default_operand_key,{std::string("positional4")}},
+      {co::default_operand_key,{std::string("positional5")}},
       {"f",{std::string("f_arg")}},
       {"f",{std::string("42")}},
       {"bar",{std::string("bar_arg")}},
