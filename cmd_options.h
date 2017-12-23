@@ -181,6 +181,45 @@ class unexpected_operand_error : public command_option_error {
     }
 };
 
+class constraint_error : public command_option_error {
+  public:
+    constraint_error(const std::string &option)
+        :command_option_error(option) {}
+
+    const char * option(void) const noexcept {
+      return what();
+    }
+};
+
+class occurrence_error : public constraint_error {
+  public:
+    occurrence_error(const std::string &mapped_key, std::size_t min,
+      std::size_t max, std::size_t occurrences)
+        :constraint_error(mapped_key), _min(min), _max(max),
+          _occurrences(occurrences) {}
+
+    const char * mapped_key(void) const noexcept {
+      return what();
+    }
+
+    const std::size_t min(void) const noexcept {
+      return _min;
+    }
+
+    const std::size_t max(void) const noexcept {
+      return _max;
+    }
+
+    const std::size_t occurrences(void) const noexcept {
+      return _occurrences;
+    }
+
+  private:
+    std::size_t _min;
+    std::size_t _max;
+    std::size_t _occurrences;
+};
+
 
 
 
@@ -285,6 +324,13 @@ using basic_variable_map = std::multimap<std::basic_string<CharT>,any>;
                       : raw_key = "bar"
                       : packed_arguments = ""
                       : value = "false"
+                      : value_provided = true
+
+      9) -Wl,<args>   = long flag, key=Wl, value=<args>
+                      : prefix = "-"
+                      : raw_key = "Wl"
+                      : packed_arguments = ""
+                      : value = "<args>"
                       : value_provided = true
 */
 template<typename CharT>
@@ -508,8 +554,6 @@ struct basic_option_description {
     example, if a minimum number of options are expected, the
     variable_map can be queried to see if it has been satisfied and
     throw an error if not.
-
-    command_option_error substitution is available for '%L' and '%S'
   */
   std::function<void(const variable_map &vm)> finalize;
 
@@ -912,6 +956,14 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
     }
   }
 
+  // check constraints if not partial
+  if(!partial) {
+    for(auto &desc : grp) {
+      if(desc.finalize)
+        desc.finalize(_vm);
+    }
+  }
+
   return _vm;
 }
 
@@ -989,10 +1041,13 @@ typedef std::multimap<std::basic_string<wchar_t>,any> wvariable_map;
 
 
 
-
+/*
+  EZ interface start
+*/
 
 /*
-  EZ interface
+  Indicate that the operand or option has constraints with respect to
+  the number, position, or exclusivity of other operands or options.
 
   Be overly descriptive. ie use
     basic_constraint<CharT>().occurrences(1,2).mutually_exclusive({"foo"}).
@@ -1002,19 +1057,29 @@ typedef std::multimap<std::basic_string<wchar_t>,any> wvariable_map;
 
   ie is "foo" inclusive or exclusive? what if don't want to use range?
   therefore lots of constructors that someone needs to be read.
+
+  Default indicates allow any number of occurrences, at any argument
+  position both mutually exclusive and mutually inclusive of nothing.
+
 */
-
-
 template<typename CharT>
 struct basic_constraint {
   typedef std::basic_string<CharT> string_type;
 
+  /*
+    Constrain the number of occurrences to exactly \c n
+  */
   basic_constraint<CharT> & occurrences(std::size_t n)
   {
     _min = _max = n;
     return *this;
   }
 
+  /*
+    Constrain the number of occurrences to between \c n and \c m
+
+    assert \c must be smaller than \m
+  */
   basic_constraint<CharT> & occurrences(std::size_t n, std::size_t m)
   {
     _min = n;
@@ -1151,9 +1216,25 @@ typename std::enable_if<std::is_same<CharT, wchar_t>::value, std::wstring>::type
     return std::to_wstring(t);
 }
 
+inline std::string as_utf8(const char *s)
+{
+  return std::string(s);
+}
+
 inline std::string as_utf8(const std::string &s)
 {
   return s;
+}
+
+template<typename CharT>
+inline std::string as_utf8(const CharT *s)
+{
+  typedef std::wstring_convert<
+    std::codecvt_utf8<CharT>,CharT> converter_type;
+
+  converter_type converter;
+
+  return converter.to_bytes(s);
 }
 
 template<typename CharT>
@@ -1378,8 +1459,6 @@ inline void add_operand_key(const std::basic_string<CharT> &key, int posn,
   }
 }
 
-
-
 /*
   Used for constraints on options.
 
@@ -1395,32 +1474,10 @@ void add_option_constraints(const basic_constraint<CharT> &cnts,
 {
   desc.finalize = [=](const basic_variable_map<CharT> &vm) {
 
-    if(vm.count(mapped_key) > cnts._max) {
-      std::stringstream err;
-      err << "option ";
-      if(!long_opt.empty())
-        err << "'%L" << as_utf8(long_opt) << "' ";
-      if(!long_opt.empty() && !short_opt.empty())
-        err << "or ";
-      if(!short_opt.empty())
-        err << "'%S" << as_utf8(short_opt) << "' ";
-      err << "cannot be specified more than "
-        << cnts._max << (cnts._max==1?" time":" times");
-      throw command_option_error(err.str());
-    }
-
-    if(vm.count(mapped_key) < cnts._min) {
-      std::stringstream err;
-      err << "option ";
-      if(!long_opt.empty())
-        err << "'%L" << as_utf8(long_opt) << "' ";
-      if(!long_opt.empty() && !short_opt.empty())
-        err << "or ";
-      if(!short_opt.empty())
-        err << "'%S" << as_utf8(short_opt) << "' ";
-      err << "must be specified at least "
-        << cnts._min << (cnts._max==1?" time":" times");
-      throw command_option_error(err.str());
+    std::size_t occurrances = vm.count(mapped_key);
+    if(occurrances > cnts._max || occurrances < cnts._min) {
+      throw occurrence_error(as_utf8(mapped_key),cnts._min,cnts._max,
+        occurrances);
     }
 
     for(auto &exclusive_key : cnts._mutual_exclusion) {
@@ -1428,11 +1485,11 @@ void add_option_constraints(const basic_constraint<CharT> &cnts,
         std::stringstream err;
         err << "option ";
         if(!long_opt.empty())
-          err << "'%L" << as_utf8(long_opt) << "' ";
+          err << "'--" << as_utf8(long_opt) << "' ";
         if(!long_opt.empty() && !short_opt.empty())
           err << "and ";
         if(!short_opt.empty())
-          err << "'%S" << as_utf8(short_opt) << "' ";
+          err << "'-" << as_utf8(short_opt) << "' ";
         err << "cannot be specified along with '"
           << as_utf8(exclusive_key) << "'";
         throw command_option_error(err.str());
@@ -1444,11 +1501,11 @@ void add_option_constraints(const basic_constraint<CharT> &cnts,
         std::stringstream err;
         err << "option ";
         if(!long_opt.empty())
-          err << "'%L" << as_utf8(long_opt) << "' ";
+          err << "'--" << as_utf8(long_opt) << "' ";
         if(!long_opt.empty() && !short_opt.empty())
           err << "or ";
         if(!short_opt.empty())
-          err << "'%S" << as_utf8(short_opt) << "' ";
+          err << "'-" << as_utf8(short_opt) << "' ";
         err << "must be specified along with '"
           << as_utf8(inclusive_key) << "'";
         throw command_option_error(err.str());
@@ -1466,22 +1523,10 @@ void add_operand_constraints(const basic_constraint<CharT> &cnts,
   basic_option_description<CharT> &desc)
 {
   desc.finalize = [=](const basic_variable_map<CharT> &vm) {
-    if(vm.count(mapped_key) > cnts._max) {
-      std::stringstream err;
-      err << "operand cannot be specified more than "
-        << cnts._max << (cnts._max==1?" time":" times");
-      throw command_option_error(err.str());
-    }
-
-    if(vm.count(mapped_key) < cnts._min) {
-      std::stringstream err;
-      if(cnts._max==1)
-        err << "an operand ";
-      else
-        err << "operandss ";
-      err << "must be specified at least "
-        << cnts._min << (cnts._max==1?" time":" times");
-      throw command_option_error(err.str());
+    std::size_t occurrances = vm.count(mapped_key);
+    if(occurrances < cnts._min || occurrances > cnts._max) {
+        throw occurrence_error(as_utf8(mapped_key),cnts._min,cnts._max,
+          occurrances);
     }
 
     for(auto &exclusive_key : cnts._mutual_exclusion) {

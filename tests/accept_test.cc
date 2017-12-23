@@ -7,7 +7,7 @@
 #include <iostream>
 
 /**
-  Accept all options and positionals, need to check these before
+  Accept all options and operands, need to check these before
   individual cases.
  */
 

@@ -113,9 +113,9 @@ BOOST_AUTO_TEST_CASE( parse_nested_option_test )
 }
 
 /**
-  Nested positional_test
+  Nested operand_test
  */
-BOOST_AUTO_TEST_CASE( parse_nested_positional_test )
+BOOST_AUTO_TEST_CASE( parse_nested_operand_test )
 {
   co::variable_map vm;
   co::options_group options;
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE( parse_nested_positional_test )
 
   BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
-      {"",{string_type("pos")}},
+      {"alt_key",{string_type("pos")}},
       {"a",{}},
       {"bar",{}},
       {"c",{}},

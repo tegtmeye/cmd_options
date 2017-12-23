@@ -7,7 +7,7 @@
 #include <iostream>
 
 /**
-  case 19, Degenerate hidden positional
+  case 19, Degenerate hidden operand
  */
 
 BOOST_AUTO_TEST_SUITE( case19_test_suite )
@@ -32,25 +32,25 @@ BOOST_AUTO_TEST_CASE( all_key_value_test )
   };
 
   options = co::options_group{
-    co::make_hidden_operand("positional_key")
+    co::make_hidden_operand("operand_key")
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
   BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
-      {"positional_key",{}},
-      {"positional_key",{}},
-      {"positional_key",{}},
-      {"positional_key",{}}
+      {"operand_key",{}},
+      {"operand_key",{}},
+      {"operand_key",{}},
+      {"operand_key",{}}
     }));
 }
 
 
 /**
-  keys values with embedded positional
+  keys values with embedded operand
  */
-BOOST_AUTO_TEST_CASE( key_value_with_embedded_positional_test )
+BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
 {
   co::variable_map vm;
   co::options_group options;
@@ -59,20 +59,20 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_positional_test )
   argv = std::vector<const char *>{
     "-f",
     "f_arg",
-    "positional1",
+    "operand1",
     "-f42",
-    "positional2",
-    "positional3",
+    "operand2",
+    "operand3",
     "--bar",
     "bar_arg",
-    "positional4",
+    "operand4",
     "--bar=43",
-    "positional5",
+    "operand5",
   };
 
   options = co::options_group{
     co::make_option("",co::value<std::string>("floo"),"case 19"),
-    co::make_hidden_operand("positional_key")
+    co::make_hidden_operand("operand_key")
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -81,11 +81,11 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_positional_test )
 
   BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
-      {"positional_key",{}},
-      {"positional_key",{}},
-      {"positional_key",{}},
-      {"positional_key",{}},
-      {"positional_key",{}},
+      {"operand_key",{}},
+      {"operand_key",{}},
+      {"operand_key",{}},
+      {"operand_key",{}},
+      {"operand_key",{}},
       {"f",{std::string("f_arg")}},
       {"f",{std::string("42")}},
       {"bar",{std::string("bar_arg")}},

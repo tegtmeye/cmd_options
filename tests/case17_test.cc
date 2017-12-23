@@ -7,7 +7,7 @@
 #include <iostream>
 
 /**
-  case 17, Positional
+  case 17, operand
  */
 
 BOOST_AUTO_TEST_SUITE( case17_test_suite )
@@ -48,9 +48,9 @@ BOOST_AUTO_TEST_CASE( all_key_value_test )
 
 
 /**
-  keys values with embedded positional
+  keys values with embedded operand
  */
-BOOST_AUTO_TEST_CASE( key_value_with_embedded_positional_test )
+BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
 {
   co::variable_map vm;
   co::options_group options;
@@ -59,15 +59,15 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_positional_test )
   argv = std::vector<const char *>{
     "-f",
     "f_arg",
-    "positional1",
+    "operand1",
     "-f42",
-    "positional2",
-    "positional3",
+    "operand2",
+    "operand3",
     "--bar",
     "bar_arg",
-    "positional4",
+    "operand4",
     "--bar=43",
-    "positional5",
+    "operand5",
   };
 
   options = co::options_group{
@@ -81,11 +81,11 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_positional_test )
 
   BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
-      {"key",{std::string("positional1")}},
-      {"key",{std::string("positional2")}},
-      {"key",{std::string("positional3")}},
-      {"key",{std::string("positional4")}},
-      {"key",{std::string("positional5")}},
+      {"key",{std::string("operand1")}},
+      {"key",{std::string("operand2")}},
+      {"key",{std::string("operand3")}},
+      {"key",{std::string("operand4")}},
+      {"key",{std::string("operand5")}},
       {"f",{std::string("f_arg")}},
       {"f",{std::string("42")}},
       {"bar",{std::string("bar_arg")}},

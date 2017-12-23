@@ -27,6 +27,7 @@ master_suite=$(top_srcdir)/tests/master_suite.cc
 
 additional_cppflags= \
 	-pedantic -Wall -I.. \
+	-DCMD_OPTIONS_DEFAULT_OPERAND_KEY=alt_key \
 	$(SYSTEM_BOOST_CPPFLAGS)
 
 additional_cflags=
@@ -66,7 +67,8 @@ check_PROGRAMS=\
 	case18_test \
 	case19_test \
 	case20_test \
-	case21_test
+	case21_test \
+	constraints_test
 
 basic_test_SOURCES=$(master_suite) \
 	test_detail.h \
@@ -176,9 +178,7 @@ case13_test_LDADD=$(additional_libs)
 case14_test_SOURCES=$(master_suite) \
 	test_detail.h \
 	case14_test.cc 
-case14_test_CPPFLAGS= \
-	-DCMD_OPTIONS_DEFAULT_OPERAND_KEY=alt_key \
-	$(additional_cppflags)
+case14_test_CPPFLAGS=$(additional_cppflags)
 case14_test_LDFLAGS=$(additional_ldflags)
 case14_test_LDADD=$(additional_libs)
 
@@ -231,6 +231,13 @@ case21_test_CPPFLAGS=$(additional_cppflags)
 case21_test_LDFLAGS=$(additional_ldflags)
 case21_test_LDADD=$(additional_libs)
 
+constraints_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	constraints_test.cc 
+constraints_test_CPPFLAGS=$(additional_cppflags)
+constraints_test_LDFLAGS=$(additional_ldflags)
+constraints_test_LDADD=$(additional_libs)
+
 TESTS=\
 	basic_test \
 	parse_test \
@@ -254,4 +261,6 @@ TESTS=\
 	case18_test \
 	case19_test \
 	case20_test \
-	case21_test
+	case21_test \
+	constraints_test
+
