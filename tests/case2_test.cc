@@ -71,8 +71,8 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
 
   BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
-      {"",std::string("--bar")},
-      {"",std::string("blah")},
+      {co::default_operand_key,std::string("--bar")},
+      {co::default_operand_key,std::string("blah")},
       {"foo",{}},
       {"foo",{}}
     }));
@@ -149,8 +149,8 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
 
   BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{
-      {"",std::string("--bar")},
-      {"",std::string("blah")},
+      {co::default_operand_key,std::string("--bar")},
+      {co::default_operand_key,std::string("blah")},
       {"foo",{}},
       {"foo",{}},
       {"a",{}},

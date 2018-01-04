@@ -402,7 +402,7 @@ struct basic_option_description {
   std::function<option_pack(const string_type &option)> unpack_option;
 
   /*
-    If this description is can handle the given argument, return true
+    If this description can handle the given argument, return true
     and the key that will be used in the variable map to represent this
     option or operand depending on the presence or absence of
     \c unpack_option.
@@ -413,10 +413,8 @@ struct basic_option_description {
     the \c option_pack.
 
     If unpack_option is not set, then the argument is an operand and
-    mapped_key should return the appropriate mapped key. In the case of
-    an operand, the raw_key will always be the default operand key
-    (currently the empty string, but may be user configurable in the
-    future).
+    mapped_key should return the appropriate mapped key for the default
+    raw key \c default_operand_key (or simply return \c default_operand_key).
 
     If \c mapped_key is not set then this description will be marked to
     handle the argument and \c raw_key will be used for the key in the
@@ -929,7 +927,7 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
 
           if(desc->mapped_key) {
             operand_key =
-              desc->mapped_key(string_type(),operand_count,arg_count,_vm);
+              desc->mapped_key(default_operand_key,operand_count,arg_count,_vm);
             if(!operand_key.first)
               continue;
           }
