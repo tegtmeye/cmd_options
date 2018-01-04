@@ -372,6 +372,93 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_2_test )
   );
 }
 
+/**
+  operand 0 or 1 given 0
+ */
+BOOST_AUTO_TEST_CASE( operand_0_1_given_0_test )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "--foo",
+    "-f"
+  };
+
+  options = co::options_group{
+    co::make_operand<std::string>("case 14",co::constrain().occurrences(0,1)),
+    co::make_option("foo,f","case 2")
+  };
+
+  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
+    co::variable_map{
+      {"foo",{}},
+      {"foo",{}}
+    }));
+}
+
+/**
+  operand 0 or 1 given 1
+ */
+BOOST_AUTO_TEST_CASE( operand_0_1_given_1_test )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "--foo",
+    "-f",
+    "bar"
+  };
+
+  options = co::options_group{
+    co::make_operand<std::string>("case 14",co::constrain().occurrences(0,1)),
+    co::make_option("foo,f","case 2")
+  };
+
+  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
+    co::variable_map{
+      {co::default_operand_key,{std::string("bar")}},
+      {"foo",{}},
+      {"foo",{}}
+    }));
+}
+
+/**
+  operand 0 or 1 given 2
+ */
+BOOST_AUTO_TEST_CASE( operand_0_1_given_2_test )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "--foo",
+    "-f",
+    "bar1",
+    "bar2"
+  };
+
+  options = co::options_group{
+    co::make_operand<std::string>("case 14",co::constrain().occurrences(0,1)),
+    co::make_option("foo,f","case 2")
+  };
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
+    co::occurrence_error, [](const co::occurrence_error &ex) {
+      return (ex.mapped_key() == co::default_operand_key  && ex.min() == 0
+        && ex.max() == 1 && ex.occurrences() == 2);
+    }
+  );
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 
