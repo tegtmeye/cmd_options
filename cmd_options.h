@@ -561,6 +561,27 @@ template<typename CharT>
 using basic_options_group = std::vector<basic_option_description<CharT> >;
 
 
+template<typename CharT>
+std::ostream & operator<<(std::ostream &out,
+  const basic_option_description<CharT> &desc)
+{
+  out << "option_description:\n"
+    << "\tunpack_option: " << bool(desc.unpack_option) << "\n"
+    << "\tmapped_key: " << bool(desc.mapped_key) << "\n"
+    << "\tkey_description: " << bool(desc.key_description) << "\n"
+    << "\textended_description: " << bool(desc.extended_description) << "\n"
+    << "\timplicit_value: " << bool(desc.implicit_value) << "\n"
+    << "\timplicit_value_description: " << bool(desc.implicit_value_description)
+      << "\n"
+    << "\tmake_value: " << bool(desc.make_value) << "\n"
+    << "\tfinalize: " << bool(desc.finalize) << "\n";
+
+  return out;
+}
+
+
+
+
 /*
   POSIX flag syntax. Unpack alphanumeric arguments in the form:
 
@@ -779,7 +800,6 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
 
         if(cmd_stack.size() == 1 && current_cmdlist.back() == end_of_options) {
           current_cmdlist.pop_back();
-          ++arg_count;
           state = 4;
 // std::cerr << "end of options: " << option_pack << "\n";
           break;
@@ -818,7 +838,7 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
 //             << "' has mapped_key '"
 //             << mapped_key << "'\n";
 
-          state = 2; // is option
+          state = 2; // is option but no handler
         }
       } break;
 
@@ -826,7 +846,6 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
         // option is found pull off and handle it
         arg = std::move(current_cmdlist.back());
         current_cmdlist.pop_back();
-        ++arg_count;
 
         if(!desc->make_value) {
 //   std::cerr << "'" << option_pack.raw_key << "' strictly takes no values\n";
@@ -900,6 +919,8 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
           cmd_stack.emplace_back(std::move(option_pack.packed_arguments));
         }
         state = 0;
+        ++option_count;
+        ++arg_count;
       } break;
 
       case 2: {
@@ -916,7 +937,6 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
         // operand, if end_of_option is set, then we continually repeat here
         arg = std::move(current_cmdlist.back());
         current_cmdlist.pop_back();
-        ++arg_count;
 
         // always process as operand, try to find desc to handle it
         for(desc = grp.begin(); desc != grp.end(); ++desc) {
@@ -945,8 +965,10 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
           break;
         }
 
-        if(desc == grp.end())
+        if(desc == grp.end()) //fixme, add pos and arg
           throw unexpected_operand_error(arg);
+
+        ++arg_count;
       } break;
 
       default:
@@ -1443,6 +1465,9 @@ inline void add_operand_key(const std::basic_string<CharT> &key, int posn,
     desc.mapped_key = [=](const string_type &, std::size_t _posn,
       std::size_t _argn, const variable_map &)
     {
+//       std::cerr << "Got key: '" << key << "' posn: " << _posn << " and argn: "
+//         << _argn << " required posn: " << posn << " and argn: " << argn << "\n";
+//
       if((posn<0 || posn == _posn) && (argn<0 || argn == _argn))
         return std::make_pair(true,key);
       return std::make_pair(false,std::basic_string<CharT>());
@@ -1674,6 +1699,9 @@ make_operand(const std::basic_string<char> &extended_desc,
 
   detail::add_value(value<T>(),desc);
 
+  detail::add_operand_key(default_operand_key,cnts._position,
+    cnts._argument,desc);
+
   detail::add_operand_constraints(cnts,default_operand_key,desc);
 
   return desc;
@@ -1690,6 +1718,9 @@ make_hidden_operand(
   basic_option_description<char> desc;
 
   detail::add_value(value<T>(),desc);
+
+  detail::add_operand_key(default_operand_key,cnts._position,
+    cnts._argument,desc);
 
   detail::add_operand_constraints(cnts,default_operand_key,desc);
 
@@ -1749,6 +1780,9 @@ make_operand(const std::basic_string<char> &extended_desc,
 
   desc.extended_description = [=](void) { return extended_desc; };
 
+  detail::add_operand_key(default_operand_key,cnts._position,
+    cnts._argument,desc);
+
   detail::add_operand_constraints(cnts,default_operand_key,desc);
 
   return desc;
@@ -1762,6 +1796,9 @@ make_hidden_operand(
   const basic_constraint<char> &cnts = basic_constraint<char>())
 {
   basic_option_description<char> desc;
+
+  detail::add_operand_key(default_operand_key,cnts._position,
+    cnts._argument,desc);
 
   detail::add_operand_constraints(cnts,default_operand_key,desc);
 

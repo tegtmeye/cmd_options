@@ -460,5 +460,192 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_2_test )
 }
 
 
+/*
+  Position and argument checks
+*/
+
+/**
+  unconstrained operand argument
+ */
+BOOST_AUTO_TEST_CASE( operand_unconstrained_argument )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "bar1",
+    "--foo",
+    "bar2",
+    "-f",
+    "bar3"
+  };
+
+  options = co::options_group{
+    co::make_operand<std::string>("case 14",co::constrain().at_argument(-1)),
+    co::make_option("foo,f","case 2")
+  };
+
+  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+
+  //std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
+    co::variable_map{
+      {co::default_operand_key,{std::string("bar1")}},
+      {co::default_operand_key,{std::string("bar2")}},
+      {co::default_operand_key,{std::string("bar3")}},
+      {"foo",{}},
+      {"foo",{}}
+    }));
+}
+
+/**
+  operand strictly at argument 0
+ */
+BOOST_AUTO_TEST_CASE( operand_argument_0_given_0 )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "bar",
+    "--foo"
+  };
+
+  options = co::options_group{
+    co::make_operand<std::string>("case 14",co::constrain().at_argument(0)),
+    co::make_option("foo,f","case 2")
+  };
+
+  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
+    co::variable_map{
+      {co::default_operand_key,{std::string("bar")}},
+      {"foo",{}}
+    }));
+}
+
+/**
+  operand strictly at argument 0 given 1
+ */
+BOOST_AUTO_TEST_CASE( operand_argument_0_given_1 )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "--foo",
+    "bar"
+  };
+
+  options = co::options_group{
+    co::make_operand<std::string>("case 14",co::constrain().at_argument(0)),
+    co::make_option("foo,f","case 2")
+  };
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
+    co::unexpected_operand_error, [](const co::unexpected_operand_error &ex) {
+      return (ex.operand() == std::string("bar"));
+    }
+  );
+}
+
+
+/**
+  unconstrained operand position
+ */
+BOOST_AUTO_TEST_CASE( operand_unconstrained_position )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "bar1",
+    "--foo",
+    "bar2",
+    "-f",
+    "bar3"
+  };
+
+  options = co::options_group{
+    co::make_operand<std::string>("case 14",co::constrain().at_position(-1)),
+    co::make_option("foo,f","case 2")
+  };
+
+  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+
+  //std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
+    co::variable_map{
+      {co::default_operand_key,{std::string("bar1")}},
+      {co::default_operand_key,{std::string("bar2")}},
+      {co::default_operand_key,{std::string("bar3")}},
+      {"foo",{}},
+      {"foo",{}}
+    }));
+}
+
+/**
+  operand strictly at position 0
+ */
+BOOST_AUTO_TEST_CASE( operand_position_0_given_0 )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "--foo",
+    "bar"
+  };
+
+  options = co::options_group{
+    co::make_operand<std::string>("case 14",co::constrain().at_position(0)),
+    co::make_option("foo,f","case 2")
+  };
+
+  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
+    co::variable_map{
+      {co::default_operand_key,{std::string("bar")}},
+      {"foo",{}}
+    }));
+}
+
+/**
+  operand strictly at position 0 given 1
+ */
+BOOST_AUTO_TEST_CASE( operand_position_0_given_1 )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "--foo",
+    "bar0",
+    "bar1"
+  };
+
+  options = co::options_group{
+    co::make_operand<std::string>("case 14",co::constrain().at_position(0)),
+    co::make_option("foo,f","case 2")
+  };
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
+    co::unexpected_operand_error, [](const co::unexpected_operand_error &ex) {
+      return (ex.operand() == std::string("bar1"));
+    }
+  );
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
 

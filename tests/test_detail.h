@@ -140,6 +140,14 @@ inline bool is_raw_mapped_optional_option(
     && desc.make_value && desc.implicit_value);
 }
 
+/*
+  In the EZ interface for row 14, 15, 18, and 19 mapped key is set to
+  allow for position and argument number constraints. That is row 14 and
+  row 15 are actually another occurrences of row 16 and row 17 and row
+  18 and 19 are another occurrences of row 20 and 21. The mapped key
+  simply provides the raw key which is the default behavior if it wasn't
+  present. So this check is not used and here for completeness only.
+*/
 template<typename CharT>
 inline bool is_interpret_operand(
   const co::basic_option_description<CharT> &desc)
@@ -366,8 +374,6 @@ bool contents_equal(const VariableMap &lhs, const VariableMap &rhs)
 
   return lcur == lhs.end() && rcur == rhs.end();
 }
-
-
 
 }
 

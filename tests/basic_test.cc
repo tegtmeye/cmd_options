@@ -10,6 +10,10 @@ BOOST_AUTO_TEST_SUITE( basic_test_suite )
 
 namespace co = lemma::cmd_options;
 
+typedef std::basic_string<char> string_type;
+typedef co::basic_option_pack<char> option_pack;
+typedef co::basic_option_description<char> option_description;
+typedef co::basic_variable_map<char> variable_map;
 
 
 /**
@@ -75,13 +79,20 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
     co::make_hidden_option("",co::value<std::string>("bar")), // line 13
     detail::is_raw_mapped_optional_option<char>));
 
+  /*
+    In the EZ interface for row 14 and row 15, mapped key is set to allow
+    for position and argument number constraints. That is row 14 and row
+    15 are actually another occurrences of row 16 and row 17. The mapped
+    key simply provides the raw key which is the default behavior if it
+    wasn't present.
+  */
   BOOST_REQUIRE(detail::check_exclusive(
     co::make_operand<std::string>("line 14"),
-    detail::is_interpret_operand<char>));
+    detail::is_keyed_interpret_operand<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
     co::make_hidden_operand<std::string>(), // line 15
-    detail::is_hidden_interpret_operand<char>));
+    detail::is_hidden_keyed_interpret_operand<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
     co::make_operand<std::string>("key","line 16"),
@@ -91,13 +102,20 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
     co::make_hidden_operand<std::string>("key"), // line 17
     detail::is_hidden_keyed_interpret_operand<char>));
 
+  /*
+    In the EZ interface for row 18 and row 19, mapped key is set to allow
+    for position and argument number constraints. That is row 18 and row
+    19 are actually another occurrences of row 20 and row 21. The mapped
+    key simply provides the raw key which is the default behavior if it
+    wasn't present.
+  */
   BOOST_REQUIRE(detail::check_exclusive(
     co::make_operand("line 18"),
-    detail::is_empty_operand<char>));
+    detail::is_empty_keyed_operand<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
     co::make_hidden_operand(), // line 19
-    detail::is_hidden_empty_operand<char>));
+    detail::is_hidden_empty_keyed_operand<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
     co::make_operand("key","line 20"),
