@@ -122,73 +122,103 @@ mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2, InputIt2 last2)
 /*
   Exception class hierarchy inherited from std::runtime error used to
   indicate command option errors.
-
-  In the single argument versions, the \c option or \c argument method
-  is simply a mapping to \c std::runtime_error's what() method. In
-  \c unexpected_argument_error, the unexpected argument is contained in
-  a private string accessible via the \c argument method.
 */
-class command_option_error : public std::runtime_error {
+class parse_error : public std::runtime_error {
   public:
-    command_option_error(const std::string &what)
-        :std::runtime_error(what) {}
-};
+    parse_error(std::size_t posn, std::size_t argn)
+      :std::runtime_error("parse_error"), _position(posn),
+        _argument(argn) {}
 
-class unknown_option_error : public command_option_error {
-  public:
-    unknown_option_error(const std::string &option)
-        :command_option_error(option) {}
-
-    const char * option(void) const noexcept {
-      return what();
-    }
-};
-
-class missing_argument_error : public command_option_error {
-  public:
-    missing_argument_error(const std::string &option)
-        :command_option_error(option) {}
-
-    const char * option(void) const noexcept {
-      return what();
-    }
-};
-
-class unexpected_argument_error : public command_option_error {
-  public:
-    unexpected_argument_error(const std::string &option,
-      const std::string &arg) :command_option_error(option), _arg(arg) {}
-
-    const char * option(void) const noexcept {
-      return what();
+    std::size_t position(void) const {
+      return _position;
     }
 
-    const char * argument(void) const noexcept {
-      return _arg.c_str();
+    std::size_t argument(void) const {
+      return _argument;
+    }
+
+  protected:
+    parse_error(const std::string &what, std::size_t pos, std::size_t arg)
+      :std::runtime_error(what), _position(pos), _argument(arg) {}
+
+  private:
+    std::size_t _position;
+    std::size_t _argument;
+};
+
+class unknown_option_error : public parse_error {
+  public:
+    unknown_option_error(const std::string &option, std::size_t posn,
+      std::size_t argn) :parse_error("unknown_option_error",posn,argn),
+        _option(option) {}
+
+    const char * option(void) const noexcept {
+      return _option.what();
     }
 
   private:
-    std::string _arg;
+    std::runtime_error _option;
 };
 
-class unexpected_operand_error : public command_option_error {
+class missing_argument_error : public parse_error {
   public:
-    unexpected_operand_error(const std::string &arg)
-        :command_option_error(arg) {}
-
-    const char * operand(void) const noexcept {
-      return what();
-    }
-};
-
-class constraint_error : public command_option_error {
-  public:
-    constraint_error(const std::string &option)
-        :command_option_error(option) {}
+    missing_argument_error(const std::string &option, std::size_t posn,
+      std::size_t argn) :parse_error("missing_argument_error",posn,argn),
+        _option(option) {}
 
     const char * option(void) const noexcept {
-      return what();
+      return _option.what();
     }
+
+  private:
+    std::runtime_error _option;
+};
+
+class unexpected_argument_error : public parse_error {
+  public:
+    unexpected_argument_error(const std::string &option,
+      const std::string &argument, std::size_t posn, std::size_t argn)
+        :parse_error("unexpected_argument_error",posn,argn), _option(option),
+          _argument(argument) {}
+
+    const char * option(void) const noexcept {
+      return _option.what();
+    }
+
+    const char * argument(void) const noexcept {
+      return _argument.what();
+    }
+
+  private:
+    std::runtime_error _option;
+    std::runtime_error _argument;
+};
+
+class unexpected_operand_error : public parse_error {
+  public:
+    unexpected_operand_error(const std::string &operand, std::size_t posn,
+      std::size_t argn)
+        :parse_error("unexpected_operand_error",posn,argn), _operand(operand) {}
+
+    const char * operand(void) const noexcept {
+      return _operand.what();
+    }
+
+  private:
+    std::runtime_error _operand;
+};
+
+class constraint_error : public std::runtime_error {
+  public:
+    constraint_error(const std::string &mapped_key)
+      :std::runtime_error("constraint_error"), _mapped_key(mapped_key) {}
+
+    const char * mapped_key(void) const noexcept {
+      return _mapped_key.what();
+    }
+
+  private:
+    std::runtime_error _mapped_key;
 };
 
 class occurrence_error : public constraint_error {
@@ -197,10 +227,6 @@ class occurrence_error : public constraint_error {
       std::size_t max, std::size_t occurrences)
         :constraint_error(mapped_key), _min(min), _max(max),
           _occurrences(occurrences) {}
-
-    const char * mapped_key(void) const noexcept {
-      return what();
-    }
 
     const std::size_t min(void) const noexcept {
       return _min;
@@ -220,7 +246,45 @@ class occurrence_error : public constraint_error {
     std::size_t _occurrences;
 };
 
+class exclusive_error : public constraint_error {
+  public:
+    exclusive_error(const std::string &mapped_key,
+      const std::string &exclusive_mapped_key)
+        :constraint_error("exclusive_error"), _mapped_key(mapped_key),
+          _exclusive_mapped_key(exclusive_mapped_key) {}
 
+    const char * mapped_key(void) const noexcept {
+      return _mapped_key.what();
+    }
+
+    const char * exclusive_mapped_key(void) const noexcept {
+      return _exclusive_mapped_key.what();
+    }
+
+  private:
+    std::runtime_error _mapped_key;
+    std::runtime_error _exclusive_mapped_key;
+};
+
+class inclusive_error : public constraint_error {
+  public:
+    inclusive_error(const std::string &mapped_key,
+      const std::string &inclusive_mapped_key)
+        :constraint_error("inclusive_error"), _mapped_key(mapped_key),
+          _inclusive_mapped_key(inclusive_mapped_key) {}
+
+    const char * mapped_key(void) const noexcept {
+      return _mapped_key.what();
+    }
+
+    const char * inclusive_mapped_key(void) const noexcept {
+      return _inclusive_mapped_key.what();
+    }
+
+  private:
+    std::runtime_error _mapped_key;
+    std::runtime_error _inclusive_mapped_key;
+};
 
 
 
@@ -376,9 +440,8 @@ struct basic_option_description {
   typedef basic_option_pack<CharT>  option_pack;
 
   /*
-    Unpack the raw option pack. If \c unpack_option is not
-    provided, then the this description is assumed to describe an
-    operand argument.
+    Unpack the raw option pack. If \c unpack_option is not provided,
+    then this description is assumed to describe an operand argument.
 
     If the option cannot be unpacked by this description, then return
     false in the \c did_unpack field (or an empty option_pack).
@@ -390,14 +453,14 @@ struct basic_option_description {
     option for "foo" can return "bar" in the \c packed_arguments field.
 
     A note on operand values... If the options group _only_ contains
-    operandss--or descriptions that do not have the \c unpack_option
+    operands--or descriptions that do not have the \c unpack_option
     set--then any argument is considered a operand---even if looks
     like an option. For example, if there are no option_descriptions
     with \c unpack_option set, then '--foo', which looks like a option
     flag, is considered a operand. This may not be what was intended.
     Reasonable machinery in this case is to include a 'dummy' option
     that has \c unpack_option set and where \c mapped_key throws a \c
-    command_option_error indicating the unknown option.
+    unknown_option_error indicating the unknown option.
   */
   std::function<option_pack(const string_type &option)> unpack_option;
 
@@ -536,8 +599,6 @@ struct basic_option_description {
     value. For example, if only a certain number of options with the
     same key are valid or if certain combinations of options are
     mutually-exclusive.
-
-    command_option_error substitution is available for '%@', '%L', '%S'
   */
 
   std::function<
@@ -852,7 +913,7 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
           // strictly no values
           if(option_pack.value_provided)
             throw unexpected_argument_error(option_pack.raw_key,
-              option_pack.value);
+              option_pack.value,option_count,arg_count);
 
 //   std::cerr << "'" << option_pack.raw_key
 //     << "' is a flag. adding to _vm as '" << mapped_key << "'\n";
@@ -875,7 +936,7 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
             if(desc->implicit_value)
               _vm.emplace(mapped_key,desc->implicit_value(mapped_key,_vm));
             else
-              throw missing_argument_error(arg);
+              throw missing_argument_error(arg,option_count,arg_count);
           }
           else {
             // try to use the next argument on the command list. If any
@@ -897,7 +958,7 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
               if(desc->implicit_value)
                 _vm.emplace(mapped_key,desc->implicit_value(mapped_key,_vm));
               else
-                throw missing_argument_error(arg);
+                throw missing_argument_error(arg,option_count,arg_count);
             }
             else {
               _vm.emplace(mapped_key,
@@ -925,7 +986,7 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
 
       case 2: {
         // was unpacked as an option but couldn't find desc to handle it
-        throw unknown_option_error(arg);
+        throw unknown_option_error(arg,option_count,arg_count);
       } break;
 
 
@@ -966,7 +1027,7 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
         }
 
         if(desc == grp.end()) //fixme, add pos and arg
-          throw unexpected_operand_error(arg);
+          throw unexpected_operand_error(arg,operand_count,arg_count);
 
         ++arg_count;
       } break;
@@ -1236,38 +1297,6 @@ typename std::enable_if<std::is_same<CharT, wchar_t>::value, std::wstring>::type
     return std::to_wstring(t);
 }
 
-inline std::string as_utf8(const char *s)
-{
-  return std::string(s);
-}
-
-inline std::string as_utf8(const std::string &s)
-{
-  return s;
-}
-
-template<typename CharT>
-inline std::string as_utf8(const CharT *s)
-{
-  typedef std::wstring_convert<
-    std::codecvt_utf8<CharT>,CharT> converter_type;
-
-  converter_type converter;
-
-  return converter.to_bytes(s);
-}
-
-template<typename CharT>
-inline std::string as_utf8(const std::basic_string<CharT> &s)
-{
-  typedef std::wstring_convert<
-    std::codecvt_utf8<CharT>,CharT> converter_type;
-
-  converter_type converter;
-
-  return converter.to_bytes(s);
-}
-
 template<typename CharT>
 inline std::pair<std::basic_string<CharT>,std::basic_string<CharT> >
 split(const std::basic_string<CharT> &str, CharT delim)
@@ -1484,55 +1513,28 @@ inline void add_operand_key(const std::basic_string<CharT> &key, int posn,
 
 /*
   Used for constraints on options.
-
-  Although \c mapped_key and long_opt are the same for the EZ
-  interface, it is separated here for completeness
 */
 template<typename CharT>
 void add_option_constraints(const basic_constraint<CharT> &cnts,
   basic_option_description<CharT> &desc,
-  const std::basic_string<CharT> &mapped_key,
-  const std::basic_string<CharT> &long_opt,
-  const std::basic_string<CharT> &short_opt)
+  const std::basic_string<CharT> &mapped_key)
 {
   desc.finalize = [=](const basic_variable_map<CharT> &vm) {
 
     std::size_t occurrances = vm.count(mapped_key);
     if(occurrances > cnts._max || occurrances < cnts._min) {
-      throw occurrence_error(as_utf8(mapped_key),cnts._min,cnts._max,
+      throw occurrence_error(mapped_key,cnts._min,cnts._max,
         occurrances);
     }
 
     for(auto &exclusive_key : cnts._mutual_exclusion) {
-      if(vm.count(exclusive_key) != 0) {
-        std::stringstream err;
-        err << "option ";
-        if(!long_opt.empty())
-          err << "'--" << as_utf8(long_opt) << "' ";
-        if(!long_opt.empty() && !short_opt.empty())
-          err << "and ";
-        if(!short_opt.empty())
-          err << "'-" << as_utf8(short_opt) << "' ";
-        err << "cannot be specified along with '"
-          << as_utf8(exclusive_key) << "'";
-        throw command_option_error(err.str());
-      }
+      if(vm.count(exclusive_key) != 0)
+        throw exclusive_error(mapped_key,exclusive_key);
     }
 
     for(auto &inclusive_key : cnts._mutual_inclusion) {
-      if(vm.count(inclusive_key) != 0) {
-        std::stringstream err;
-        err << "option ";
-        if(!long_opt.empty())
-          err << "'--" << as_utf8(long_opt) << "' ";
-        if(!long_opt.empty() && !short_opt.empty())
-          err << "or ";
-        if(!short_opt.empty())
-          err << "'-" << as_utf8(short_opt) << "' ";
-        err << "must be specified along with '"
-          << as_utf8(inclusive_key) << "'";
-        throw command_option_error(err.str());
-      }
+      if(vm.count(inclusive_key) != 0)
+        throw inclusive_error(mapped_key,inclusive_key);
     }
   };
 }
@@ -1548,26 +1550,18 @@ void add_operand_constraints(const basic_constraint<CharT> &cnts,
   desc.finalize = [=](const basic_variable_map<CharT> &vm) {
     std::size_t occurrances = vm.count(mapped_key);
     if(occurrances < cnts._min || occurrances > cnts._max) {
-        throw occurrence_error(as_utf8(mapped_key),cnts._min,cnts._max,
+        throw occurrence_error(mapped_key,cnts._min,cnts._max,
           occurrances);
     }
 
     for(auto &exclusive_key : cnts._mutual_exclusion) {
-      if(vm.count(exclusive_key) != 0) {
-        std::stringstream err;
-        err << "option '" << as_utf8(exclusive_key)
-            << "' is incompatible with the given operand";
-        throw command_option_error(err.str());
-      }
+      if(vm.count(exclusive_key) != 0)
+        throw exclusive_error(mapped_key,exclusive_key);
     }
 
     for(auto &inclusive_key : cnts._mutual_inclusion) {
-      if(vm.count(inclusive_key) != 0) {
-        std::stringstream err;
-        err << "option '" << as_utf8(inclusive_key)
-            << "' must be provided with the given operand";
-        throw command_option_error(err.str());
-      }
+      if(vm.count(inclusive_key) != 0)
+        throw inclusive_error(mapped_key,inclusive_key);
     }
   };
 }
@@ -1606,7 +1600,7 @@ make_option(const std::basic_string<char> &opt_spec,
   string_type short_opt;
   std::tie(long_opt,short_opt) = detail::add_option_spec(opt_spec,delim,desc);
 
-  detail::add_option_constraints(cnts,desc,long_opt,long_opt,short_opt);
+  detail::add_option_constraints(cnts,desc,long_opt);
 
   return desc;
 }
@@ -1628,7 +1622,7 @@ make_hidden_option(const std::basic_string<char> &opt_spec,
   std::tie(long_opt,short_opt) =
     detail::add_hidden_option_spec(opt_spec,delim,desc);
 
-  detail::add_option_constraints(cnts,desc,long_opt,long_opt,short_opt);
+  detail::add_option_constraints(cnts,desc,long_opt);
 
   return desc;
 }
@@ -1655,7 +1649,7 @@ make_option(const std::basic_string<char> &opt_spec,
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  detail::add_option_constraints(cnts,desc,long_opt,long_opt,short_opt);
+  detail::add_option_constraints(cnts,desc,long_opt);
 
   return desc;
 }
@@ -1680,7 +1674,7 @@ make_hidden_option(const std::basic_string<char> &opt_spec, const value<T> &val,
 
   detail::add_value(val,desc);
 
-  detail::add_option_constraints(cnts,desc,long_opt,long_opt,short_opt);
+  detail::add_option_constraints(cnts,desc,long_opt);
 
   return desc;
 }
