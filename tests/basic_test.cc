@@ -64,57 +64,45 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
     detail::is_raw_mapped_reqired_option<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_option("foo",co::value<std::string>("bar"),"line 10"),
+    co::make_option("foo",co::value<std::string>().implicit("bar"),"line 10"),
     detail::is_mapped_optional_option<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_option("foo",co::value<std::string>("bar")), // line 11
+    // line 11
+    co::make_hidden_option("foo",co::value<std::string>().implicit("bar")),
     detail::is_hidden_mapped_optional_option<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_option("",co::value<std::string>("bar"),"line 12"),
+    co::make_option("",co::value<std::string>().implicit("bar"),"line 12"),
     detail::is_raw_optional_option<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_option("",co::value<std::string>("bar")), // line 13
+    // line 13
+    co::make_hidden_option("",co::value<std::string>().implicit("bar")),
     detail::is_raw_mapped_optional_option<char>));
 
-  /*
-    In the EZ interface for row 14 and row 15, mapped key is set to allow
-    for position and argument number constraints. That is row 14 and row
-    15 are actually another occurrences of row 16 and row 17. The mapped
-    key simply provides the raw key which is the default behavior if it
-    wasn't present.
-  */
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_operand<std::string>("line 14"),
+    co::make_operand("line 14",co::value<std::string>()),
     detail::is_keyed_interpret_operand<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_operand<std::string>(), // line 15
+    co::make_hidden_operand<char>(co::value<std::string>()), // line 15
     detail::is_hidden_keyed_interpret_operand<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_operand<std::string>("key","line 16"),
+    co::make_operand("key","line 16",co::value<std::string>()),
     detail::is_keyed_interpret_operand<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_operand<std::string>("key"), // line 17
+    co::make_hidden_operand("key",co::value<std::string>()), // line 17
     detail::is_hidden_keyed_interpret_operand<char>));
 
-  /*
-    In the EZ interface for row 18 and row 19, mapped key is set to allow
-    for position and argument number constraints. That is row 18 and row
-    19 are actually another occurrences of row 20 and row 21. The mapped
-    key simply provides the raw key which is the default behavior if it
-    wasn't present.
-  */
   BOOST_REQUIRE(detail::check_exclusive(
     co::make_operand("line 18"),
     detail::is_empty_keyed_operand<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_operand(), // line 19
+    co::make_hidden_operand<char>(), // line 19
     detail::is_hidden_empty_keyed_operand<char>));
 
   BOOST_REQUIRE(detail::check_exclusive(

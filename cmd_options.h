@@ -217,6 +217,10 @@ class constraint_error : public std::runtime_error {
       return _mapped_key.what();
     }
 
+  protected:
+    constraint_error(const std::string &what, const std::string &mapped_key)
+      :std::runtime_error(what), _mapped_key(mapped_key) {}
+
   private:
     std::runtime_error _mapped_key;
 };
@@ -225,7 +229,7 @@ class occurrence_error : public constraint_error {
   public:
     occurrence_error(const std::string &mapped_key, std::size_t min,
       std::size_t max, std::size_t occurrences)
-        :constraint_error(mapped_key), _min(min), _max(max),
+        :constraint_error("occurrence_error",mapped_key), _min(min), _max(max),
           _occurrences(occurrences) {}
 
     const std::size_t min(void) const noexcept {
@@ -246,43 +250,33 @@ class occurrence_error : public constraint_error {
     std::size_t _occurrences;
 };
 
-class exclusive_error : public constraint_error {
+class mutually_exclusive_error : public constraint_error {
   public:
-    exclusive_error(const std::string &mapped_key,
+    mutually_exclusive_error(const std::string &mapped_key,
       const std::string &exclusive_mapped_key)
-        :constraint_error("exclusive_error"), _mapped_key(mapped_key),
+        :constraint_error("mutually_exclusive_error",mapped_key),
           _exclusive_mapped_key(exclusive_mapped_key) {}
-
-    const char * mapped_key(void) const noexcept {
-      return _mapped_key.what();
-    }
 
     const char * exclusive_mapped_key(void) const noexcept {
       return _exclusive_mapped_key.what();
     }
 
   private:
-    std::runtime_error _mapped_key;
     std::runtime_error _exclusive_mapped_key;
 };
 
-class inclusive_error : public constraint_error {
+class mutually_inclusive_error : public constraint_error {
   public:
-    inclusive_error(const std::string &mapped_key,
+    mutually_inclusive_error(const std::string &mapped_key,
       const std::string &inclusive_mapped_key)
-        :constraint_error("inclusive_error"), _mapped_key(mapped_key),
+        :constraint_error("mutually_inclusive_error",mapped_key),
           _inclusive_mapped_key(inclusive_mapped_key) {}
-
-    const char * mapped_key(void) const noexcept {
-      return _mapped_key.what();
-    }
 
     const char * inclusive_mapped_key(void) const noexcept {
       return _inclusive_mapped_key.what();
     }
 
   private:
-    std::runtime_error _mapped_key;
     std::runtime_error _inclusive_mapped_key;
 };
 
@@ -436,7 +430,7 @@ template<typename CharT>
 struct basic_option_description {
   typedef CharT                     char_type;
   typedef std::basic_string<CharT>  string_type;
-  typedef basic_variable_map<CharT> variable_map;
+  typedef basic_variable_map<CharT> variable_map_type;
   typedef basic_option_pack<CharT>  option_pack;
 
   /*
@@ -498,8 +492,9 @@ struct basic_option_description {
 
     Where \c infile is always first and \outfile is always second.
   */
-  std::function<std::pair<bool,string_type>(const string_type &raw_key,
-    std::size_t posn, std::size_t argn, const variable_map &vm)> mapped_key;
+  std::function<std::pair<bool,string_type>(
+    const string_type &raw_key, std::size_t posn, std::size_t argn,
+    const variable_map_type &vm)> mapped_key;
 
   /*
     Return the human-readable description for this option. This does not
@@ -546,13 +541,13 @@ struct basic_option_description {
     The function's first parameter is the string given as the option's
     key exactly as provided to the option without the long- or
     short_option_flag prefix. This is useful to deal with nonstandard
-    syntaxes. For example, given -frtti vs -fno-rtti, the variable_map
-    key could be 'rtti' with a boolean value. The option forbids values
-    so the mapped value must be determined by the key (specifically the
-    presence or absence of the 'no' prefix.
+    syntaxes. For example, given -frtti vs -fno-rtti, the
+    variable_map_type key could be 'rtti' with a boolean value. The
+    option forbids values so the mapped value must be determined by the
+    key (specifically the presence or absence of the 'no' prefix.
   */
   std::function<
-    any(const string_type &key, const variable_map &vm)> implicit_value;
+    any(const string_type &key, const variable_map_type &vm)> implicit_value;
 
   /*
     Return the human-readable description for this option's implicit
@@ -603,18 +598,18 @@ struct basic_option_description {
 
   std::function<
     any(const string_type &mapped_key, const string_type &value,
-      const variable_map &vm)> make_value;
+      const variable_map_type &vm)> make_value;
 
   /*
     If set, this function is called for each option_description by the
     parse_* functions after all options are parsed. A typical use of
-    this function is to inspect the state of the variable_map argument
-    for option-specific inconsistencies or illegal combinations. For
-    example, if a minimum number of options are expected, the
-    variable_map can be queried to see if it has been satisfied and
-    throw an error if not.
+    this function is to inspect the state of the variable_map_type
+    argument for option-specific inconsistencies or illegal
+    combinations. For example, if a minimum number of options are
+    expected, the variable_map_type can be queried to see if it has been
+    satisfied and throw an error if not.
   */
-  std::function<void(const variable_map &vm)> finalize;
+  std::function<void(const variable_map_type &vm)> finalize;
 
 };
 
@@ -801,19 +796,19 @@ basic_option_pack<CharT> unpack_gnu(const std::basic_string<CharT> &str)
 */
 template<typename CharT>
 basic_variable_map<CharT>
-parse_arguments(std::size_t _argc, const CharT *_argv[],
+parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
   const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm,
-  const std::basic_string<CharT> &end_of_options, bool partial)
+  const std::basic_string<CharT> &end_of_options)
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_option_pack<CharT> option_pack_type;
   typedef basic_options_group<CharT> options_group_type;
-  typedef basic_variable_map<CharT> variable_map;
+  typedef basic_variable_map<CharT> variable_map_type;
 
   typedef std::vector<string_type> args_list;
   typedef std::vector<args_list> cmd_stack_type;
 
-  variable_map _vm = vm;
+  variable_map_type _vm = vm;
 
   cmd_stack_type cmd_stack{
     args_list{
@@ -834,35 +829,19 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
 
   int state = 0;
   while(!cmd_stack.empty()) {
-// std::cerr << "cmd stack\n";
-// int depth = 0;
-// for(auto &al : cmd_stack) {
-//   std::cerr << std::string(depth,' ') << ": ";
-//   for(auto &cmd : al)
-//     std::cerr << cmd << ", ";
-//   std::cerr << "\n";
-//   ++depth;
-// }
-
-
     args_list &current_cmdlist = cmd_stack.back();
     if(current_cmdlist.empty()) {
       cmd_stack.pop_back();
       continue;
     }
 
-//     std::cerr << "state=" << state << "\n";
     switch(state) {
       case 0: {
         // pull arg off cmdlist and determine if it is an option or an
         // operand
-
-//         std::cerr << "Processing cmd arg: " << current_cmdlist.back() << "\n";
-
         if(cmd_stack.size() == 1 && current_cmdlist.back() == end_of_options) {
           current_cmdlist.pop_back();
           state = 4;
-// std::cerr << "end of options: " << option_pack << "\n";
           break;
         }
 
@@ -876,9 +855,8 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
 
           if(!option_pack.did_unpack)
             continue;
-// std::cerr << option_pack << "\n";
+
           if(desc->mapped_key) {
-// std::cerr << "A\n";
             bool handles_arg = false;
             std::tie(handles_arg,mapped_key) =
               desc->mapped_key(option_pack.raw_key,option_count,arg_count,_vm);
@@ -886,18 +864,12 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
               state = 1;
               break;
             }
-// std::cerr << "B\n";
           }
           else {
-// std::cerr << "C\n";
             mapped_key = option_pack.raw_key;
             state = 1;
             break;
           }
-
-//           std::cerr << "cmd arg: '" << option_pack.raw_key
-//             << "' has mapped_key '"
-//             << mapped_key << "'\n";
 
           state = 2; // is option but no handler
         }
@@ -909,24 +881,18 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
         current_cmdlist.pop_back();
 
         if(!desc->make_value) {
-//   std::cerr << "'" << option_pack.raw_key << "' strictly takes no values\n";
           // strictly no values
           if(option_pack.value_provided)
             throw unexpected_argument_error(option_pack.raw_key,
               option_pack.value,option_count,arg_count);
 
-//   std::cerr << "'" << option_pack.raw_key
-//     << "' is a flag. adding to _vm as '" << mapped_key << "'\n";
           // handle the flag only
           _vm.emplace(mapped_key,any());
         }
         else {
-//   std::cerr << "'" << option_pack.raw_key << "' has an optional or required value\n";
           // required or optional value
           // is it embedded in the option pack?
           if(option_pack.value_provided) {
-//   std::cerr << "'" << option_pack.raw_key << "' has embedded value '"
-//     << option_pack.value << "' adding to _vm\n";
             // handle the provided value
             _vm.emplace(mapped_key,
               desc->make_value(mapped_key,option_pack.value,_vm));
@@ -970,11 +936,6 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
 
         // see if there were any packed options
         if(!option_pack.packed_arguments.empty()) {
-// std::cerr << "Adding packed args: \n";
-// for(auto &arg : option_pack.packed_arguments)
-//   std::cerr << arg << ", ";
-// std::cerr << "\n";
-
           std::reverse(option_pack.packed_arguments.begin(),
             option_pack.packed_arguments.end());
           cmd_stack.emplace_back(std::move(option_pack.packed_arguments));
@@ -1026,7 +987,7 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
           break;
         }
 
-        if(desc == grp.end()) //fixme, add pos and arg
+        if(desc == grp.end())
           throw unexpected_operand_error(arg,operand_count,arg_count);
 
         ++arg_count;
@@ -1037,77 +998,47 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
     }
   }
 
-  // check constraints if not partial
-  if(!partial) {
-    for(auto &desc : grp) {
-      if(desc.finalize)
-        desc.finalize(_vm);
-    }
+  return _vm;
+}
+
+template<typename CharT>
+inline basic_variable_map<CharT>
+parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
+  const basic_options_group<CharT> &grp,
+  const std::basic_string<CharT> &end_of_options)
+{
+  return parse_incremental_arguments(_argc,_argv,grp,
+    basic_variable_map<CharT>(),end_of_options);
+}
+
+template<typename CharT>
+inline basic_variable_map<CharT>
+parse_arguments(std::size_t _argc, const CharT *_argv[],
+  const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm,
+  const std::basic_string<CharT> &end_of_options)
+{
+  basic_variable_map<CharT> _vm =
+    std::move(parse_incremental_arguments(_argc,_argv,grp,vm,end_of_options));
+
+  for(auto &desc : grp) {
+    if(desc.finalize)
+      desc.finalize(_vm);
   }
 
   return _vm;
 }
 
-
-
-
-
-
-
-
-
-
-
-/*
-  Parse the arguments contained in \c argv with size \c argc according
-  to the option description group \c grp. If
-  \c partial is true, then finalize parsing. Options are returned in a
-  new variable map.
-*/
 template<typename CharT>
 inline basic_variable_map<CharT>
-parse_arguments(std::size_t argc, const CharT * argv[],
-  const basic_options_group<CharT> &grp, bool partial = false)
+parse_arguments(std::size_t _argc, const CharT *_argv[],
+  const basic_options_group<CharT> &grp,
+  const std::basic_string<CharT> &end_of_options)
 {
-  return parse_arguments(argc,argv,grp,basic_variable_map<CharT>(),
-    std::basic_string<CharT>("--"),partial);
+  return parse_arguments(_argc,_argv,grp,basic_variable_map<CharT>(),
+    end_of_options);
 }
 
-#if 0
-/*
-  Parse the arguments contained in \c argv with size \c argc according
-  to the option description group \c grp with parse_options \c opt. If
-  \c partial is true, then finalize parsing. Options are added to a copy
-  of the variable map \c _vm and returned.
-*/
-template<typename CharT>
-inline basic_variable_map<CharT>
-parse_arguments(std::size_t argc, const CharT *argv[],
-  const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &_vm,
-  bool partial = false)
-{
-  std::size_t endc;
-  return parse_arguments(argc,argv,endc,grp,_vm,partial);
-}
 
-/*
-  Parse the arguments contained in \c argv with size \c argc according
-  to the option description group \c grp with parse_options \c opt. If
-  \c partial is true, then finalize parsing. Options are returned in a
-  new variable map. If parsing is halted due to a "end of parse"
-  indicator (normally '--') then \c endc is updated to the index of the
-  first non-parsed argument.
-*/
-template<typename CharT>
-inline basic_variable_map<CharT>
-parse_arguments(std::size_t argc, const CharT * argv[],
-  std::size_t &endc, const basic_options_group<CharT> &grp,
-  bool partial = false)
-{
-  return parse_arguments(argc,argv,endc,grp,basic_variable_map<CharT>(),
-    partial);
-}
-#endif
 
 typedef basic_option_description<char> option_description;
 typedef std::vector<basic_option_description<char> > options_group;
@@ -1170,16 +1101,16 @@ struct basic_constraint {
   }
 
   basic_constraint<CharT> &
-  mutual_exclusion(const std::vector<string_type> &mapped_key_vec)
+  mutually_exclusive(const std::vector<string_type> &mapped_key_vec)
   {
-    _mutual_exclusion = mapped_key_vec;
+    _mutually_exclusive = mapped_key_vec;
     return *this;
   }
 
   basic_constraint<CharT> &
-  mutual_inclusion(const std::vector<string_type> &mapped_key_vec)
+  mutually_inclusive(const std::vector<string_type> &mapped_key_vec)
   {
-    _mutual_inclusion = mapped_key_vec;
+    _mutually_inclusive = mapped_key_vec;
     return *this;
   }
 
@@ -1208,17 +1139,25 @@ struct basic_constraint {
 
   std::size_t _min = 0;
   std::size_t _max = std::numeric_limits<std::size_t>::max();
-  std::vector<string_type> _mutual_exclusion;
-  std::vector<string_type> _mutual_inclusion;
+  std::vector<string_type> _mutually_exclusive;
+  std::vector<string_type> _mutually_inclusive;
 };
+
+typedef basic_constraint<char> constrain;
+typedef basic_constraint<wchar_t> wconstrain;
+
 
 
 template<typename T>
 struct value {
   typedef T value_type;
 
-  value(void) = default;
-  value(const T &val) :_implicit(std::make_shared<T>(val)) {}
+
+  value<T> & implicit(const T &val) {
+    _implicit = std::make_shared<T>(val);
+
+    return *this;
+  }
 
   std::shared_ptr<value_type> _implicit;
 };
@@ -1227,7 +1166,7 @@ template<typename CharT>
 const std::basic_string<CharT> & default_long_prefix(void); // undefined
 
 template<>
-const std::basic_string<char> & default_long_prefix<char>(void)
+inline const std::basic_string<char> & default_long_prefix<char>(void)
 {
   static const std::basic_string<char> val("--");
 
@@ -1235,7 +1174,7 @@ const std::basic_string<char> & default_long_prefix<char>(void)
 }
 
 template<>
-const std::basic_string<wchar_t> & default_long_prefix<wchar_t>(void)
+inline const std::basic_string<wchar_t> & default_long_prefix<wchar_t>(void)
 {
   static const std::basic_string<wchar_t> val(L"--");
 
@@ -1246,7 +1185,7 @@ template<typename CharT>
 const std::basic_string<CharT> & default_short_prefix(void); // undefined
 
 template<>
-const std::basic_string<char> & default_short_prefix<char>(void)
+inline const std::basic_string<char> & default_short_prefix<char>(void)
 {
   static const std::basic_string<char> val("-");
 
@@ -1254,12 +1193,47 @@ const std::basic_string<char> & default_short_prefix<char>(void)
 }
 
 template<>
-const std::basic_string<wchar_t> & default_short_prefix<wchar_t>(void)
+inline const std::basic_string<wchar_t> & default_short_prefix<wchar_t>(void)
 {
   static const std::basic_string<wchar_t> val(L"-");
 
   return val;
 }
+
+template<typename CharT>
+const std::basic_string<CharT> & default_accept_all(void); // undefined
+
+template<>
+inline const std::basic_string<char> & default_accept_all<char>(void)
+{
+  static const std::basic_string<char> val("*");
+
+  return val;
+}
+
+template<>
+inline const std::basic_string<wchar_t> & default_accept_all<wchar_t>(void)
+{
+  static const std::basic_string<wchar_t> val(L"*");
+
+  return val;
+}
+
+template<typename CharT>
+CharT default_option_delim(void); // undefined
+
+template<>
+inline char default_option_delim<char>(void)
+{
+  return ',';
+}
+
+template<>
+inline wchar_t default_option_delim<wchar_t>(void)
+{
+  return L',';
+}
+
 
 
 
@@ -1313,10 +1287,10 @@ split(const std::basic_string<CharT> &str, CharT delim)
 template<typename CharT>
 std::pair<std::basic_string<CharT>,std::basic_string<CharT> >
 add_option_spec(const std::basic_string<CharT> &opt_spec,
-  CharT delim, basic_option_description<CharT> &desc)
+  CharT delim, basic_option_description<CharT> &desc, bool hidden)
 {
-  typedef std::basic_string<char> string_type;
-  typedef basic_variable_map<CharT> variable_map;
+  typedef std::basic_string<CharT> string_type;
+  typedef basic_variable_map<CharT> variable_map_type;
 
   string_type long_opt;
   string_type short_opt;
@@ -1329,12 +1303,16 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
   */
   string_type key_desc;
   if(opt_spec.empty() || (long_opt.empty() && short_opt.empty())) {
-    key_desc = default_long_prefix<CharT>() + "[all] ,  "
-        + default_short_prefix<CharT>() + "[all]";
+    if(!hidden) {
+      desc.key_description = [=](void) {
+        return default_long_prefix<CharT>() + default_accept_all<CharT>()
+          + delim + default_short_prefix<CharT>() + default_accept_all<CharT>();
+      };
+    }
   }
   else if(!long_opt.empty() && !short_opt.empty()) {
     desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
-      const variable_map &)
+      const variable_map_type &)
       {
         if(_opt == long_opt || _opt == short_opt)
           return std::make_pair(true,long_opt);
@@ -1342,12 +1320,16 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
         return std::make_pair(false,string_type());
       };
 
-    key_desc = default_long_prefix<CharT>() + long_opt + " ,  "
-        + default_short_prefix<CharT>() + short_opt;
+    if(!hidden) {
+      desc.key_description = [=](void) {
+        return default_long_prefix<CharT>() + long_opt + delim
+          + default_short_prefix<CharT>() + short_opt;
+      };
+    }
   }
   else if(!long_opt.empty()) {
     desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
-      const variable_map &)
+      const variable_map_type &)
       {
         if(_opt == long_opt)
           return std::make_pair(true,_opt);
@@ -1355,11 +1337,15 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
         return std::make_pair(false,string_type());
       };
 
-    key_desc = default_long_prefix<CharT>() + long_opt;
+    if(!hidden) {
+      desc.key_description = [=](void) {
+        return default_long_prefix<CharT>() + long_opt;
+      };
+    }
   }
   else {
     desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
-      const variable_map &)
+      const variable_map_type &)
       {
         if(_opt == short_opt)
           return std::make_pair(true,_opt);
@@ -1367,75 +1353,15 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
         return std::make_pair(false,string_type());
       };
 
-    key_desc = default_short_prefix<CharT>() + short_opt;
-  }
-
-  desc.key_description = [=](void) { return key_desc; };
-
-  return std::make_pair(long_opt,short_opt);
-}
-
-
-
-
-
-
-
-
-
-template<typename CharT>
-std::pair<std::basic_string<CharT>,std::basic_string<CharT> >
-add_hidden_option_spec(const std::basic_string<CharT> &opt_spec,
-  CharT delim, basic_option_description<CharT> &desc)
-{
-  typedef std::basic_string<char> string_type;
-  typedef basic_variable_map<CharT> variable_map;
-
-  string_type long_opt;
-  string_type short_opt;
-  std::tie(long_opt,short_opt) = detail::split(opt_spec,delim);
-
-  /*
-    If both are provided, the long option is the vm key
-
-    If none are provided, then it is unmapped_key
-  */
-  if(!long_opt.empty() && !short_opt.empty()) {
-    desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
-      const variable_map &)
-      {
-        if(_opt == long_opt || _opt == short_opt)
-          return std::make_pair(true,long_opt);
-
-        return std::make_pair(false,string_type());
+    if(!hidden) {
+      desc.key_description = [=](void) {
+        return default_short_prefix<CharT>() + short_opt;
       };
-  }
-  else if(!long_opt.empty()) {
-    desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
-      const variable_map &)
-      {
-        if(_opt == long_opt)
-          return std::make_pair(true,_opt);
-
-        return std::make_pair(false,string_type());
-      };
-  }
-  else if(!short_opt.empty()){
-    desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
-      const variable_map &)
-      {
-        if(_opt == short_opt)
-          return std::make_pair(true,_opt);
-
-        return std::make_pair(false,string_type());
-      };
+    }
   }
 
   return std::make_pair(long_opt,short_opt);
 }
-
-
-
 
 
 template <typename T, typename CharT>
@@ -1460,14 +1386,14 @@ to_value(const std::basic_string<CharT> &,
 }
 
 template<typename T, typename CharT>
-inline void add_value(const value<T> &val,
+inline void add_option_value(const value<T> &val,
   basic_option_description<CharT> &desc)
 {
   typedef std::basic_string<CharT> string_type;
-  typedef basic_variable_map<CharT> variable_map;
+  typedef basic_variable_map<CharT> variable_map_type;
 
   if(val._implicit) {
-    desc.implicit_value = [=](const string_type &, const variable_map &)
+    desc.implicit_value = [=](const string_type &, const variable_map_type &)
     {
       return any(*(val._implicit));
     };
@@ -1478,10 +1404,33 @@ inline void add_value(const value<T> &val,
   }
 
   desc.make_value = [](const string_type &mapped_key, const string_type &value,
-      const variable_map &vm)
+      const variable_map_type &vm)
   {
     return to_value<T>(mapped_key,value,vm);
   };
+}
+
+template<typename T, typename CharT>
+inline void add_operand_value(const value<T> &val,
+  basic_option_description<CharT> &desc)
+{
+  typedef std::basic_string<CharT> string_type;
+  typedef basic_variable_map<CharT> variable_map_type;
+
+  if(val._implicit) {
+    desc.make_value = [=](const string_type &, const string_type &,
+      const variable_map_type &)
+    {
+      return any(*(val._implicit));
+    };
+  }
+  else {
+    desc.make_value = [](const string_type &mapped_key,
+      const string_type &value, const variable_map_type &vm)
+    {
+      return to_value<T>(mapped_key,value,vm);
+    };
+  }
 }
 
 template<typename CharT>
@@ -1489,14 +1438,12 @@ inline void add_operand_key(const std::basic_string<CharT> &key, int posn,
   int argn, basic_option_description<CharT> &desc)
 {
   typedef std::basic_string<CharT> string_type;
+  typedef basic_variable_map<CharT> variable_map_type;
 
   if(posn >= 0 || argn >= 0) {
     desc.mapped_key = [=](const string_type &, std::size_t _posn,
-      std::size_t _argn, const variable_map &)
+      std::size_t _argn, const variable_map_type &)
     {
-//       std::cerr << "Got key: '" << key << "' posn: " << _posn << " and argn: "
-//         << _argn << " required posn: " << posn << " and argn: " << argn << "\n";
-//
       if((posn<0 || posn == _posn) && (argn<0 || argn == _argn))
         return std::make_pair(true,key);
       return std::make_pair(false,std::basic_string<CharT>());
@@ -1504,7 +1451,7 @@ inline void add_operand_key(const std::basic_string<CharT> &key, int posn,
   }
   else {
     desc.mapped_key = [=](const string_type &, std::size_t, std::size_t,
-      const variable_map &)
+      const variable_map_type &)
     {
       return std::make_pair(true,key);
     };
@@ -1527,14 +1474,14 @@ void add_option_constraints(const basic_constraint<CharT> &cnts,
         occurrances);
     }
 
-    for(auto &exclusive_key : cnts._mutual_exclusion) {
+    for(auto &exclusive_key : cnts._mutually_exclusive) {
       if(vm.count(exclusive_key) != 0)
-        throw exclusive_error(mapped_key,exclusive_key);
+        throw mutually_exclusive_error(mapped_key,exclusive_key);
     }
 
-    for(auto &inclusive_key : cnts._mutual_inclusion) {
-      if(vm.count(inclusive_key) != 0)
-        throw inclusive_error(mapped_key,inclusive_key);
+    for(auto &inclusive_key : cnts._mutually_inclusive) {
+      if(vm.count(inclusive_key) == 0)
+        throw mutually_inclusive_error(mapped_key,inclusive_key);
     }
   };
 }
@@ -1554,14 +1501,14 @@ void add_operand_constraints(const basic_constraint<CharT> &cnts,
           occurrances);
     }
 
-    for(auto &exclusive_key : cnts._mutual_exclusion) {
+    for(auto &exclusive_key : cnts._mutually_exclusive) {
       if(vm.count(exclusive_key) != 0)
-        throw exclusive_error(mapped_key,exclusive_key);
+        throw mutually_exclusive_error(mapped_key,exclusive_key);
     }
 
-    for(auto &inclusive_key : cnts._mutual_inclusion) {
-      if(vm.count(inclusive_key) != 0)
-        throw inclusive_error(mapped_key,inclusive_key);
+    for(auto &inclusive_key : cnts._mutually_inclusive) {
+      if(vm.count(inclusive_key) == 0)
+        throw mutually_inclusive_error(mapped_key,inclusive_key);
     }
   };
 }
@@ -1573,10 +1520,6 @@ void add_operand_constraints(const basic_constraint<CharT> &cnts,
 
 
 
-typedef basic_constraint<char> constrain;
-typedef basic_constraint<wchar_t> wconstrain;
-
-
 /*
   The following functions are for convenience only. They provide automatic
   type deduction and therefore implicit conversion from string literals
@@ -1586,112 +1529,221 @@ typedef basic_constraint<wchar_t> wconstrain;
 /*
   Cases line 2, 4
 */
-inline basic_option_description<char>
-make_option(const std::basic_string<char> &opt_spec,
-  const std::basic_string<char> &extended_desc,
-  const basic_constraint<char> &cnts = basic_constraint<char>(),
-  char delim = ',')
+template<typename CharT>
+inline basic_option_description<CharT>
+make_option(const std::basic_string<CharT> &opt_spec,
+  const std::basic_string<CharT> &extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
+  CharT delim = default_option_delim<CharT>())
 {
-  typedef std::basic_string<char> string_type;
+  typedef std::basic_string<CharT> string_type;
 
-  basic_option_description<char> desc{unpack_gnu<true,char>};
-
-  string_type long_opt;
-  string_type short_opt;
-  std::tie(long_opt,short_opt) = detail::add_option_spec(opt_spec,delim,desc);
-
-  detail::add_option_constraints(cnts,desc,long_opt);
-
-  return desc;
-}
-
-/*
-  Cases line 3, 5
-*/
-inline basic_option_description<char>
-make_hidden_option(const std::basic_string<char> &opt_spec,
-  const basic_constraint<char> &cnts = basic_constraint<char>(),
-  char delim = ',')
-{
-  typedef std::basic_string<char> string_type;
-
-  basic_option_description<char> desc{unpack_gnu<true,char>};
+  basic_option_description<CharT> desc{unpack_gnu<true,CharT>};
 
   string_type long_opt;
   string_type short_opt;
   std::tie(long_opt,short_opt) =
-    detail::add_hidden_option_spec(opt_spec,delim,desc);
+    detail::add_option_spec(opt_spec,delim,desc,false);
 
   detail::add_option_constraints(cnts,desc,long_opt);
 
   return desc;
 }
 
-/*
-  Case line 6, 8, 10, 12
-*/
-template<typename T>
-inline basic_option_description<char>
-make_option(const std::basic_string<char> &opt_spec,
-  const value<T> &val, const std::basic_string<char> &extended_desc,
-  const basic_constraint<char> &cnts = basic_constraint<char>(),
-  char delim = ',')
+template<typename CharT>
+inline basic_option_description<CharT>
+make_option(const CharT *opt_spec, const CharT *extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
+  CharT delim = default_option_delim<CharT>())
 {
-  typedef std::basic_string<char> string_type;
+  return make_option(std::basic_string<CharT>(opt_spec),
+    std::basic_string<CharT>(extended_desc),cnts,delim);
+}
 
-  basic_option_description<char> desc{unpack_gnu<false,char>};
+template<typename CharT>
+inline basic_option_description<CharT>
+make_option(const std::basic_string<CharT> &opt_spec,
+  const CharT *extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
+  CharT delim = default_option_delim<CharT>())
+{
+  return make_option(opt_spec,std::basic_string<CharT>(extended_desc),
+    cnts,delim);
+}
+
+template<typename CharT>
+inline basic_option_description<CharT>
+make_option(const CharT *opt_spec,
+  const std::basic_string<CharT> &extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
+  CharT delim = default_option_delim<CharT>())
+{
+  return make_option(std::basic_string<CharT>(opt_spec),extended_desc,
+    cnts,delim);
+}
+
+
+/*
+  Cases line 3, 5
+*/
+template<typename CharT>
+inline basic_option_description<CharT>
+make_hidden_option(const std::basic_string<CharT> &opt_spec,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
+  CharT delim = default_option_delim<CharT>())
+{
+  typedef std::basic_string<CharT> string_type;
+
+  basic_option_description<CharT> desc{unpack_gnu<true,CharT>};
 
   string_type long_opt;
   string_type short_opt;
-  std::tie(long_opt,short_opt) = detail::add_option_spec(opt_spec,delim,desc);
+  std::tie(long_opt,short_opt) =
+    detail::add_option_spec(opt_spec,delim,desc,true);
 
-  detail::add_value(val,desc);
+  detail::add_option_constraints(cnts,desc,long_opt);
+
+  return desc;
+}
+
+template<typename CharT>
+inline basic_option_description<CharT>
+make_hidden_option(const CharT *opt_spec,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
+  CharT delim = default_option_delim<CharT>())
+{
+  return make_hidden_option(std::basic_string<CharT>(opt_spec),cnts,delim);
+}
+
+
+/*
+  Case line 6, 8, 10, 12
+*/
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_option(const std::basic_string<CharT> &opt_spec,
+  const value<T> &val, const std::basic_string<CharT> &extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
+  CharT delim = default_option_delim<CharT>())
+{
+  typedef std::basic_string<CharT> string_type;
+
+  basic_option_description<CharT> desc{unpack_gnu<false,CharT>};
+
+  string_type long_opt;
+  string_type short_opt;
+  std::tie(long_opt,short_opt) =
+    detail::add_option_spec(opt_spec,delim,desc,false);
+
+  detail::add_option_value(val,desc);
 
   desc.extended_description = [=](void) { return extended_desc; };
 
   detail::add_option_constraints(cnts,desc,long_opt);
 
   return desc;
+}
+
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_option(const CharT *opt_spec,
+  const value<T> &val, const CharT *extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
+  CharT delim = default_option_delim<CharT>())
+{
+  return make_option(std::basic_string<CharT>(opt_spec),val,
+    std::basic_string<CharT>(extended_desc),cnts,delim);
+}
+
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_option(const std::basic_string<CharT> &opt_spec,
+  const value<T> &val, const CharT *extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
+  CharT delim = default_option_delim<CharT>())
+{
+  return make_option(opt_spec,val,std::basic_string<CharT>(extended_desc),
+    cnts,delim);
+}
+
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_option(const CharT *opt_spec,
+  const value<T> &val, const std::basic_string<CharT> &extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
+  CharT delim = default_option_delim<CharT>())
+{
+  return make_option(std::basic_string<CharT>(opt_spec),val,extended_desc,
+    cnts,delim);
 }
 
 /*
   Case line 7, 9, 11, 13
 */
-template<typename T>
-inline basic_option_description<char>
-make_hidden_option(const std::basic_string<char> &opt_spec, const value<T> &val,
-  const basic_constraint<char> &cnts = basic_constraint<char>(),
-  char delim = ',')
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_hidden_option(const std::basic_string<CharT> &opt_spec,
+  const value<T> &val,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
+  CharT delim = default_option_delim<CharT>())
 {
-  typedef std::basic_string<char> string_type;
+  typedef std::basic_string<CharT> string_type;
 
-  basic_option_description<char> desc{unpack_gnu<false,char>};
+  basic_option_description<CharT> desc{unpack_gnu<false,CharT>};
 
   string_type long_opt;
   string_type short_opt;
   std::tie(long_opt,short_opt) =
-    detail::add_hidden_option_spec(opt_spec,delim,desc);
+    detail::add_option_spec(opt_spec,delim,desc,true);
 
-  detail::add_value(val,desc);
+  detail::add_option_value(val,desc);
 
   detail::add_option_constraints(cnts,desc,long_opt);
 
   return desc;
 }
 
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_hidden_option(const CharT *opt_spec, const value<T> &val,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
+  CharT delim = default_option_delim<CharT>())
+{
+  return make_hidden_option(std::basic_string<CharT>(opt_spec),val,cnts,delim);
+}
+
+/*
+  The \c make_operand and \c make_hidden_operand EZ interface do not map
+  directly to case lines but the same effect can be achieved.
+
+  In cases 14-17, an operand value is translated into an \c any of some
+  type T. In the EZ interface this is accomplished by the value<T>
+  parameter as long as the given operand string value can be translated
+  into an instance of type T.
+
+  Suppose however that no translation is needed and the provided string
+  value is ignored and the vm is populated with the same instance of T
+  always. This is achieved by providing an \c implicit value to \c
+  value<T>. That is, the given operand's string value is ignored and the
+  \c any value is always set to \c value<T>.implicit().
+
+  In cases 18-21, an operand's given string value is always ignored and
+  a default constructed \c any is the value of the \c mapped key.
+*/
+
 /*
   Case line 14
 */
-template<typename T>
-inline basic_option_description<char>
-make_operand(const std::basic_string<char> &extended_desc,
-  const basic_constraint<char> &cnts = basic_constraint<char>())
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_operand(const std::basic_string<CharT> &extended_desc, const value<T> &val,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
-  basic_option_description<char> desc;
+  basic_option_description<CharT> desc;
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  detail::add_value(value<T>(),desc);
+  detail::add_operand_value(val,desc);
 
   detail::add_operand_key(default_operand_key,cnts._position,
     cnts._argument,desc);
@@ -1701,17 +1753,26 @@ make_operand(const std::basic_string<char> &extended_desc,
   return desc;
 }
 
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_operand(const CharT *extended_desc, const value<T> &val,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
+{
+  return make_operand(std::basic_string<CharT>(extended_desc),val,cnts);
+
+}
+
 /*
   Case line 15
 */
-template<typename T>
-inline basic_option_description<char>
-make_hidden_operand(
-  const basic_constraint<char> &cnts = basic_constraint<char>())
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_hidden_operand(const value<T> &val,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
-  basic_option_description<char> desc;
+  basic_option_description<CharT> desc;
 
-  detail::add_value(value<T>(),desc);
+  detail::add_operand_value(val,desc);
 
   detail::add_operand_key(default_operand_key,cnts._position,
     cnts._argument,desc);
@@ -1725,17 +1786,17 @@ make_hidden_operand(
   Case line 16
 */
 
-template<typename T>
-inline basic_option_description<char>
-make_operand(const std::basic_string<char> &mapped_key,
-  const std::basic_string<char> &extended_desc,
-  const basic_constraint<char> &cnts = basic_constraint<char>())
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_operand(const std::basic_string<CharT> &mapped_key,
+  const std::basic_string<CharT> &extended_desc, const value<T> &val,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
   basic_option_description<char> desc;
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  detail::add_value(value<T>(),desc);
+  detail::add_option_value(val,desc);
 
   detail::add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
 
@@ -1744,33 +1805,74 @@ make_operand(const std::basic_string<char> &mapped_key,
   return desc;
 }
 
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_operand(const CharT *mapped_key, const CharT *extended_desc,
+  const value<T> &val,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
+{
+  return make_operand(std::basic_string<CharT>(mapped_key),
+    std::basic_string<CharT>(extended_desc),val,cnts);
+}
+
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_operand(const CharT *mapped_key,
+  const std::basic_string<CharT> &extended_desc, const value<T> &val,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
+{
+  return make_operand(std::basic_string<CharT>(mapped_key),
+    extended_desc,val,cnts);
+}
+
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_operand(const std::basic_string<CharT> &mapped_key,
+  const CharT *extended_desc, const value<T> &val,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
+{
+  return make_operand(mapped_key,std::basic_string<CharT>(extended_desc),
+    val,cnts);
+}
+
+
 /*
   Case line 17
 */
-template<typename T>
-inline basic_option_description<char>
-make_hidden_operand(const std::basic_string<char> &mapped_key,
-  const basic_constraint<char> &cnts = basic_constraint<char>())
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_hidden_operand(const std::basic_string<CharT> &mapped_key,
+  const value<T> &val,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
   basic_option_description<char> desc;
 
-  detail::add_value(value<T>(),desc);
+  detail::add_option_value(val,desc);
 
   detail::add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
 
   detail::add_operand_constraints(cnts,mapped_key,desc);
 
   return desc;
+}
+
+template<typename CharT, typename T>
+inline basic_option_description<CharT>
+make_hidden_operand(const CharT *mapped_key, const value<T> &val,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
+{
+  return make_hidden_operand(std::basic_string<CharT>(mapped_key),val,cnts);
 }
 
 /*
   Case line 18
 */
-inline basic_option_description<char>
-make_operand(const std::basic_string<char> &extended_desc,
-  const basic_constraint<char> &cnts = basic_constraint<char>())
+template<typename CharT>
+inline basic_option_description<CharT>
+make_operand(const std::basic_string<CharT> &extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
-  basic_option_description<char> desc;
+  basic_option_description<CharT> desc;
 
   desc.extended_description = [=](void) { return extended_desc; };
 
@@ -1782,14 +1884,23 @@ make_operand(const std::basic_string<char> &extended_desc,
   return desc;
 }
 
+template<typename CharT>
+inline basic_option_description<CharT>
+make_operand(const CharT *extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
+{
+  return make_operand(std::basic_string<CharT>(extended_desc),cnts);
+}
+
 /*
   Case line 19
 */
-inline basic_option_description<char>
+template<typename CharT>
+inline basic_option_description<CharT>
 make_hidden_operand(
-  const basic_constraint<char> &cnts = basic_constraint<char>())
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
-  basic_option_description<char> desc;
+  basic_option_description<CharT> desc;
 
   detail::add_operand_key(default_operand_key,cnts._position,
     cnts._argument,desc);
@@ -1802,12 +1913,13 @@ make_hidden_operand(
 /*
   Case line 20
 */
-inline basic_option_description<char>
-make_operand(const std::basic_string<char> &mapped_key,
-  const std::basic_string<char> &extended_desc,
-  const basic_constraint<char> &cnts = basic_constraint<char>())
+template<typename CharT>
+inline basic_option_description<CharT>
+make_operand(const std::basic_string<CharT> &mapped_key,
+  const std::basic_string<CharT> &extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<char>())
 {
-  basic_option_description<char> desc;
+  basic_option_description<CharT> desc;
 
   desc.extended_description = [=](void) { return extended_desc; };
 
@@ -1818,20 +1930,56 @@ make_operand(const std::basic_string<char> &mapped_key,
   return desc;
 }
 
+template<typename CharT>
+inline basic_option_description<CharT>
+make_operand(const CharT *mapped_key, const CharT *extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<char>())
+{
+  return make_operand(std::basic_string<CharT>(mapped_key),
+    std::basic_string<CharT>(extended_desc),cnts);
+}
+
+template<typename CharT>
+inline basic_option_description<CharT>
+make_operand(const std::basic_string<CharT> &mapped_key,
+  const CharT *extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<char>())
+{
+  return make_operand(mapped_key,std::basic_string<CharT>(extended_desc),cnts);
+}
+
+template<typename CharT>
+inline basic_option_description<CharT>
+make_operand(const CharT *mapped_key,
+  const std::basic_string<CharT> &extended_desc,
+  const basic_constraint<CharT> &cnts = basic_constraint<char>())
+{
+  return make_operand(std::basic_string<CharT>(mapped_key),extended_desc,cnts);
+}
+
 /*
   Case line 21
 */
-inline basic_option_description<char>
-make_hidden_operand(const std::basic_string<char> &mapped_key,
-  const basic_constraint<char> &cnts = basic_constraint<char>())
+template<typename CharT>
+inline basic_option_description<CharT>
+make_hidden_operand(const std::basic_string<CharT> &mapped_key,
+  const basic_constraint<CharT> &cnts = basic_constraint<char>())
 {
-  basic_option_description<char> desc;
+  basic_option_description<CharT> desc;
 
   detail::add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
 
   detail::add_operand_constraints(cnts,mapped_key,desc);
 
   return desc;
+}
+
+template<typename CharT>
+inline basic_option_description<CharT>
+make_hidden_operand(const CharT *mapped_key,
+  const basic_constraint<CharT> &cnts = basic_constraint<char>())
+{
+  return make_hidden_operand(std::basic_string<CharT>(mapped_key),cnts);
 }
 
 /*
@@ -1849,12 +1997,14 @@ make_hidden_operand(const std::basic_string<char> &mapped_key,
   unrecognized, use the \c make_options_error function and do not
   include any other non-operand descriptions.
 */
-inline basic_option_description<char> make_options_error(void)
+template<typename CharT>
+inline basic_option_description<CharT> make_options_error(void)
 {
-  typedef std::basic_string<char> string_type;
+  typedef std::basic_string<CharT> string_type;
+  typedef basic_variable_map<CharT> variable_map_type;
 
-  return basic_option_description<char>{unpack_gnu<false,char>,
-    [](const string_type &raw_key,int,int,const variable_map &) {
+  return basic_option_description<CharT>{unpack_gnu<false,CharT>,
+    [](const string_type &raw_key,int,int,const variable_map_type &) {
       return std::make_pair(false,string_type());
     }};
 }
@@ -1862,11 +2012,50 @@ inline basic_option_description<char> make_options_error(void)
 
 
 
-/*
-  Specializations for wchar_t
 
-  Add me
+
+
+
+/*
+  Convenience specializations of parse_incremental_arguments for appropriate
+  character classes
 */
+inline basic_variable_map<char>
+parse_incremental_arguments(std::size_t _argc, const char *_argv[],
+  const basic_options_group<char> &grp, const basic_variable_map<char> &vm)
+{
+  return parse_incremental_arguments(_argc,_argv,grp,vm,
+    std::basic_string<char>("--"));
+}
+
+inline basic_variable_map<char>
+parse_incremental_arguments(std::size_t _argc, const char *_argv[],
+  const basic_options_group<char> &grp)
+{
+  return parse_incremental_arguments(_argc,_argv,grp,
+    basic_variable_map<char>(),std::basic_string<char>("--"));
+}
+
+inline basic_variable_map<char>
+parse_arguments(std::size_t _argc, const char *_argv[],
+  const basic_options_group<char> &grp, const basic_variable_map<char> &vm)
+{
+  return parse_incremental_arguments(_argc,_argv,grp,vm,
+    std::basic_string<char>("--"));
+}
+
+inline basic_variable_map<char>
+parse_arguments(std::size_t _argc, const char *_argv[],
+  const basic_options_group<char> &grp)
+{
+  return parse_arguments(_argc,_argv,grp,
+    basic_variable_map<char>(),std::basic_string<char>("--"));
+}
+
+
+
+
+
 
 
 
@@ -1877,7 +2066,7 @@ inline basic_option_description<char> make_options_error(void)
   Parse the arguments contained in \c argv with size \c argc. Options
   are returned in a new variable map. Long options are prefaced with a
   '--' and short options (single character) are prefaced with a '-'. In
-  each case, the option is stored as a key in the variable_map. If
+  each case, the option is stored as a key in the variable_map_type. If
   parsing is halted due to a "end of parse" indicator '--' then \c endc
   is updated to the index of the first non-parsed argument.
 */

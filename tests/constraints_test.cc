@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE( operand_no_restrictions_given_0_test )
 
   options = co::options_group{
     co::make_option("foo,f","case 2"),
-    co::make_operand<std::string>("case 14")
+    co::make_operand("case 14",co::value<std::string>())
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE( operand_no_restrictions_given_1_test )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14")
+    co::make_operand("case 14",co::value<std::string>())
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -260,7 +260,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_0_given_0_test )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().occurrences(0)),
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().occurrences(0)),
     co::make_option("bar,b","case 2")
   };
 
@@ -286,7 +287,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_0_given_1_test )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().occurrences(0))
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().occurrences(0))
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
@@ -310,7 +312,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_0_test )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().occurrences(1))
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().occurrences(1))
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
@@ -335,7 +338,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_1_test )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().occurrences(1))
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().occurrences(1))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -361,7 +365,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_2_test )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().occurrences(1))
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().occurrences(1))
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
@@ -387,7 +392,8 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_0_test )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().occurrences(0,1)),
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().occurrences(0,1)),
     co::make_option("foo,f","case 2")
   };
 
@@ -416,7 +422,8 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_1_test )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().occurrences(0,1)),
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().occurrences(0,1)),
     co::make_option("foo,f","case 2")
   };
 
@@ -447,7 +454,8 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_2_test )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().occurrences(0,1)),
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().occurrences(0,1)),
     co::make_option("foo,f","case 2")
   };
 
@@ -482,7 +490,8 @@ BOOST_AUTO_TEST_CASE( operand_unconstrained_argument )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().at_argument(-1)),
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().at_argument(-1)),
     co::make_option("foo,f","case 2")
   };
 
@@ -515,7 +524,8 @@ BOOST_AUTO_TEST_CASE( operand_argument_0_given_0 )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().at_argument(0)),
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().at_argument(0)),
     co::make_option("foo,f","case 2")
   };
 
@@ -543,7 +553,8 @@ BOOST_AUTO_TEST_CASE( operand_argument_0_given_1 )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().at_argument(0)),
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().at_argument(0)),
     co::make_option("foo,f","case 2")
   };
 
@@ -573,7 +584,8 @@ BOOST_AUTO_TEST_CASE( operand_unconstrained_position )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().at_position(-1)),
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().at_position(-1)),
     co::make_option("foo,f","case 2")
   };
 
@@ -606,7 +618,8 @@ BOOST_AUTO_TEST_CASE( operand_position_0_given_0 )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().at_position(0)),
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().at_position(0)),
     co::make_option("foo,f","case 2")
   };
 
@@ -635,7 +648,8 @@ BOOST_AUTO_TEST_CASE( operand_position_0_given_1 )
   };
 
   options = co::options_group{
-    co::make_operand<std::string>("case 14",co::constrain().at_position(0)),
+    co::make_operand("case 14",
+      co::value<std::string>(),co::constrain().at_position(0)),
     co::make_option("foo,f","case 2")
   };
 
@@ -646,6 +660,119 @@ BOOST_AUTO_TEST_CASE( operand_position_0_given_1 )
   );
 }
 
+/**
+  option (non) mutual exclusion
+*/
+BOOST_AUTO_TEST_CASE( option_non_mutual_exclusion_test )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "--foo"
+  };
+
+  options = co::options_group{
+    co::make_option("foo,f","case 2",
+      co::constrain().mutually_exclusive({"bar","baz","foobar"})),
+  };
+
+  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+
+  //std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
+    co::variable_map{
+      {"foo",{}}
+    }));
+}
+
+/**
+  option mutual exclusion
+*/
+BOOST_AUTO_TEST_CASE( option_mutual_exclusion_test )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "--foo",
+    "--bar"
+  };
+
+  options = co::options_group{
+    co::make_option("bar,b","case 2"),
+    co::make_option("foo,f","case 2",
+      co::constrain().mutually_exclusive({"bar"})),
+  };
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
+    co::mutually_exclusive_error, [](const co::mutually_exclusive_error &ex) {
+      return (ex.mapped_key() == std::string("foo")
+        && ex.exclusive_mapped_key() == std::string("bar"));
+    }
+  );
+}
+
+/**
+  option (non) mutual inclusion
+*/
+BOOST_AUTO_TEST_CASE( option_non_mutual_inclusion_test )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "--foo",
+    "--bar"
+  };
+
+  options = co::options_group{
+    co::make_option("bar,b","case 2"),
+    co::make_option("foo,f","case 2",
+      co::constrain().mutually_inclusive({"bar"})),
+  };
+
+  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+
+  //std::cerr << detail::to_string<std::string>(vm);
+
+  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
+    co::variable_map{
+      {"bar",{}},
+      {"foo",{}}
+    }));
+}
+
+/**
+  option mutual inclusion (actual)
+*/
+BOOST_AUTO_TEST_CASE( option_mutual_inclusion_test )
+{
+  co::variable_map vm;
+  co::options_group options;
+  std::vector<const char *> argv;
+
+  argv = std::vector<const char *>{
+    "--foo"
+  };
+
+  options = co::options_group{
+    co::make_option("bar,b","case 2"),
+    co::make_option("foo,f","case 2",
+      co::constrain().mutually_inclusive({"bar"})),
+  };
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
+    co::mutually_inclusive_error, [](const co::mutually_inclusive_error &ex) {
+      return (ex.mapped_key() == std::string("foo")
+        && ex.inclusive_mapped_key() == std::string("bar"));
+    }
+  );
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

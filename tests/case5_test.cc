@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
 
   options = co::options_group{
     co::make_hidden_option(""),
-    co::make_operand<std::string>("accept all operands")
+    co::make_operand("accept all operands",co::value<std::string>())
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
 
   options = co::options_group{
     co::make_hidden_option(""),
-    co::make_operand<std::string>("accept all operands")
+    co::make_operand("accept all operands",co::value<std::string>())
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);

@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
 
   options = co::options_group{
     co::make_option("","case 4"),
-    co::make_operand<std::string>("accept all operands")
+    co::make_operand("accept all operands",co::value<std::string>())
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
 
   options = co::options_group{
     co::make_option("","case 4"),
-    co::make_operand<std::string>("accept all operands")
+    co::make_operand("accept all operands",co::value<std::string>())
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE( flags_packed_arg_test )
     co::make_option("","case 4")
   };
 
-  std::cerr << detail::to_string(options.front()) << "\n";
+//   std::cerr << detail::to_string(options.front()) << "\n";
 
   BOOST_REQUIRE_THROW(
     (vm = co::parse_arguments(argv.size(),argv.data(),options)),
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE( multi_packed_flags_test )
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  std::cerr << detail::to_string<std::string>(vm);
+//   std::cerr << detail::to_string<std::string>(vm);
 
   BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
     co::variable_map{

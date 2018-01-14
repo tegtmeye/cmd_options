@@ -30,8 +30,8 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_test )
   };
 
   options = co::options_group{
-    co::make_hidden_option(",f",co::value<std::string>("floo")),
-    co::make_hidden_option(",b",co::value<std::string>("blar"))
+    co::make_hidden_option(",f",co::value<std::string>().implicit("floo")),
+    co::make_hidden_option(",b",co::value<std::string>().implicit("blar"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -58,8 +58,8 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_test )
   };
 
   options = co::options_group{
-    co::make_hidden_option("foo,f",co::value<std::string>("floo")),
-    co::make_hidden_option("bar,b",co::value<std::string>("blar"))
+    co::make_hidden_option("foo,f",co::value<std::string>().implicit("floo")),
+    co::make_hidden_option("bar,b",co::value<std::string>().implicit("blar"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -89,8 +89,8 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
   };
 
   options = co::options_group{
-    co::make_hidden_option("foo,f",co::value<std::string>("floo")),
-    co::make_hidden_option("bar,b",co::value<std::string>("blar"))
+    co::make_hidden_option("foo,f",co::value<std::string>().implicit("floo")),
+    co::make_hidden_option("bar,b",co::value<std::string>().implicit("blar"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -118,8 +118,8 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
   };
 
   options = co::options_group{
-    co::make_hidden_option("foo,f",co::value<std::string>("floo")),
-    co::make_hidden_option("bar,b",co::value<std::string>("blar"))
+    co::make_hidden_option("foo,f",co::value<std::string>().implicit("floo")),
+    co::make_hidden_option("bar,b",co::value<std::string>().implicit("blar"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);

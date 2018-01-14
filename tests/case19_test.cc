@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE( all_key_value_test )
   };
 
   options = co::options_group{
-    co::make_hidden_operand()
+    co::make_hidden_operand<char>()
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
@@ -71,8 +71,8 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
   };
 
   options = co::options_group{
-    co::make_option("",co::value<std::string>("floo"),"case 19"),
-    co::make_hidden_operand()
+    co::make_option("",co::value<std::string>().implicit("floo"),"case 19"),
+    co::make_hidden_operand<char>()
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);

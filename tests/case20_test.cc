@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
   };
 
   options = co::options_group{
-    co::make_option("",co::value<std::string>("floo"),"case 18"),
+    co::make_option("",co::value<std::string>().implicit("floo"),"case 18"),
     co::make_operand("operand_key","case 20")
   };
 
