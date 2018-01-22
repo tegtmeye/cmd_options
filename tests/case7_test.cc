@@ -15,35 +15,42 @@ BOOST_AUTO_TEST_SUITE( case7_test_suite )
 
 namespace co = lemma::cmd_options;
 
+typedef std::basic_string<detail::check_char_t> string_type;
+typedef co::basic_option_pack<detail::check_char_t> option_pack_type;
+typedef co::basic_option_description<detail::check_char_t>
+  option_description_type;
+typedef co::basic_options_group<detail::check_char_t> options_group_type;
+typedef co::basic_variable_map<detail::check_char_t> variable_map_type;
+typedef detail::std_stream_select<detail::check_char_t> stream_select;
+
+
 /**
   All POSIX key/value pairs
  */
 BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "-f",
-    "bar",
-    "-frab",
-    "-f bar"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("-f"),
+    _LIT("bar"),
+    _LIT("-frab"),
+    _LIT("-f bar")
   };
 
-  options = co::options_group{
-    co::make_hidden_option("foo,f",co::value<std::string>())
+  options = options_group_type{
+    co::make_hidden_option(_LIT("foo,f"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-   std::cerr << detail::to_string<std::string>(vm);
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"foo",{std::string("bar")}},
-      {"foo",{std::string("rab")}},
-      {"foo",{std::string(" bar")}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{string_type(_LIT("bar"))}},
+      {_LIT("foo"),{string_type(_LIT("rab"))}},
+      {_LIT("foo"),{string_type(_LIT(" bar"))}}
     }));
 }
 
@@ -52,28 +59,26 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
  */
 BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo=bar",
-    "--foo",
-    "rab"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo=bar"),
+    _LIT("--foo"),
+    _LIT("rab")
   };
 
-  options = co::options_group{
-    co::make_hidden_option("foo,f",co::value<std::string>())
+  options = options_group_type{
+    co::make_hidden_option(_LIT("foo,f"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-//   std::cerr << detail::to_string<std::string>(vm);
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"foo",{std::string("bar")}},
-      {"foo",{std::string("rab")}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{string_type(_LIT("bar"))}},
+      {_LIT("foo"),{string_type(_LIT("rab"))}}
     }));
 }
 
@@ -82,18 +87,16 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
  */
 BOOST_AUTO_TEST_CASE( all_invalid_POSIX_key_value_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "-f bar",
-    "-f",
-    "-b"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("-f bar"),
+    _LIT("-f"),
+    _LIT("-b")
   };
 
-  options = co::options_group{
-    co::make_hidden_option("foo,f",co::value<std::string>())
+  options = options_group_type{
+    co::make_hidden_option(_LIT("foo,f"),co::value<string_type>())
   };
 
   BOOST_REQUIRE_THROW(
@@ -106,16 +109,14 @@ BOOST_AUTO_TEST_CASE( all_invalid_POSIX_key_value_test )
  */
 BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test1 )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo bar"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo bar")
   };
 
-  options = co::options_group{
-    co::make_hidden_option("foo,f",co::value<std::string>())
+  options = options_group_type{
+    co::make_hidden_option(_LIT("foo,f"),co::value<string_type>())
   };
 
   BOOST_REQUIRE_THROW(
@@ -128,17 +129,15 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test1 )
  */
 BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test2 )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "--bar"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("--bar")
   };
 
-  options = co::options_group{
-    co::make_hidden_option("foo,f",co::value<std::string>())
+  options = options_group_type{
+    co::make_hidden_option(_LIT("foo,f"),co::value<string_type>())
   };
 
   BOOST_REQUIRE_THROW(
@@ -168,33 +167,31 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test2 )
  */
 BOOST_AUTO_TEST_CASE( all_flags_cease_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "-f",
-    "--",
-    "--bar",
-    "blah"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("-f"),
+    _LIT("--"),
+    _LIT("--bar"),
+    _LIT("blah")
   };
 
-  options = co::options_group{
-    co::make_hidden_option(""),
-    co::make_operand<std::string>("accept all operands")
+  options = options_group_type{
+    co::make_hidden_option(_LIT("")),
+    co::make_operand<string_type>("accept all operands")
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  //std::cerr << detail::to_string<std::string>(vm);
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"",std::string("--bar")},
-      {"",std::string("blah")},
-      {"foo",{}},
-      {"f",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT(""),string_type(_LIT("--bar"))},
+      {_LIT(""),string_type(_LIT("blah"))},
+      {_LIT("foo"),{}},
+      {_LIT("f"),{}}
     }));
 }
 
@@ -203,32 +200,30 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
  */
 BOOST_AUTO_TEST_CASE( packed_flags_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "-f",
-    "-abcd"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("-f"),
+    _LIT("-abcd")
   };
 
-  options = co::options_group{
-    co::make_hidden_option("")
+  options = options_group_type{
+    co::make_hidden_option(_LIT(""))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-// std::cerr << detail::to_string<std::string>(vm);
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"foo",{}},
-      {"f",{}},
-      {"a",{}},
-      {"b",{}},
-      {"c",{}},
-      {"d",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{}},
+      {_LIT("f"),{}},
+      {_LIT("a"),{}},
+      {_LIT("b"),{}},
+      {_LIT("c"),{}},
+      {_LIT("d"),{}}
     }));
 }
 
@@ -237,38 +232,36 @@ BOOST_AUTO_TEST_CASE( packed_flags_test )
  */
 BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "-f",
-    "-abcd",
-    "--",
-    "--bar",
-    "blah"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("-f"),
+    _LIT("-abcd"),
+    _LIT("--"),
+    _LIT("--bar"),
+    _LIT("blah")
   };
 
-  options = co::options_group{
-    co::make_hidden_option(""),
-    co::make_operand<std::string>("accept all operands")
+  options = options_group_type{
+    co::make_hidden_option(_LIT("")),
+    co::make_operand<string_type>("accept all operands")
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-// std::cerr << detail::to_string<std::string>(vm);
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"",std::string("--bar")},
-      {"",std::string("blah")},
-      {"foo",{}},
-      {"f",{}},
-      {"a",{}},
-      {"b",{}},
-      {"c",{}},
-      {"d",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT(""),string_type(_LIT("--bar"))},
+      {_LIT(""),string_type(_LIT("blah"))},
+      {_LIT("foo"),{}},
+      {_LIT("f"),{}},
+      {_LIT("a"),{}},
+      {_LIT("b"),{}},
+      {_LIT("c"),{}},
+      {_LIT("d"),{}}
     }));
 }
 
@@ -277,21 +270,18 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
  */
 BOOST_AUTO_TEST_CASE( flags_packed_arg_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo=bar",
-    "-f",
-    "-abcd"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo=bar"),
+    _LIT("-f"),
+    _LIT("-abcd")
   };
 
-  options = co::options_group{
-    co::make_hidden_option("")
+  options = options_group_type{
+    co::make_hidden_option(_LIT(""))
   };
 
-  std::cerr << detail::to_string(options.front()) << "\n";
 
   BOOST_REQUIRE_THROW(
     (vm = co::parse_arguments(argv.size(),argv.data(),options)),
@@ -303,18 +293,16 @@ BOOST_AUTO_TEST_CASE( flags_packed_arg_test )
  */
 BOOST_AUTO_TEST_CASE( flags_invalid_posarg_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "-f",
-    "bar"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("-f"),
+    _LIT("bar")
   };
 
-  options = co::options_group{
-    co::make_hidden_option("")
+  options = options_group_type{
+    co::make_hidden_option(_LIT(""))
   };
 
   BOOST_REQUIRE_THROW(
@@ -327,29 +315,27 @@ BOOST_AUTO_TEST_CASE( flags_invalid_posarg_test )
  */
 BOOST_AUTO_TEST_CASE( flags_invalid_packed_cease_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "-f",
-    "-a--"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("-f"),
+    _LIT("-a--")
   };
 
-  options = co::options_group{
-    co::make_hidden_option("")
+  options = options_group_type{
+    co::make_hidden_option(_LIT(""))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"foo",{}},
-      {"f",{}},
-      {"a",{}},
-      {"-",{}},
-      {"-",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{}},
+      {_LIT("f"),{}},
+      {_LIT("a"),{}},
+      {_LIT("-"),{}},
+      {_LIT("-"),{}}
     }));
 }
 
@@ -358,33 +344,31 @@ BOOST_AUTO_TEST_CASE( flags_invalid_packed_cease_test )
  */
 BOOST_AUTO_TEST_CASE( multi_packed_flags_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "-abc",
-    "-def"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("-abc"),
+    _LIT("-def")
   };
 
-  options = co::options_group{
-    co::make_hidden_option("")
+  options = options_group_type{
+    co::make_hidden_option(_LIT(""))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  std::cerr << detail::to_string<std::string>(vm);
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"a",{}},
-      {"b",{}},
-      {"c",{}},
-      {"d",{}},
-      {"e",{}},
-      {"f",{}},
-      {"foo",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("a"),{}},
+      {_LIT("b"),{}},
+      {_LIT("c"),{}},
+      {_LIT("d"),{}},
+      {_LIT("e"),{}},
+      {_LIT("f"),{}},
+      {_LIT("foo"),{}}
     }));
 }
 #endif

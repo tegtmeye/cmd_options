@@ -42,6 +42,7 @@
 #include <cassert>
 #include <sstream>
 #include <codecvt>
+#include <locale>
 #include <functional>
 
 #include <iostream>
@@ -96,14 +97,6 @@ namespace cmd_options {
   using any = std::any;
 #endif
 
-#ifndef CMD_OPTIONS_DEFAULT_OPERAND_KEY
-#define CMD_OPTIONS_DEFAULT_OPERAND_KEY
-#endif
-
-static const std::string
-  default_operand_key(CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR);
-
-
 namespace detail {
 
 // In the future (post C++14) use std::mismatch
@@ -148,64 +141,26 @@ class parse_error : public std::runtime_error {
 
 class unknown_option_error : public parse_error {
   public:
-    unknown_option_error(const std::string &option, std::size_t posn,
-      std::size_t argn) :parse_error("unknown_option_error",posn,argn),
-        _option(option) {}
-
-    const char * option(void) const noexcept {
-      return _option.what();
-    }
-
-  private:
-    std::runtime_error _option;
+    unknown_option_error(std::size_t posn, std::size_t argn)
+      :parse_error("unknown_option_error",posn,argn) {}
 };
 
 class missing_argument_error : public parse_error {
   public:
-    missing_argument_error(const std::string &option, std::size_t posn,
-      std::size_t argn) :parse_error("missing_argument_error",posn,argn),
-        _option(option) {}
-
-    const char * option(void) const noexcept {
-      return _option.what();
-    }
-
-  private:
-    std::runtime_error _option;
+    missing_argument_error(std::size_t posn, std::size_t argn)
+      :parse_error("missing_argument_error",posn,argn) {}
 };
 
 class unexpected_argument_error : public parse_error {
   public:
-    unexpected_argument_error(const std::string &option,
-      const std::string &argument, std::size_t posn, std::size_t argn)
-        :parse_error("unexpected_argument_error",posn,argn), _option(option),
-          _argument(argument) {}
-
-    const char * option(void) const noexcept {
-      return _option.what();
-    }
-
-    const char * argument(void) const noexcept {
-      return _argument.what();
-    }
-
-  private:
-    std::runtime_error _option;
-    std::runtime_error _argument;
+    unexpected_argument_error(std::size_t posn, std::size_t argn)
+        :parse_error("unexpected_argument_error",posn,argn) {}
 };
 
 class unexpected_operand_error : public parse_error {
   public:
-    unexpected_operand_error(const std::string &operand, std::size_t posn,
-      std::size_t argn)
-        :parse_error("unexpected_operand_error",posn,argn), _operand(operand) {}
-
-    const char * operand(void) const noexcept {
-      return _operand.what();
-    }
-
-  private:
-    std::runtime_error _operand;
+    unexpected_operand_error(std::size_t posn, std::size_t argn)
+        :parse_error("unexpected_operand_error",posn,argn) {}
 };
 
 class constraint_error : public std::runtime_error {
@@ -279,6 +234,57 @@ class mutually_inclusive_error : public constraint_error {
   private:
     std::runtime_error _inclusive_mapped_key;
 };
+
+
+/*
+  Convenience function to translate CharT -> char for use in formatting
+  exception messages. It is assumed that chars are encoded as UTF8 and
+  CharT is encoded as UTF16 in all cases
+*/
+inline std::string asUTF8(const std::basic_string<char> &str)
+{
+  return str;
+}
+
+/*
+  CharT either char16_t, char32_t, or wchar_t
+*/
+template<typename CharT>
+inline std::string asUTF8(const std::basic_string<CharT> &str)
+{
+  std::wstring_convert<std::codecvt_utf8_utf16<CharT> > convert;
+  return convert.to_bytes(str);
+}
+
+template<typename CharT>
+inline const std::basic_string<CharT> & default_operand_key(void)
+{
+  static const auto cvt = [](const char *str) -> std::basic_string<CharT> {
+    std::wstring_convert<std::codecvt_utf8_utf16<CharT> > convert;
+    return convert.from_bytes(str);
+  };
+
+  static const std::basic_string<CharT> str =
+    cvt(CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR);
+
+  return str;
+}
+
+template<>
+inline const std::basic_string<char> & default_operand_key<char>(void)
+{
+  static const std::string str(CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR);
+
+  return str;
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -404,6 +410,7 @@ struct basic_option_pack {
   string_type value;
 };
 
+#if 0
 template<typename CharT>
 std::ostream & operator<<(std::ostream &out,
   const basic_option_pack<CharT> &option_pack)
@@ -422,6 +429,7 @@ std::ostream & operator<<(std::ostream &out,
 
   return out;
 }
+#endif
 
 /*
   A description for a single option
@@ -675,7 +683,10 @@ basic_option_pack<CharT> unpack_posix(const std::basic_string<CharT> &str)
   typedef typename option_pack::string_type string_type;
   typedef typename option_pack::packed_arg_seq packed_arg_seq;
 
-  static const string_type sprefix("-");
+  // use this form to automatically convert single byte ASCII (UTF) encoding
+  // to wider equivalent. Works because each is part of the basic source
+  // character set.
+  static const string_type sprefix{'-'};
 
   auto &&res =
     detail::mismatch(sprefix.begin(),sprefix.end(),str.begin(),str.end());
@@ -748,8 +759,11 @@ basic_option_pack<CharT> unpack_gnu(const std::basic_string<CharT> &str)
   typedef basic_option_pack<CharT> option_pack;
   typedef std::basic_string<CharT> string_type;
 
-  static const string_type lprefix("--");
-  static const string_type assignment("=");
+  // use this form to automatically convert single byte ASCII (UTF) encoding
+  // to wider equivalent. Works because each is part of the basic source
+  // character set.
+  static const string_type lprefix{'-','-'};
+  static const string_type assignment{'='};
 
   auto &&res =
     detail::mismatch(lprefix.begin(),lprefix.end(),str.begin(),str.end());
@@ -883,8 +897,7 @@ parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
         if(!desc->make_value) {
           // strictly no values
           if(option_pack.value_provided)
-            throw unexpected_argument_error(option_pack.raw_key,
-              option_pack.value,option_count,arg_count);
+            throw unexpected_argument_error(option_count,arg_count);
 
           // handle the flag only
           _vm.emplace(mapped_key,any());
@@ -902,7 +915,7 @@ parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
             if(desc->implicit_value)
               _vm.emplace(mapped_key,desc->implicit_value(mapped_key,_vm));
             else
-              throw missing_argument_error(arg,option_count,arg_count);
+              throw missing_argument_error(option_count,arg_count);
           }
           else {
             // try to use the next argument on the command list. If any
@@ -924,7 +937,7 @@ parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
               if(desc->implicit_value)
                 _vm.emplace(mapped_key,desc->implicit_value(mapped_key,_vm));
               else
-                throw missing_argument_error(arg,option_count,arg_count);
+                throw missing_argument_error(option_count,arg_count);
             }
             else {
               _vm.emplace(mapped_key,
@@ -947,7 +960,7 @@ parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
 
       case 2: {
         // was unpacked as an option but couldn't find desc to handle it
-        throw unknown_option_error(arg,option_count,arg_count);
+        throw unknown_option_error(option_count,arg_count);
       } break;
 
 
@@ -965,11 +978,13 @@ parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
           if(desc->unpack_option)
             continue;
 
-          std::pair<bool,string_type> operand_key{false,default_operand_key};
+          std::pair<bool,string_type> operand_key{false,
+            default_operand_key<CharT>()};
 
           if(desc->mapped_key) {
             operand_key =
-              desc->mapped_key(default_operand_key,operand_count,arg_count,_vm);
+              desc->mapped_key(default_operand_key<CharT>(),operand_count,
+                arg_count,_vm);
             if(!operand_key.first)
               continue;
           }
@@ -988,7 +1003,7 @@ parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
         }
 
         if(desc == grp.end())
-          throw unexpected_operand_error(arg,operand_count,arg_count);
+          throw unexpected_operand_error(operand_count,arg_count);
 
         ++arg_count;
       } break;
@@ -1036,6 +1051,45 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
 {
   return parse_arguments(_argc,_argv,grp,basic_variable_map<CharT>(),
     end_of_options);
+}
+
+/*
+  Convenience specializations of parse_incremental_arguments
+*/
+template<typename CharT>
+inline basic_variable_map<CharT>
+parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
+  const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm)
+{
+  return parse_incremental_arguments(_argc,_argv,grp,vm,
+    std::basic_string<CharT>{'-','-'});
+}
+
+template<typename CharT>
+inline basic_variable_map<CharT>
+parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
+  const basic_options_group<CharT> &grp)
+{
+  return parse_incremental_arguments(_argc,_argv,grp,
+    basic_variable_map<CharT>(),std::basic_string<CharT>{'-','-'});
+}
+
+template<typename CharT>
+inline basic_variable_map<CharT>
+parse_arguments(std::size_t _argc, const CharT *_argv[],
+  const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm)
+{
+  return parse_incremental_arguments(_argc,_argv,grp,vm,
+    std::basic_string<CharT>{'-','-'});
+}
+
+template<typename CharT>
+inline basic_variable_map<CharT>
+parse_arguments(std::size_t _argc, const CharT *_argv[],
+  const basic_options_group<CharT> &grp)
+{
+  return parse_arguments(_argc,_argv,grp,
+    basic_variable_map<CharT>(),std::basic_string<CharT>{'-','-'});
 }
 
 
@@ -1470,18 +1524,20 @@ void add_option_constraints(const basic_constraint<CharT> &cnts,
 
     std::size_t occurrances = vm.count(mapped_key);
     if(occurrances > cnts._max || occurrances < cnts._min) {
-      throw occurrence_error(mapped_key,cnts._min,cnts._max,
+      throw occurrence_error(asUTF8(mapped_key),cnts._min,cnts._max,
         occurrances);
     }
 
     for(auto &exclusive_key : cnts._mutually_exclusive) {
       if(vm.count(exclusive_key) != 0)
-        throw mutually_exclusive_error(mapped_key,exclusive_key);
+        throw mutually_exclusive_error(asUTF8(mapped_key),
+          asUTF8(exclusive_key));
     }
 
     for(auto &inclusive_key : cnts._mutually_inclusive) {
       if(vm.count(inclusive_key) == 0)
-        throw mutually_inclusive_error(mapped_key,inclusive_key);
+        throw mutually_inclusive_error(asUTF8(mapped_key),
+          asUTF8(inclusive_key));
     }
   };
 }
@@ -1497,18 +1553,20 @@ void add_operand_constraints(const basic_constraint<CharT> &cnts,
   desc.finalize = [=](const basic_variable_map<CharT> &vm) {
     std::size_t occurrances = vm.count(mapped_key);
     if(occurrances < cnts._min || occurrances > cnts._max) {
-        throw occurrence_error(mapped_key,cnts._min,cnts._max,
+        throw occurrence_error(asUTF8(mapped_key),cnts._min,cnts._max,
           occurrances);
     }
 
     for(auto &exclusive_key : cnts._mutually_exclusive) {
       if(vm.count(exclusive_key) != 0)
-        throw mutually_exclusive_error(mapped_key,exclusive_key);
+        throw mutually_exclusive_error(asUTF8(mapped_key),
+          asUTF8(exclusive_key));
     }
 
     for(auto &inclusive_key : cnts._mutually_inclusive) {
       if(vm.count(inclusive_key) == 0)
-        throw mutually_inclusive_error(mapped_key,inclusive_key);
+        throw mutually_inclusive_error(asUTF8(mapped_key),
+          asUTF8(inclusive_key));
     }
   };
 }
@@ -1745,10 +1803,10 @@ make_operand(const std::basic_string<CharT> &extended_desc, const value<T> &val,
 
   detail::add_operand_value(val,desc);
 
-  detail::add_operand_key(default_operand_key,cnts._position,
+  detail::add_operand_key(default_operand_key<CharT>(),cnts._position,
     cnts._argument,desc);
 
-  detail::add_operand_constraints(cnts,default_operand_key,desc);
+  detail::add_operand_constraints(cnts,default_operand_key<CharT>(),desc);
 
   return desc;
 }
@@ -1774,10 +1832,10 @@ make_hidden_operand(const value<T> &val,
 
   detail::add_operand_value(val,desc);
 
-  detail::add_operand_key(default_operand_key,cnts._position,
+  detail::add_operand_key(default_operand_key<CharT>(),cnts._position,
     cnts._argument,desc);
 
-  detail::add_operand_constraints(cnts,default_operand_key,desc);
+  detail::add_operand_constraints(cnts,default_operand_key<CharT>(),desc);
 
   return desc;
 }
@@ -1792,7 +1850,7 @@ make_operand(const std::basic_string<CharT> &mapped_key,
   const std::basic_string<CharT> &extended_desc, const value<T> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
-  basic_option_description<char> desc;
+  basic_option_description<CharT> desc;
 
   desc.extended_description = [=](void) { return extended_desc; };
 
@@ -1845,7 +1903,7 @@ make_hidden_operand(const std::basic_string<CharT> &mapped_key,
   const value<T> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
-  basic_option_description<char> desc;
+  basic_option_description<CharT> desc;
 
   detail::add_option_value(val,desc);
 
@@ -1876,10 +1934,10 @@ make_operand(const std::basic_string<CharT> &extended_desc,
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  detail::add_operand_key(default_operand_key,cnts._position,
+  detail::add_operand_key(default_operand_key<CharT>(),cnts._position,
     cnts._argument,desc);
 
-  detail::add_operand_constraints(cnts,default_operand_key,desc);
+  detail::add_operand_constraints(cnts,default_operand_key<CharT>(),desc);
 
   return desc;
 }
@@ -1902,10 +1960,10 @@ make_hidden_operand(
 {
   basic_option_description<CharT> desc;
 
-  detail::add_operand_key(default_operand_key,cnts._position,
+  detail::add_operand_key(default_operand_key<CharT>(),cnts._position,
     cnts._argument,desc);
 
-  detail::add_operand_constraints(cnts,default_operand_key,desc);
+  detail::add_operand_constraints(cnts,default_operand_key<CharT>(),desc);
 
   return desc;
 }
@@ -1933,7 +1991,7 @@ make_operand(const std::basic_string<CharT> &mapped_key,
 template<typename CharT>
 inline basic_option_description<CharT>
 make_operand(const CharT *mapped_key, const CharT *extended_desc,
-  const basic_constraint<CharT> &cnts = basic_constraint<char>())
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
   return make_operand(std::basic_string<CharT>(mapped_key),
     std::basic_string<CharT>(extended_desc),cnts);
@@ -1943,7 +2001,7 @@ template<typename CharT>
 inline basic_option_description<CharT>
 make_operand(const std::basic_string<CharT> &mapped_key,
   const CharT *extended_desc,
-  const basic_constraint<CharT> &cnts = basic_constraint<char>())
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
   return make_operand(mapped_key,std::basic_string<CharT>(extended_desc),cnts);
 }
@@ -1952,7 +2010,7 @@ template<typename CharT>
 inline basic_option_description<CharT>
 make_operand(const CharT *mapped_key,
   const std::basic_string<CharT> &extended_desc,
-  const basic_constraint<CharT> &cnts = basic_constraint<char>())
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
   return make_operand(std::basic_string<CharT>(mapped_key),extended_desc,cnts);
 }
@@ -1963,7 +2021,7 @@ make_operand(const CharT *mapped_key,
 template<typename CharT>
 inline basic_option_description<CharT>
 make_hidden_operand(const std::basic_string<CharT> &mapped_key,
-  const basic_constraint<CharT> &cnts = basic_constraint<char>())
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
   basic_option_description<CharT> desc;
 
@@ -1977,7 +2035,7 @@ make_hidden_operand(const std::basic_string<CharT> &mapped_key,
 template<typename CharT>
 inline basic_option_description<CharT>
 make_hidden_operand(const CharT *mapped_key,
-  const basic_constraint<CharT> &cnts = basic_constraint<char>())
+  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
   return make_hidden_operand(std::basic_string<CharT>(mapped_key),cnts);
 }
@@ -2016,41 +2074,6 @@ inline basic_option_description<CharT> make_options_error(void)
 
 
 
-/*
-  Convenience specializations of parse_incremental_arguments for appropriate
-  character classes
-*/
-inline basic_variable_map<char>
-parse_incremental_arguments(std::size_t _argc, const char *_argv[],
-  const basic_options_group<char> &grp, const basic_variable_map<char> &vm)
-{
-  return parse_incremental_arguments(_argc,_argv,grp,vm,
-    std::basic_string<char>("--"));
-}
-
-inline basic_variable_map<char>
-parse_incremental_arguments(std::size_t _argc, const char *_argv[],
-  const basic_options_group<char> &grp)
-{
-  return parse_incremental_arguments(_argc,_argv,grp,
-    basic_variable_map<char>(),std::basic_string<char>("--"));
-}
-
-inline basic_variable_map<char>
-parse_arguments(std::size_t _argc, const char *_argv[],
-  const basic_options_group<char> &grp, const basic_variable_map<char> &vm)
-{
-  return parse_incremental_arguments(_argc,_argv,grp,vm,
-    std::basic_string<char>("--"));
-}
-
-inline basic_variable_map<char>
-parse_arguments(std::size_t _argc, const char *_argv[],
-  const basic_options_group<char> &grp)
-{
-  return parse_arguments(_argc,_argv,grp,
-    basic_variable_map<char>(),std::basic_string<char>("--"));
-}
 
 
 
@@ -2058,7 +2081,7 @@ parse_arguments(std::size_t _argc, const char *_argv[],
 
 
 
-
+#if 0
 #if 0
 /*
   Convenience default parser
@@ -2387,7 +2410,7 @@ to_string_debug(const basic_option_description<CharT> &option)
 };
 
 
-
+#endif
 
 }
 

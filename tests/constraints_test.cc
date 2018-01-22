@@ -15,29 +15,35 @@ BOOST_AUTO_TEST_SUITE( constraints_test_suite )
 
 namespace co = lemma::cmd_options;
 
+typedef std::basic_string<detail::check_char_t> string_type;
+typedef co::basic_option_pack<detail::check_char_t> option_pack_type;
+typedef co::basic_option_description<detail::check_char_t>
+  option_description_type;
+typedef co::basic_options_group<detail::check_char_t> options_group_type;
+typedef co::basic_variable_map<detail::check_char_t> variable_map_type;
+typedef detail::std_stream_select<detail::check_char_t> stream_select;
+
 /**
   option no restriction given 0
  */
 BOOST_AUTO_TEST_CASE( option_no_restrictions_given_0_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--bar",
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--bar"),
   };
 
-  options = co::options_group{
-    co::make_option("foo,f","case 2"),
-    co::make_option("bar,b","case 2")
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),_LIT("case 2")),
+    co::make_option(_LIT("bar,b"),_LIT("case 2"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"bar",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("bar"),{}}
     }));
 }
 
@@ -46,23 +52,21 @@ BOOST_AUTO_TEST_CASE( option_no_restrictions_given_0_test )
  */
 BOOST_AUTO_TEST_CASE( option_no_restrictions_given_1_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
   };
 
-  options = co::options_group{
-    co::make_option("foo,f","case 2")
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"foo",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{}}
     }));
 }
 
@@ -71,24 +75,23 @@ BOOST_AUTO_TEST_CASE( option_no_restrictions_given_1_test )
  */
 BOOST_AUTO_TEST_CASE( option_degenerate_occurrences_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--bar",
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--bar"),
   };
 
-  options = co::options_group{
-    co::make_option("foo,f","case 2",co::constrain().occurrences(0)),
-    co::make_option("bar,b","case 2")
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),
+      _LIT("case 2"),co::basic_constraint<detail::check_char_t>().occurrences(0)),
+    co::make_option(_LIT("bar,b"),_LIT("case 2"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"bar",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("bar"),{}}
     }));
 }
 
@@ -97,22 +100,21 @@ BOOST_AUTO_TEST_CASE( option_degenerate_occurrences_test )
  */
 BOOST_AUTO_TEST_CASE( option_strict_0_given_1_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
   };
 
-  options = co::options_group{
-    co::make_option("foo,f","case 2",co::constrain().occurrences(0)),
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().occurrences(0)),
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
-      return (ex.mapped_key() == std::string("foo")  && ex.min() == 0
-        && ex.max() == 0 && ex.occurrences() == 1);
+      return (ex.mapped_key() == co::asUTF8(string_type(_LIT("foo")))
+        && ex.min() == 0 && ex.max() == 0 && ex.occurrences() == 1);
     }
   );
 }
@@ -122,21 +124,20 @@ BOOST_AUTO_TEST_CASE( option_strict_0_given_1_test )
  */
 BOOST_AUTO_TEST_CASE( option_strict_1_given_0_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
   };
 
-  options = co::options_group{
-    co::make_option("foo,f","case 2",co::constrain().occurrences(1))
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
-      return (ex.mapped_key() == std::string("foo")  && ex.min() == 1
-        && ex.max() == 1 && ex.occurrences() == 0);
+      return (ex.mapped_key() == co::asUTF8(string_type(_LIT("foo")))
+        && ex.min() == 1 && ex.max() == 1 && ex.occurrences() == 0);
     }
   );
 }
@@ -146,23 +147,22 @@ BOOST_AUTO_TEST_CASE( option_strict_1_given_0_test )
  */
 BOOST_AUTO_TEST_CASE( option_strict_1_given_1_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
   };
 
-  options = co::options_group{
-    co::make_option("foo,f","case 2",co::constrain().occurrences(1))
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"foo",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{}}
     }));
 }
 
@@ -171,23 +171,22 @@ BOOST_AUTO_TEST_CASE( option_strict_1_given_1_test )
  */
 BOOST_AUTO_TEST_CASE( option_strict_1_given_2_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "-f"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("-f")
   };
 
-  options = co::options_group{
-    co::make_option("foo,f","case 2",co::constrain().occurrences(1))
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
-      return (ex.mapped_key() == std::string("foo")  && ex.min() == 1
-        && ex.max() == 1 && ex.occurrences() == 2);
+      return (ex.mapped_key() == co::asUTF8(string_type(_LIT("foo")))
+        && ex.min() == 1 && ex.max() == 1 && ex.occurrences() == 2);
     }
   );
 }
@@ -200,24 +199,22 @@ BOOST_AUTO_TEST_CASE( option_strict_1_given_2_test )
  */
 BOOST_AUTO_TEST_CASE( operand_no_restrictions_given_0_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
   };
 
-  options = co::options_group{
-    co::make_option("foo,f","case 2"),
-    co::make_operand("case 14",co::value<std::string>())
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),_LIT("case 2")),
+    co::make_operand(_LIT("case 14"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"foo",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{}}
     }));
 }
 
@@ -226,23 +223,22 @@ BOOST_AUTO_TEST_CASE( operand_no_restrictions_given_0_test )
  */
 BOOST_AUTO_TEST_CASE( operand_no_restrictions_given_1_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--bar",
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--bar"),
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",co::value<std::string>())
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {co::default_operand_key,{std::string("--bar")}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("--bar"))}}
     }));
 }
 
@@ -251,25 +247,23 @@ BOOST_AUTO_TEST_CASE( operand_no_restrictions_given_1_test )
  */
 BOOST_AUTO_TEST_CASE( operand_strict_0_given_0_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--bar",
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--bar"),
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().occurrences(0)),
-    co::make_option("bar,b","case 2")
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().occurrences(0)),
+    co::make_option(_LIT("bar,b"),_LIT("case 2"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"bar",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("bar"),{}}
     }));
 }
 
@@ -278,23 +272,23 @@ BOOST_AUTO_TEST_CASE( operand_strict_0_given_0_test )
  */
 BOOST_AUTO_TEST_CASE( operand_strict_0_given_1_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--bar",
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--bar"),
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().occurrences(0))
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().occurrences(0))
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
-      return (ex.mapped_key() == co::default_operand_key  && ex.min() == 0
-        && ex.max() == 0 && ex.occurrences() == 1);
+      return
+        (ex.mapped_key() ==
+          co::asUTF8(co::default_operand_key<detail::check_char_t>())
+        && ex.min() == 0 && ex.max() == 0 && ex.occurrences() == 1);
     }
   );
 }
@@ -304,22 +298,22 @@ BOOST_AUTO_TEST_CASE( operand_strict_0_given_1_test )
  */
 BOOST_AUTO_TEST_CASE( operand_strict_1_given_0_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().occurrences(1))
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
-      return (ex.mapped_key() == co::default_operand_key  && ex.min() == 1
-        && ex.max() == 1 && ex.occurrences() == 0);
+      return
+        (ex.mapped_key() ==
+          co::asUTF8(co::default_operand_key<detail::check_char_t>())
+        && ex.min() == 1 && ex.max() == 1 && ex.occurrences() == 0);
     }
   );
 }
@@ -329,24 +323,23 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_0_test )
  */
 BOOST_AUTO_TEST_CASE( operand_strict_1_given_1_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--bar",
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--bar"),
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().occurrences(1))
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {co::default_operand_key,{std::string("--bar")}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("--bar"))}}
     }));
 }
 
@@ -355,24 +348,24 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_1_test )
  */
 BOOST_AUTO_TEST_CASE( operand_strict_1_given_2_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "-f"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("-f")
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().occurrences(1))
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
-      return (ex.mapped_key() == co::default_operand_key  && ex.min() == 1
-        && ex.max() == 1 && ex.occurrences() == 2);
+      return
+        (ex.mapped_key() ==
+          co::asUTF8(co::default_operand_key<detail::check_char_t>())
+        && ex.min() == 1 && ex.max() == 1 && ex.occurrences() == 2);
     }
   );
 }
@@ -382,27 +375,25 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_2_test )
  */
 BOOST_AUTO_TEST_CASE( operand_0_1_given_0_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "-f"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("-f")
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().occurrences(0,1)),
-    co::make_option("foo,f","case 2")
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().occurrences(0,1)),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"foo",{}},
-      {"foo",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{}},
+      {_LIT("foo"),{}}
     }));
 }
 
@@ -411,29 +402,28 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_0_test )
  */
 BOOST_AUTO_TEST_CASE( operand_0_1_given_1_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "-f",
-    "bar"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("-f"),
+    _LIT("bar")
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().occurrences(0,1)),
-    co::make_option("foo,f","case 2")
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().occurrences(0,1)),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {co::default_operand_key,{std::string("bar")}},
-      {"foo",{}},
-      {"foo",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("bar"))}},
+      {_LIT("foo"),{}},
+      {_LIT("foo"),{}}
     }));
 }
 
@@ -442,27 +432,27 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_1_test )
  */
 BOOST_AUTO_TEST_CASE( operand_0_1_given_2_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "-f",
-    "bar1",
-    "bar2"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("-f"),
+    _LIT("bar1"),
+    _LIT("bar2")
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().occurrences(0,1)),
-    co::make_option("foo,f","case 2")
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().occurrences(0,1)),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
-      return (ex.mapped_key() == co::default_operand_key  && ex.min() == 0
-        && ex.max() == 1 && ex.occurrences() == 2);
+      return
+        (ex.mapped_key() ==
+          co::asUTF8(co::default_operand_key<detail::check_char_t>())
+        && ex.min() == 0 && ex.max() == 1 && ex.occurrences() == 2);
     }
   );
 }
@@ -477,35 +467,36 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_2_test )
  */
 BOOST_AUTO_TEST_CASE( operand_unconstrained_argument )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "bar1",
-    "--foo",
-    "bar2",
-    "-f",
-    "bar3"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("bar1"),
+    _LIT("--foo"),
+    _LIT("bar2"),
+    _LIT("-f"),
+    _LIT("bar3")
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().at_argument(-1)),
-    co::make_option("foo,f","case 2")
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().at_argument(-1)),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  //std::cerr << detail::to_string<std::string>(vm);
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {co::default_operand_key,{std::string("bar1")}},
-      {co::default_operand_key,{std::string("bar2")}},
-      {co::default_operand_key,{std::string("bar3")}},
-      {"foo",{}},
-      {"foo",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("bar1"))}},
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("bar2"))}},
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("bar3"))}},
+      {_LIT("foo"),{}},
+      {_LIT("foo"),{}}
     }));
 }
 
@@ -514,27 +505,26 @@ BOOST_AUTO_TEST_CASE( operand_unconstrained_argument )
  */
 BOOST_AUTO_TEST_CASE( operand_argument_0_given_0 )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "bar",
-    "--foo"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("bar"),
+    _LIT("--foo")
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().at_argument(0)),
-    co::make_option("foo,f","case 2")
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().at_argument(0)),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {co::default_operand_key,{std::string("bar")}},
-      {"foo",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("bar"))}},
+      {_LIT("foo"),{}}
     }));
 }
 
@@ -543,24 +533,22 @@ BOOST_AUTO_TEST_CASE( operand_argument_0_given_0 )
  */
 BOOST_AUTO_TEST_CASE( operand_argument_0_given_1 )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "bar"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("bar")
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().at_argument(0)),
-    co::make_option("foo,f","case 2")
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().at_argument(0)),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
     co::unexpected_operand_error, [](const co::unexpected_operand_error &ex) {
-      return (ex.operand() == std::string("bar"));
+      return (ex.position() == 0 && ex.argument() == 1);
     }
   );
 }
@@ -571,35 +559,36 @@ BOOST_AUTO_TEST_CASE( operand_argument_0_given_1 )
  */
 BOOST_AUTO_TEST_CASE( operand_unconstrained_position )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "bar1",
-    "--foo",
-    "bar2",
-    "-f",
-    "bar3"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("bar1"),
+    _LIT("--foo"),
+    _LIT("bar2"),
+    _LIT("-f"),
+    _LIT("bar3")
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().at_position(-1)),
-    co::make_option("foo,f","case 2")
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().at_position(-1)),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  //std::cerr << detail::to_string<std::string>(vm);
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {co::default_operand_key,{std::string("bar1")}},
-      {co::default_operand_key,{std::string("bar2")}},
-      {co::default_operand_key,{std::string("bar3")}},
-      {"foo",{}},
-      {"foo",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("bar1"))}},
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("bar2"))}},
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("bar3"))}},
+      {_LIT("foo"),{}},
+      {_LIT("foo"),{}}
     }));
 }
 
@@ -608,27 +597,26 @@ BOOST_AUTO_TEST_CASE( operand_unconstrained_position )
  */
 BOOST_AUTO_TEST_CASE( operand_position_0_given_0 )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "bar"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("bar")
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().at_position(0)),
-    co::make_option("foo,f","case 2")
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().at_position(0)),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {co::default_operand_key,{std::string("bar")}},
-      {"foo",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("bar"))}},
+      {_LIT("foo"),{}}
     }));
 }
 
@@ -637,25 +625,23 @@ BOOST_AUTO_TEST_CASE( operand_position_0_given_0 )
  */
 BOOST_AUTO_TEST_CASE( operand_position_0_given_1 )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "bar0",
-    "bar1"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("bar0"),
+    _LIT("bar1")
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",
-      co::value<std::string>(),co::constrain().at_position(0)),
-    co::make_option("foo,f","case 2")
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+      co::basic_constraint<detail::check_char_t>().at_position(0)),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
     co::unexpected_operand_error, [](const co::unexpected_operand_error &ex) {
-      return (ex.operand() == std::string("bar1"));
+      return (ex.position() == 1 && ex.argument() == 2);
     }
   );
 }
@@ -665,26 +651,25 @@ BOOST_AUTO_TEST_CASE( operand_position_0_given_1 )
 */
 BOOST_AUTO_TEST_CASE( option_non_mutual_exclusion_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo")
   };
 
-  options = co::options_group{
-    co::make_option("foo,f","case 2",
-      co::constrain().mutually_exclusive({"bar","baz","foobar"})),
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_exclusive(
+        {_LIT("bar"),_LIT("baz"),_LIT("foobar")})),
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  //std::cerr << detail::to_string<std::string>(vm);
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"foo",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{}}
     }));
 }
 
@@ -693,25 +678,24 @@ BOOST_AUTO_TEST_CASE( option_non_mutual_exclusion_test )
 */
 BOOST_AUTO_TEST_CASE( option_mutual_exclusion_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "--bar"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("--bar")
   };
 
-  options = co::options_group{
-    co::make_option("bar,b","case 2"),
-    co::make_option("foo,f","case 2",
-      co::constrain().mutually_exclusive({"bar"})),
+  options = options_group_type{
+    co::make_option(_LIT("bar,b"),_LIT("case 2")),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_exclusive(
+        {_LIT("bar")})),
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
     co::mutually_exclusive_error, [](const co::mutually_exclusive_error &ex) {
-      return (ex.mapped_key() == std::string("foo")
-        && ex.exclusive_mapped_key() == std::string("bar"));
+      return (ex.mapped_key() == co::asUTF8(string_type(_LIT("foo")))
+        && ex.exclusive_mapped_key() == co::asUTF8(string_type(_LIT("bar"))));
     }
   );
 }
@@ -721,29 +705,28 @@ BOOST_AUTO_TEST_CASE( option_mutual_exclusion_test )
 */
 BOOST_AUTO_TEST_CASE( option_non_mutual_inclusion_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo",
-    "--bar"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("--bar")
   };
 
-  options = co::options_group{
-    co::make_option("bar,b","case 2"),
-    co::make_option("foo,f","case 2",
-      co::constrain().mutually_inclusive({"bar"})),
+  options = options_group_type{
+    co::make_option(_LIT("bar,b"),_LIT("case 2")),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_inclusive(
+        {_LIT("bar")})),
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  //std::cerr << detail::to_string<std::string>(vm);
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {"bar",{}},
-      {"foo",{}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("bar"),{}},
+      {_LIT("foo"),{}}
     }));
 }
 
@@ -752,24 +735,23 @@ BOOST_AUTO_TEST_CASE( option_non_mutual_inclusion_test )
 */
 BOOST_AUTO_TEST_CASE( option_mutual_inclusion_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "--foo"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo")
   };
 
-  options = co::options_group{
-    co::make_option("bar,b","case 2"),
-    co::make_option("foo,f","case 2",
-      co::constrain().mutually_inclusive({"bar"})),
+  options = options_group_type{
+    co::make_option(_LIT("bar,b"),_LIT("case 2")),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_inclusive(
+        {_LIT("bar")})),
   };
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.size(),argv.data(),options),
     co::mutually_inclusive_error, [](const co::mutually_inclusive_error &ex) {
-      return (ex.mapped_key() == std::string("foo")
-        && ex.inclusive_mapped_key() == std::string("bar"));
+      return (ex.mapped_key() == co::asUTF8(string_type(_LIT("foo")))
+        && ex.inclusive_mapped_key() == co::asUTF8(string_type(_LIT("bar"))));
     }
   );
 }

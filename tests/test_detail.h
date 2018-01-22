@@ -3,6 +3,9 @@
 
 #include "cmd_options.h"
 
+#include <iostream>
+
+
 namespace lemma {
 namespace cmd_options {
 
@@ -23,6 +26,38 @@ bool operator==(const basic_option_pack<CharT> &lhs,
 namespace co = lemma::cmd_options;
 
 namespace detail {
+
+#ifndef CMD_OPT_TEST_CHART
+#define CMD_OPT_TEST_CHART char
+#endif
+
+#ifndef LITERAL_PREFIX
+#define LITERAL_PREFIX
+#endif
+
+// call _LIT(...) to automatically add 'L' or other CharT literal
+// qualifier to string literals
+#define _CAT_LITERAL(x,y) x##y
+#define _MAKE_LITERAL(lit,str) _CAT_LITERAL(lit,str)
+#define _LIT(string) _MAKE_LITERAL(LITERAL_PREFIX,string)
+
+
+typedef CMD_OPT_TEST_CHART check_char_t;
+
+template<typename CharT>
+struct std_stream_select;
+
+template<>
+struct std_stream_select<char> {
+  static constexpr std::basic_ostream<char> &cout = std::cout;
+  static constexpr std::basic_ostream<char> &cerr = std::cerr;
+};
+
+template<>
+struct std_stream_select<wchar_t> {
+  static constexpr std::basic_ostream<wchar_t> &cout = std::wcout;
+  static constexpr std::basic_ostream<wchar_t> &cerr = std::wcerr;
+};
 
 template<typename CharT>
 inline bool is_empty(const co::basic_option_description<CharT> &desc)
@@ -228,40 +263,48 @@ inline bool is_hidden_empty_keyed_operand(
 
 
 
-
-
-inline std::string to_string(const co::basic_option_description<char> &desc)
+template<typename CharT>
+inline std::basic_string<CharT>
+to_string(const co::basic_option_description<CharT> &desc)
 {
-  std::stringstream out;
+  std::basic_stringstream<CharT> out;
   out
-    << "unpack_option: " << bool(desc.unpack_option) << "\n"
-    << "mapped_key: " << bool(desc.mapped_key) << "\n"
-    << "key_description: " << bool(desc.key_description) << "\n"
-    << "extended_description: " << bool(desc.extended_description) << "\n"
-    << "implicit_value: " << bool(desc.implicit_value) << "\n"
-    << "implicit_value_description: "
-      << bool(desc.implicit_value_description) << "\n"
-    << "make_value: " << bool(desc.make_value) << "\n"
-    << "finalize: " << bool(desc.finalize) << "\n";
+    << _LIT("unpack_option: ") << bool(desc.unpack_option)
+      << _LIT("\n")
+    << _LIT("mapped_key: ")
+      << bool(desc.mapped_key) << _LIT("\n")
+    << _LIT("key_description: ") << bool(desc.key_description)
+      << _LIT("\n")
+    << _LIT("extended_description: ") << bool(desc.extended_description)
+      << _LIT("\n")
+    << _LIT("implicit_value: ") << bool(desc.implicit_value)
+      << _LIT("\n")
+    << _LIT("implicit_value_description: ")
+      << bool(desc.implicit_value_description) << _LIT("\n")
+    << _LIT("make_value: ") << bool(desc.make_value)
+      << _LIT("\n")
+    << _LIT("finalize: ") << bool(desc.finalize)
+      << _LIT("\n");
 
   return out.str();
 }
 
-template<typename T>
-std::string to_string(const co::variable_map &vm)
+template<typename CharT, typename T>
+std::basic_string<CharT>
+to_string(const co::basic_variable_map<CharT> &vm, const co::value<T> &)
 {
-  std::stringstream out;
+  std::basic_stringstream<CharT> out;
+
   for(auto && pair : vm) {
-    out << pair.first << " -> ";
+    out << pair.first << _LIT(" -> ");
     if(co::is_empty(pair.second))
-      out << "[empty]\n";
+      out << _LIT("[empty]\n");
     else
-      out << co::any_cast<T>(pair.second) << "\n";
+      out << co::any_cast<T>(pair.second) << _LIT("\n");
   }
 
   return out.str();
 }
-
 
 
 template<typename CharT>
@@ -269,32 +312,48 @@ bool check_exclusive(const co::basic_option_description<CharT> &desc,
   bool(*fn)(const co::basic_option_description<CharT> &))
 {
   typedef bool(*fn_t)(const co::basic_option_description<CharT> &);
-  typedef std::pair<std::string,fn_t> pair_type;
+  typedef std::pair<std::basic_string<CharT>,fn_t> pair_type;
 
   static const std::vector<pair_type> cases{
-    {"is_mapped_isolated_option",is_mapped_isolated_option<CharT>},
-    {"is_hidden_mapped_isolated_option",
+    {_LIT("is_mapped_isolated_option"),
+      is_mapped_isolated_option<CharT>},
+    {_LIT("is_hidden_mapped_isolated_option"),
       is_hidden_mapped_isolated_option<CharT>},
-    {"is_raw_isolated_option",is_raw_isolated_option<CharT>},
-    {"is_hidden_raw_isolated_option",is_hidden_raw_isolated_option<CharT>},
-    {"is_mapped_reqired_option",is_mapped_reqired_option<CharT>},
-    {"is_hidden_mapped_reqired_option",is_hidden_mapped_reqired_option<CharT>},
-    {"is_raw_reqired_option",is_raw_reqired_option<CharT>},
-    {"is_raw_mapped_reqired_option",is_raw_mapped_reqired_option<CharT>},
-    {"is_mapped_optional_option",is_mapped_optional_option<CharT>},
-    {"is_hidden_mapped_optional_option",
+    {_LIT("is_raw_isolated_option"),
+      is_raw_isolated_option<CharT>},
+    {_LIT("is_hidden_raw_isolated_option"),
+      is_hidden_raw_isolated_option<CharT>},
+    {_LIT("is_mapped_reqired_option"),
+      is_mapped_reqired_option<CharT>},
+    {_LIT("is_hidden_mapped_reqired_option"),
+      is_hidden_mapped_reqired_option<CharT>},
+    {_LIT("is_raw_reqired_option"),
+      is_raw_reqired_option<CharT>},
+    {_LIT("is_raw_mapped_reqired_option"),
+      is_raw_mapped_reqired_option<CharT>},
+    {_LIT("is_mapped_optional_option"),
+      is_mapped_optional_option<CharT>},
+    {_LIT("is_hidden_mapped_optional_option"),
       is_hidden_mapped_optional_option<CharT>},
-    {"is_raw_optional_option",is_raw_optional_option<CharT>},
-    {"is_raw_mapped_optional_option",is_raw_mapped_optional_option<CharT>},
-    {"is_interpret_operand",is_interpret_operand<CharT>},
-    {"is_hidden_interpret_operand",is_hidden_interpret_operand<CharT>},
-    {"is_keyed_interpret_operand",is_keyed_interpret_operand<CharT>},
-    {"is_hidden_keyed_interpret_operand",
+    {_LIT("is_raw_optional_option"),
+      is_raw_optional_option<CharT>},
+    {_LIT("is_raw_mapped_optional_option"),
+      is_raw_mapped_optional_option<CharT>},
+    {_LIT("is_interpret_operand"),
+      is_interpret_operand<CharT>},
+    {_LIT("is_hidden_interpret_operand"),
+      is_hidden_interpret_operand<CharT>},
+    {_LIT("is_keyed_interpret_operand"),
+      is_keyed_interpret_operand<CharT>},
+    {_LIT("is_hidden_keyed_interpret_operand"),
       is_hidden_keyed_interpret_operand<CharT>},
-    {"is_empty_operand",is_empty_operand<CharT>},
-    {"is_hidden_empty_operand",is_hidden_empty_operand<CharT>},
-    {"is_empty_keyed_operand",is_empty_keyed_operand<CharT>},
-    {"is_hidden_empty_keyed_operand",
+    {_LIT("is_empty_operand"),
+      is_empty_operand<CharT>},
+    {_LIT("is_hidden_empty_operand"),
+      is_hidden_empty_operand<CharT>},
+    {_LIT("is_empty_keyed_operand"),
+      is_empty_keyed_operand<CharT>},
+    {_LIT("is_hidden_empty_keyed_operand"),
       is_hidden_empty_keyed_operand<CharT>}
   };
 
@@ -312,14 +371,17 @@ bool check_exclusive(const co::basic_option_description<CharT> &desc,
 
 #if 1
   if(!fn(desc)) {
-    std::cerr << "Given function returned false\n" << to_string(desc) << "\n";
+    std_stream_select<CharT>::cerr
+      << _LIT("Given function returned false\n")
+      << to_string(desc) << _LIT("\n");
     return false;
   }
 
   for(std::size_t i=0; i<exclusive.size(); ++i) {
     if(exclusive[i].second(desc)) {
-      std::cerr << "check_exclusive is true for : " << exclusive[i].first
-        << "\n" << to_string(desc) << "\n";
+      std_stream_select<CharT>::cerr
+        << _LIT("check_exclusive is true for : ") << exclusive[i].first
+        << _LIT("\n") << to_string(desc) << ("\n");
       return false;
     }
   }
@@ -333,28 +395,33 @@ bool check_exclusive(const co::basic_option_description<CharT> &desc,
 template<typename T, typename VariableMap>
 bool contents_equal(const VariableMap &lhs, const VariableMap &rhs)
 {
+  typedef typename VariableMap::key_type::value_type char_type;
   typename VariableMap::const_iterator lcur = lhs.begin();
   typename VariableMap::const_iterator rcur = rhs.begin();
 
   while(lcur != lhs.end() && rcur != rhs.end()) {
     if(lcur->first != rcur->first) {
-       std::cerr << "lhs vm key '" << lcur->first << "' != rhs vm key '"
-         << rcur->first << "'\n";
+      std_stream_select<char_type>::cerr
+        << _LIT("lhs vm key '") << lcur->first
+        << _LIT("' != rhs vm key '") << rcur->first
+        << _LIT("'\n");
       return false;
     }
 
     if(!(co::is_empty(lcur->second) && co::is_empty(rcur->second))) {
       if(co::is_empty(lcur->second) && !co::is_empty(rcur->second)) {
-         std::cerr << "lhs vm value for key '" << lcur->first
-           << "' is empty but rhs vm value for key '" << rcur->first
-           << "' is not\n";
+        std_stream_select<char_type>::cerr
+          << _LIT("lhs vm value for key '") << lcur->first
+          << _LIT("' is empty but rhs vm value for key '")
+          << rcur->first << _LIT("' is not\n");
         return false;
       }
 
       if(!co::is_empty(lcur->second) && co::is_empty(rcur->second)) {
-         std::cerr << "lhs vm value for key '" << lcur->first
-           << "' is not empty but rhs vm value for key '" << rcur->first
-           << "' is\n";
+        std_stream_select<char_type>::cerr
+          << _LIT("lhs vm value for key '") << lcur->first
+          << _LIT("' is not empty but rhs vm value for key '")
+          << rcur->first << _LIT("' is\n");
         return false;
       }
 
@@ -363,7 +430,9 @@ bool contents_equal(const VariableMap &lhs, const VariableMap &rhs)
           return false;
       }
       catch(const co::bad_any_cast &ex) {
-        std::cerr << "vm values are not given type T: " << ex.what() << "\n";
+        std_stream_select<char_type>::cerr
+          << _LIT("vm values are not given type T: ") << ex.what()
+          << _LIT("\n");
         throw;
       }
     }

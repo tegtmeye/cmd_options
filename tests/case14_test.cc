@@ -15,34 +15,44 @@ BOOST_AUTO_TEST_SUITE( case14_test_suite )
 
 namespace co = lemma::cmd_options;
 
+typedef std::basic_string<detail::check_char_t> string_type;
+typedef co::basic_option_pack<detail::check_char_t> option_pack_type;
+typedef co::basic_option_description<detail::check_char_t>
+  option_description_type;
+typedef co::basic_options_group<detail::check_char_t> options_group_type;
+typedef co::basic_variable_map<detail::check_char_t> variable_map_type;
+typedef detail::std_stream_select<detail::check_char_t> stream_select;
+
 /**
   All keys values
  */
 BOOST_AUTO_TEST_CASE( all_key_value_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "-f",
-    "-f42",
-    "--bar",
-    "--bar=43"
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("-f"),
+    _LIT("-f42"),
+    _LIT("--bar"),
+    _LIT("--bar=43")
   };
 
-  options = co::options_group{
-    co::make_operand("case 14",co::value<std::string>())
+  options = options_group_type{
+    co::make_operand(_LIT("case 14"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {co::default_operand_key,{std::string("-f")}},
-      {co::default_operand_key,{std::string("-f42")}},
-      {co::default_operand_key,{std::string("--bar")}},
-      {co::default_operand_key,{std::string("--bar=43")}},
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("-f"))}},
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("-f42"))}},
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("--bar"))}},
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("--bar=43"))}},
     }));
 }
 
@@ -52,44 +62,48 @@ BOOST_AUTO_TEST_CASE( all_key_value_test )
  */
 BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
 {
-  co::variable_map vm;
-  co::options_group options;
-  std::vector<const char *> argv;
-
-  argv = std::vector<const char *>{
-    "-f",
-    "f_arg",
-    "operand1",
-    "-f42",
-    "operand2",
-    "operand3",
-    "--bar",
-    "bar_arg",
-    "operand4",
-    "--bar=43",
-    "operand5",
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("-f"),
+    _LIT("f_arg"),
+    _LIT("operand1"),
+    _LIT("-f42"),
+    _LIT("operand2"),
+    _LIT("operand3"),
+    _LIT("--bar"),
+    _LIT("bar_arg"),
+    _LIT("operand4"),
+    _LIT("--bar=43"),
+    _LIT("operand5"),
   };
 
-  options = co::options_group{
-    co::make_option("",co::value<std::string>().implicit("floo"),"case 14"),
-    co::make_operand("case 14",co::value<std::string>())
+  options = options_group_type{
+    co::make_option(_LIT(""),
+      co::value<string_type>().implicit(_LIT("floo")),_LIT("case 14")),
+    co::make_operand(_LIT("case 14"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-//   std::cerr << detail::to_string<std::string>(vm);
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
-  BOOST_REQUIRE(detail::contents_equal<std::string>(vm,
-    co::variable_map{
-      {co::default_operand_key,{std::string("operand1")}},
-      {co::default_operand_key,{std::string("operand2")}},
-      {co::default_operand_key,{std::string("operand3")}},
-      {co::default_operand_key,{std::string("operand4")}},
-      {co::default_operand_key,{std::string("operand5")}},
-      {"f",{std::string("f_arg")}},
-      {"f",{std::string("42")}},
-      {"bar",{std::string("bar_arg")}},
-      {"bar",{std::string("43")}}
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("operand1"))}},
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("operand2"))}},
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("operand3"))}},
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("operand4"))}},
+      {co::default_operand_key<detail::check_char_t>(),
+        {string_type(_LIT("operand5"))}},
+      {_LIT("f"),{string_type(_LIT("f_arg"))}},
+      {_LIT("f"),{string_type(_LIT("42"))}},
+      {_LIT("bar"),{string_type(_LIT("bar_arg"))}},
+      {_LIT("bar"),{string_type(_LIT("43"))}}
     }));
 }
 
