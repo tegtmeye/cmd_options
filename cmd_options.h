@@ -1418,26 +1418,255 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
 }
 
 
-template <typename T, typename CharT>
-inline typename std::enable_if<
-  std::is_same<T,std::basic_string<CharT> >::value,any>::type
-to_value(const std::basic_string<CharT> &,
-  const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
-{
-    return any(val);
-}
 
-template <typename T, typename CharT>
-inline typename std::enable_if<
-  !std::is_same<T,std::basic_string<CharT> >::value,any>::type
-to_value(const std::basic_string<CharT> &,
-  const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
-{
-  T _val;
-  std::basic_stringstream<CharT> in(val);
-  in >> _val;
-  return any(_val);
-}
+
+template<typename T>
+struct convert {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
+  {
+    T _val;
+    std::basic_istringstream<CharT> in(val);
+    in >> _val;
+    return any(_val);
+  }
+};
+
+template<typename CharT>
+struct convert<std::basic_string<CharT> > {
+  static any from_value(const std::basic_string<CharT> &,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
+  {
+    return any(val);
+  }
+};
+
+template<>
+struct convert<bool> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
+  {
+    bool _val;
+    std::basic_istringstream<CharT> in(val);
+    if(!(in >> std::noboolalpha >> _val)) {
+      in.clear();
+      if(!(in >> std::boolalpha >> _val))
+        throw std::invalid_argument(asUTF8(val));
+    }
+
+    return any(static_cast<bool>(_val));
+  }
+};
+
+template<>
+struct convert<char> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
+  {
+    if(val.size() != 1)
+      throw std::invalid_argument(asUTF8(val));
+
+    int _i = val.front();
+    if(_i < std::numeric_limits<char>::min()
+      || _i > std::numeric_limits<char>::max())
+    {
+      throw std::out_of_range(asUTF8(val));
+    }
+
+    return any(static_cast<char>(_i));
+  }
+};
+
+template<>
+struct convert<signed char> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
+  {
+    if(val.size() != 1)
+      throw std::invalid_argument(asUTF8(val));
+
+    int _i = val.front();
+    if(_i < std::numeric_limits<signed char>::min()
+      || _i > std::numeric_limits<signed char>::max())
+    {
+      throw std::out_of_range(asUTF8(val));
+    }
+
+    return any(static_cast<signed char>(_i));
+  }
+};
+
+template<>
+struct convert<wchar_t> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
+  {
+    if(val.size() != 1)
+      throw std::invalid_argument(asUTF8(val));
+
+    int _i = val.front();
+    if(_i < std::numeric_limits<wchar_t>::min()
+      || _i > std::numeric_limits<wchar_t>::max())
+    {
+      throw std::out_of_range(asUTF8(val));
+    }
+
+    return any(static_cast<wchar_t>(_i));
+  }
+};
+
+template<>
+struct convert<short> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
+  {
+    int _i = std::stoi(val);
+    if(_i < std::numeric_limits<short>::min()
+      || _i > std::numeric_limits<short>::max())
+    {
+      throw std::out_of_range(asUTF8(val));
+    }
+
+    return any(static_cast<short>(_i));
+  }
+};
+
+template<>
+struct convert<int> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &key,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
+  {
+    return any(std::stoi(val));
+  }
+};
+
+template<>
+struct convert<long> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &key,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
+  {
+    return any(std::stol(val));
+  }
+};
+
+template<>
+struct convert<long long> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
+  {
+    return any(std::stoll(val));
+  }
+};
+
+template<>
+struct convert<unsigned char> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
+  {
+    if(val.size() != 1)
+      throw std::invalid_argument(asUTF8(val));
+
+    int _i = val.front();
+    if(_i < std::numeric_limits<unsigned char>::min()
+      || _i > std::numeric_limits<unsigned char>::max())
+    {
+      throw std::out_of_range(asUTF8(val));
+    }
+
+    return any(static_cast<unsigned char>(_i));
+  }
+};
+
+template<>
+struct convert<unsigned short> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
+  {
+    unsigned long _i = std::stoul(val);
+    if(_i > std::numeric_limits<unsigned short>::max())
+      throw std::out_of_range(asUTF8(val));
+
+    return any(static_cast<unsigned short>(_i));
+  }
+};
+
+template<>
+struct convert<unsigned int> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &key,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
+  {
+    // unsigned long may be larger than unsigned int
+    unsigned long _i = std::stoul(val);
+    if(_i > std::numeric_limits<unsigned int>::max())
+      throw std::out_of_range(asUTF8(val));
+
+    return any(static_cast<unsigned int>(_i));
+  }
+};
+
+template<>
+struct convert<unsigned long> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &key,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
+  {
+    return any(std::stoul(val));
+  }
+};
+
+template<>
+struct convert<unsigned long long> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &key,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
+  {
+    return any(std::stoull(val));
+  }
+};
+
+template<>
+struct convert<float> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &key,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
+  {
+    return any(std::stof(val));
+  }
+};
+
+template<>
+struct convert<double> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &key,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
+  {
+    return any(std::stod(val));
+  }
+};
+
+template<>
+struct convert<long double> {
+  template<typename CharT>
+  static any from_value(const std::basic_string<CharT> &key,
+    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
+  {
+    return any(std::stold(val));
+  }
+};
+
+
 
 template<typename T, typename CharT>
 inline void add_option_value(const value<T> &val,
@@ -1460,7 +1689,8 @@ inline void add_option_value(const value<T> &val,
   desc.make_value = [](const string_type &mapped_key, const string_type &value,
       const variable_map_type &vm)
   {
-    return to_value<T>(mapped_key,value,vm);
+    //return to_value<T>(mapped_key,value,vm);
+    return convert<T>::from_value(mapped_key,value,vm);
   };
 }
 
@@ -1482,7 +1712,8 @@ inline void add_operand_value(const value<T> &val,
     desc.make_value = [](const string_type &mapped_key,
       const string_type &value, const variable_map_type &vm)
     {
-      return to_value<T>(mapped_key,value,vm);
+      //return to_value<T>(mapped_key,value,vm);
+      return convert<T>::from_value(mapped_key,value,vm);
     };
   }
 }

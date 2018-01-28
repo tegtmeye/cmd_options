@@ -4,7 +4,8 @@
 #include "cmd_options.h"
 
 #include <iostream>
-
+#include <iomanip>
+#include <cmath>
 
 namespace lemma {
 namespace cmd_options {
@@ -392,6 +393,7 @@ bool check_exclusive(const co::basic_option_description<CharT> &desc,
     [&](const pair_type &val) {return val.second(desc);});
 }
 
+// should try and move away from this to per-value version \c vm_check
 template<typename T, typename VariableMap>
 bool contents_equal(const VariableMap &lhs, const VariableMap &rhs)
 {
@@ -443,6 +445,134 @@ bool contents_equal(const VariableMap &lhs, const VariableMap &rhs)
 
   return lcur == lhs.end() && rcur == rhs.end();
 }
+
+
+template<typename CharT>
+std::function<bool(
+  const typename co::basic_variable_map<CharT>::value_type &)>
+check_empty(const std::basic_string<CharT> &key)
+{
+  return [=](const typename co::basic_variable_map<CharT>::value_type &val) {
+    if(key != val.first) {
+      std_stream_select<CharT>::cerr
+        << _LIT("vm key '") << val.first
+        << _LIT("' does not equal required key '" << key << _LIT("\n"));
+      return false;
+    }
+    if(!co::is_empty(val.second)) {
+      std_stream_select<CharT>::cerr
+        << _LIT("vm value for key '") << val.first
+        << _LIT("' should be empty\n");
+      return false;
+    }
+
+    return true;
+  };
+}
+
+template<typename CharT, typename T>
+std::function<bool(
+  const typename co::basic_variable_map<CharT>::value_type &)>
+check_empty(const CharT *key)
+{
+  return check_empty(std::basic_string<CharT>(key));
+}
+
+#if 0
+template<typename T>
+struct approximatelyEqual {
+  approximatelyEqual(void) :_epsilon() {}
+
+  bool operator()(T a, T b)
+  {
+    return std::fabs(a-b) <=
+      ((std::fabs(a) < std::fabs(b)?std::fabs(b):std::fabs(a)) *
+        std::numeric_limits<T>::epsilon());
+  }
+
+  T _epsilon;
+};
+#endif
+
+template<typename T>
+struct essentiallyEqual {
+  bool operator()(const T &lhs, const T &rhs) const
+  {
+    return
+      std::fabs(lhs-rhs) <=
+        ((std::fabs(lhs) > std::fabs(rhs)?std::fabs(rhs):std::fabs(lhs)) *
+          .0001); // .001%
+  }
+};
+
+template<typename CharT, typename T, typename Eq=std::equal_to<T> >
+std::function<bool(
+  const typename co::basic_variable_map<CharT>::value_type &)>
+check_value(const std::basic_string<CharT> &key, const T &value,
+  const Eq &eq = Eq())
+{
+  return [=](const typename co::basic_variable_map<CharT>::value_type &val) {
+    if(co::is_empty(val.second)) {
+      std_stream_select<CharT>::cerr
+        << _LIT("vm value for key '") << val.first
+        << _LIT("' is empty shouldn't be\n");
+      return false;
+    }
+    else if(key != val.first) {
+      std_stream_select<CharT>::cerr
+        << _LIT("vm key '") << val.first
+        << _LIT("' does not equal required key '" << key << _LIT("\n"));
+      return false;
+    }
+
+    try {
+//        std::cerr << "checking: " <<
+//         val.second.type().name() << "\n";
+
+//         std::setprecision(std::numeric_limits<T>::digits10 + 1)
+//       << co::any_cast<T>(val.second) << " and "
+//         << value << "\n";
+      return eq(co::any_cast<T>(val.second),value);
+    }
+    catch(const co::bad_any_cast &ex) {
+      std_stream_select<CharT>::cerr
+        << _LIT("vm values are not given type T: ") << ex.what()
+        << _LIT("\n");
+      throw;
+    }
+  };
+}
+
+template<typename CharT, typename T, typename Eq=std::equal_to<T> >
+std::function<bool(
+  const typename co::basic_variable_map<CharT>::value_type &)>
+check_value(const CharT *key, const T &value, const Eq &eq = Eq())
+{
+  return check_value(std::basic_string<CharT>(key),value,eq);
+}
+
+template<typename VariableMap>
+bool vm_check(const VariableMap &vm,
+  const std::vector<
+    std::function<bool(const typename VariableMap::value_type &)> > &pred_vec)
+{
+  typedef typename VariableMap::key_type::value_type char_type;
+  typename VariableMap::const_iterator lcur = vm.begin();
+
+  if(vm.size() != pred_vec.size()) {
+    std_stream_select<char_type>::cerr
+      << _LIT("lhs vm is not the same size as the predicate list\n");
+    return false;
+  }
+
+  for(auto &pred : pred_vec) {
+    if(!pred(*lcur++))
+      return false;
+  }
+
+  return true;
+}
+
 
 }
 

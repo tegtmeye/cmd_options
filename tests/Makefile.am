@@ -98,7 +98,9 @@ check_PROGRAMS=\
 	case21_test \
 	wcase21_test \
 	constraints_test \
-	wconstraints_test
+	wconstraints_test \
+	value_test \
+	wvalue_test
 
 basic_test_SOURCES=$(master_suite) \
 	test_detail.h \
@@ -437,6 +439,20 @@ wconstraints_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wconstraints_test_LDFLAGS=$(additional_ldflags)
 wconstraints_test_LDADD=$(additional_libs)
 
+value_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	value_test.cc
+value_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
+value_test_LDFLAGS=$(additional_ldflags)
+value_test_LDADD=$(additional_libs)
+
+wvalue_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	value_test.cc
+wvalue_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
+wvalue_test_LDFLAGS=$(additional_ldflags)
+wvalue_test_LDADD=$(additional_libs)
+
 TESTS=\
 	basic_test \
 	wbasic_test \
@@ -485,5 +501,8 @@ TESTS=\
 	case21_test \
 	wcase21_test \
 	constraints_test \
-	wconstraints_test
+	wconstraints_test \
+	value_test \
+	wvalue_test
+
 
