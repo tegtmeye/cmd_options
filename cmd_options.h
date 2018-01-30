@@ -1313,7 +1313,9 @@ inline
 typename std::enable_if<std::is_same<CharT, char>::value, std::string>::type
     to_xstring(const T &t)
 {
-    return std::to_string(t);
+  using namespace std;
+
+  return to_string(t);
 }
 
 
@@ -1322,7 +1324,9 @@ inline
 typename std::enable_if<std::is_same<CharT, wchar_t>::value, std::wstring>::type
     to_xstring(const T &t)
 {
-    return std::to_wstring(t);
+  using namespace std;
+
+  return to_wstring(t);
 }
 
 template<typename CharT>
@@ -1426,9 +1430,13 @@ struct convert {
   static any from_value(const std::basic_string<CharT> &,
     const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
   {
+    typedef std::basic_istringstream<CharT> istream_type;
     T _val;
-    std::basic_istringstream<CharT> in(val);
+    istream_type in(val);
     in >> _val;
+    if(in.peek() != istream_type::traits_type::eof())
+      throw std::invalid_argument(asUTF8(val));
+
     return any(_val);
   }
 };
@@ -2313,35 +2321,6 @@ inline basic_option_description<CharT> make_options_error(void)
 
 
 #if 0
-#if 0
-/*
-  Convenience default parser
-
-  Parse the arguments contained in \c argv with size \c argc. Options
-  are returned in a new variable map. Long options are prefaced with a
-  '--' and short options (single character) are prefaced with a '-'. In
-  each case, the option is stored as a key in the variable_map_type. If
-  parsing is halted due to a "end of parse" indicator '--' then \c endc
-  is updated to the index of the first non-parsed argument.
-*/
-template<typename CharT>
-basic_variable_map<CharT>
-parse_arguments(const CharT * const argv[], std::size_t argc,
-  std::size_t &endc)
-{
-  basic_option_description<CharT> option_desc =
-    make_option("",value<std::string>(""),"any");
-
-  option_desc.unpack_option = unpack_gnu<CharT,false>;
-
-  basic_options_group<CharT> grp{
-    option_desc
-  };
-
-  return parse_arguments(argv,argc,endc,grp,basic_variable_map<CharT>(),false);
-}
-
-#endif
 
 
 
@@ -2518,10 +2497,10 @@ extended_to_string(const basic_option_description<CharT> &desc,
 /*
   Control the output format when converting to a string
 
-  \c width is the total allowed with of the formatted extents
+  \c width is the total allowed width of the formatted extents
 
   \c max_option_width is the maximum width of the option column. If a
-  formatted option width exceeds the returned value plust the returned
+  formatted option width exceeds the returned value plus the returned
   value of \c spacing_width, then the remaining columns start on a new
   line. The return value can be dynamically obtained as a percentage of
   the total width.
@@ -2575,9 +2554,7 @@ to_string(const std::vector<basic_option_description<CharT> > &grp,
   std::size_t extent = 0;
   for(auto &desc : grp) {
     // hidden means not long or short key descriptions
-    if((desc.map_long_key && desc.long_key_description) ||
-      (desc.map_short_key && desc.short_key_description))
-    {
+    if((desc.key_description)) {
       output_grp.emplace_back(std::make_pair(&desc,fmt.fmt_option(desc)));
       extent = std::max(extent,output_grp.back().second.size());
     }

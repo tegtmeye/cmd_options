@@ -10,9 +10,6 @@
   Check for fundmental and STL value handling
  */
 
-BOOST_AUTO_TEST_SUITE( value_test_suite )
-
-
 namespace co = lemma::cmd_options;
 
 typedef std::basic_string<detail::check_char_t> string_type;
@@ -22,6 +19,41 @@ typedef co::basic_option_description<detail::check_char_t>
 typedef co::basic_options_group<detail::check_char_t> options_group_type;
 typedef co::basic_variable_map<detail::check_char_t> variable_map_type;
 typedef detail::std_stream_select<detail::check_char_t> stream_select;
+
+
+struct test_struct {
+  test_struct(const string_type &str=string_type()) :_str(str) {}
+
+  bool operator==(const test_struct &rhs) const {
+    return rhs._str == _str;
+  }
+
+  string_type _str;
+};
+
+inline string_type to_string(const test_struct &ts)
+{
+  return ts._str;
+}
+
+inline string_type to_wstring(const test_struct &ts)
+{
+  return ts._str;
+}
+
+inline std::basic_istream<detail::check_char_t> &
+operator>>(std::basic_istream<detail::check_char_t> &in, test_struct &rhs)
+{
+  rhs._str = string_type(std::istreambuf_iterator<detail::check_char_t>(in),
+    std::istreambuf_iterator<detail::check_char_t>());
+
+  return in;
+}
+
+
+
+BOOST_AUTO_TEST_SUITE( value_test_suite )
+
 
 /**
   Check fundamental values
@@ -441,6 +473,28 @@ BOOST_AUTO_TEST_CASE( string_value_test )
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("string"),
         static_cast<string_type>(_LIT("Hello World"))),
+    }
+  ));
+}
+
+BOOST_AUTO_TEST_CASE( userdef_value_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--userdef=Hello World")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("userdef"),co::value<test_struct>(),
+      _LIT("case 6"))
+  };
+
+  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+
+  BOOST_REQUIRE(detail::vm_check(vm,{
+      detail::check_value(_LIT("userdef"),
+        static_cast<test_struct>(_LIT("Hello World"))),
     }
   ));
 }
