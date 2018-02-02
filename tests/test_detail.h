@@ -45,6 +45,15 @@ namespace detail {
 
 typedef CMD_OPT_TEST_CHART check_char_t;
 
+
+static const std::basic_string<check_char_t> ipsum(
+  _LIT("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla nisl libero, dignissim sed vulputate sit amet, fringilla a dui. Integer in velit ornare, hendrerit lectus lobortis, sodales elit. Maecenas vehicula lectus eu elit tincidunt, in eleifend elit faucibus. Aliquam cursus sed leo non lobortis. Curabitur ut rhoncus massa. Mauris ut lectus congue, ornare nisl eget, malesuada leo. Mauris eu tristique turpis. Etiam semper risus a diam rutrum, nec gravida leo blandit. Phasellus maximus convallis tincidunt.\n"));
+
+static const std::basic_string<check_char_t> ipsum_par(
+  _LIT("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce malesuada egestas scelerisque. Pellentesque a faucibus lectus. Morbi lobortis urna eget mi aliquet, in elementum quam aliquet. Duis pretium eros odio, a mollis odio tincidunt vel. Curabitur volutpat ipsum at pharetra pulvinar. Donec convallis, leo sed euismod auctor, velit urna varius velit, quis convallis justo elit rhoncus justo. Phasellus imperdiet tincidunt lorem, semper vehicula dolor vestibulum eu. Vestibulum lorem nunc, dapibus id sem non, aliquet fermentum lacus.\n\tPellentesque eleifend lacus quis turpis ultricies, vel convallis metus pharetra. Sed sagittis egestas justo eget pretium. Vestibulum sed diam vel libero auctor mollis ac at justo. Nullam vitae libero sed risus tincidunt condimentum. Donec non lacinia lectus. Aenean dignissim, risus et venenatis vestibulum, urna turpis tempor ipsum, sed tincidunt libero dui id velit. Phasellus feugiat sodales tellus non finibus."));
+
+
+
 template<typename CharT>
 struct std_stream_select;
 

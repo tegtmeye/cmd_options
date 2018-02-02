@@ -100,7 +100,9 @@ check_PROGRAMS=\
 	constraints_test \
 	wconstraints_test \
 	value_test \
-	wvalue_test
+	wvalue_test \
+	format_test \
+	wformat_test
 
 basic_test_SOURCES=$(master_suite) \
 	test_detail.h \
@@ -453,6 +455,20 @@ wvalue_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wvalue_test_LDFLAGS=$(additional_ldflags)
 wvalue_test_LDADD=$(additional_libs)
 
+format_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	format_test.cc
+format_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
+format_test_LDFLAGS=$(additional_ldflags)
+format_test_LDADD=$(additional_libs)
+
+wformat_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	format_test.cc
+wformat_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
+wformat_test_LDFLAGS=$(additional_ldflags)
+wformat_test_LDADD=$(additional_libs)
+
 TESTS=\
 	basic_test \
 	wbasic_test \
@@ -503,6 +519,6 @@ TESTS=\
 	constraints_test \
 	wconstraints_test \
 	value_test \
-	wvalue_test
-
-
+	wvalue_test \
+	format_test \
+	wformat_test

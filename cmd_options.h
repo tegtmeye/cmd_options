@@ -517,6 +517,9 @@ struct basic_option_description {
     the short option is hidden and the long option is fully specified
     with a description containing the associated short option. That is:
     --foo, -f.
+
+    If \c key_description is not set, then the option is considered to
+    be hidden.
   */
   std::function<string_type(void)> key_description;
 
@@ -525,46 +528,6 @@ struct basic_option_description {
     functionality.
   */
   std::function<string_type(void)> extended_description;
-
-  /*
-    Non-operand option cases:
-      -- strictly do not provide a value (no make_value)
-        -- option has an implicit, possibly empty, value (uses implicit_value)
-        -- no implicit value, use default constructed
-
-      -- provided value is optional (make_value exists)
-        -- if given, option uses provided value (calls make_value)
-        -- if missing, use an implicit, possibly empty, value
-            (uses implicit_value)
-        -- no implicit value, use default constructed
-
-      -- providing a value is mandatory (make_value exists, no implicit_value)
-        -- use the one provided (calls make_value)
-
-    If set, return the implicit value of the option as a any
-    object. This value is used whenever the option either explicitly
-    forbids a value or it is optional and one is not provided. If not
-    set, the value defaults to \c string_type().
-
-    The function's first parameter is the string given as the option's
-    key exactly as provided to the option without the long- or
-    short_option_flag prefix. This is useful to deal with nonstandard
-    syntaxes. For example, given -frtti vs -fno-rtti, the
-    variable_map_type key could be 'rtti' with a boolean value. The
-    option forbids values so the mapped value must be determined by the
-    key (specifically the presence or absence of the 'no' prefix.
-  */
-  std::function<
-    any(const string_type &key, const variable_map_type &vm)> implicit_value;
-
-  /*
-    Return the human-readable description for this option's implicit
-    value. This description is not used for parsing but rather automatic
-    help messages. For example, suppose the option --foo has an implicit
-    value of '5' if another value was not provided. A reasonable return
-    value from this function would be "5".
-  */
-  std::function<string_type(void)> implicit_value_description;
 
   /*
     Operand option case:
@@ -607,6 +570,46 @@ struct basic_option_description {
   std::function<
     any(const string_type &mapped_key, const string_type &value,
       const variable_map_type &vm)> make_value;
+
+  /*
+    Non-operand option cases:
+      -- strictly do not provide a value (no make_value)
+        -- option has an implicit, possibly empty, value (uses implicit_value)
+        -- no implicit value, use default constructed
+
+      -- provided value is optional (make_value exists)
+        -- if given, option uses provided value (calls make_value)
+        -- if missing, use an implicit, possibly empty, value
+            (uses implicit_value)
+        -- no implicit value, use default constructed
+
+      -- providing a value is mandatory (make_value exists, no implicit_value)
+        -- use the one provided (calls make_value)
+
+    If set, return the implicit value of the option as a any
+    object. This value is used whenever the option either explicitly
+    forbids a value or it is optional and one is not provided. If not
+    set, the value defaults to \c string_type().
+
+    The function's first parameter is the string given as the option's
+    key exactly as provided to the option without the long- or
+    short_option_flag prefix. This is useful to deal with nonstandard
+    syntaxes. For example, given -frtti vs -fno-rtti, the
+    variable_map_type key could be 'rtti' with a boolean value. The
+    option forbids values so the mapped value must be determined by the
+    key (specifically the presence or absence of the 'no' prefix.
+  */
+  std::function<
+    any(const string_type &key, const variable_map_type &vm)> implicit_value;
+
+  /*
+    Return the human-readable description for this option's implicit
+    value. This description is not used for parsing but rather automatic
+    help messages. For example, suppose the option --foo has an implicit
+    value of '5' if another value was not provided. A reasonable return
+    value from this function would be "5".
+  */
+  std::function<string_type(void)> implicit_value_description;
 
   /*
     If set, this function is called for each option_description by the
@@ -2320,7 +2323,6 @@ inline basic_option_description<CharT> make_options_error(void)
 
 
 
-#if 0
 
 
 
@@ -2344,77 +2346,6 @@ inline basic_option_description<CharT> make_options_error(void)
 
 
 
-
-
-
-template<typename CharT>
-bool option_comp(const basic_option_description<CharT> &lhs,
-  const basic_option_description<CharT> &rhs)
-{
-  bool lhs_short = lhs.map_short_key && lhs.short_key_description;
-  bool lhs_long = lhs.map_long_key && lhs.long_key_description;
-  bool rhs_short = rhs.map_short_key && rhs.short_key_description;
-  bool rhs_long = rhs.map_long_key && rhs.long_key_description;
-
-  if(lhs_short && rhs_short)
-    return (lhs.short_key_description() < rhs.short_key_description());
-
-  if(!lhs_short && !rhs_short) {
-    if(lhs_long && rhs_long)
-      return (lhs.long_key_description() < rhs.long_key_description());
-
-    if(!lhs_long && !rhs_long)
-      return (&lhs < &rhs);
-
-    return !lhs_long;
-  }
-
-  return !lhs_short;
-}
-
-template<typename CharT>
-std::basic_string<CharT>
-option_to_string(const basic_option_description<CharT> &desc)
-{
-//  typedef std::basic_string<CharT> string_type;
-
-  std::basic_ostringstream<CharT> out;
-#if 0
-  out << "  ";
-
-  if(desc.map_long_key && desc.map_short_key) {
-    if(!(desc.long_key_description && desc.short_key_description))
-      return string_type(); // hidden
-
-    out << opt.short_option_flag << desc.short_key_description() << " [ "
-      << opt.long_option_flag << desc.long_key_description() << " ]";
-  }
-  else if(desc.map_long_key) {
-    if(!desc.long_key_description)
-      return string_type();
-
-    out << opt.long_option_flag << desc.long_key_description();
-  }
-  else {
-    if(!desc.short_key_description)
-      return string_type();
-
-    out << opt.short_option_flag << desc.short_key_description();
-  }
-
-  if(desc.make_value) {
-    if(desc.implicit_value) {
-      // value is optional
-      out << "  [arg]";
-      if(desc.implicit_value_description)
-        out << "=(" << desc.implicit_value_description() << ')';
-    }
-    else
-      out << "  <arg>";
-  }
-#endif
-  return out.str();
-}
 
 
 
@@ -2426,7 +2357,7 @@ option_to_string(const basic_option_description<CharT> &desc)
 */
 template<typename CharT>
 std::basic_string<CharT>
-wrap(const std::basic_string<CharT> &text, std::size_t width)
+wrap_orig(const std::basic_string<CharT> &text, std::size_t width)
 {
   std::basic_istringstream<CharT> words(text);
   std::basic_ostringstream<CharT> wrapped;
@@ -2451,20 +2382,70 @@ wrap(const std::basic_string<CharT> &text, std::size_t width)
 }
 
 template<typename CharT>
-std::basic_string<CharT> make_column(const std::basic_string<CharT> &text,
-  const std::basic_string<CharT> &pad, std::size_t width)
+std::basic_string<CharT>
+wrap(const std::basic_string<CharT> &text, std::size_t max_width)
 {
   typedef std::basic_string<CharT> string_type;
 
-  static const std::basic_regex<CharT> regex("\n",
-    std::regex_constants::optimize);
+  string_type wrapped;
+  string_type word;
 
-  static const string_type nl("\n");
+  std::size_t width = 0;
+  bool ignore_ws = false;
+  auto cur = text.begin();
+  while(cur != text.end()) {
+    if(ignore_ws) {
+      // eat all whitespace until find non-whitespace or newline
+      while(cur != text.end() && isspace(*cur) && *cur != '\n')
+        ++cur;
 
-  string_type wrapped_text = wrap(text,width-pad.size());
+      if(*cur == '\n') {
+        wrapped += *cur++;
+        width = 0;
+        ignore_ws = false;
+        continue;
+      }
 
-  return std::regex_replace(wrapped_text,regex,nl+pad);
+      // read complete word
+      while(cur != text.end() && !isspace(*cur))
+        word += *cur++;
+
+      if(width + word.size() + 1 > max_width) {
+        wrapped += '\n';
+        width = 0;
+      }
+      else if(width != 0) {
+        wrapped += ' ';
+        ++width;
+      }
+      wrapped += word;
+      width += word.size();
+      word.clear();
+
+      if(*cur == '\n') {
+        wrapped += *cur++;
+        width = 0;
+        ignore_ws = false;
+      }
+    }
+    else {
+      // do not ignore whitespace
+      while(cur != text.end() && isspace(*cur)) {
+        if(width+1 > max_width) {
+          wrapped += '\n';
+          width = 0;
+        }
+        wrapped += *cur++;
+      }
+
+      if(cur != text.end())
+        ignore_ws = true;
+    }
+  }
+
+  return wrapped;
 }
+
 
 /*
   Indent is the amount of space from the left edge that the text will
@@ -2495,52 +2476,135 @@ extended_to_string(const basic_option_description<CharT> &desc,
 
 
 /*
-  Control the output format when converting to a string
+  Format an option description into a basic_string<CharT>
 
-  \c width is the total allowed width of the formatted extents
+  \c typeset_option Calls do_typeset_option(desc). Return a string
+  containing the fully formatted option or the empty string if the
+  option should be hidden.
 
-  \c max_option_width is the maximum width of the option column. If a
-  formatted option width exceeds the returned value plus the returned
-  value of \c spacing_width, then the remaining columns start on a new
-  line. The return value can be dynamically obtained as a percentage of
-  the total width.
-
-  \c spacing_width is the blank space between the option column and the
-  description column.
-
-  \c fmt_option Return a string containing the fully formatted option
-  (just the option part, not the extended description) or the empty
-  string if the option should be hidden. Default is \c option_to_string
-
-  \c cmp [OPTIONAL] If set, is used to sort the descriptors according to
-  the comparison function.
+  \c compare [OPTIONAL] Calls do_compare(). May return an empty
+  compare_type to indicate sorting should not be performed
 */
 template<typename CharT>
-struct basic_cmd_option_fmt {
-  typedef std::basic_string<CharT> string_type;
-  typedef basic_option_description<CharT> description_type;
+class basic_option_formatter {
+  public:
+    typedef std::basic_string<CharT> string_type;
+    typedef basic_option_description<CharT> description_type;
 
-  std::function<std::size_t(void)> width = [](void){ return 80; };
-  std::function<std::size_t(void)> max_option_width = [](void){ return 40; };
-  std::function<std::size_t(void)> spacing_width = [](void){ return 2; };
+    typedef std::function<bool(const description_type &,
+      const description_type &)> compare_type;
 
-  std::function<string_type(const description_type &)> fmt_option =
-    option_to_string<CharT>;
+    string_type typeset_option(const description_type &desc) const {
+      return do_typeset_option(desc);
+    }
 
-  std::function<string_type(const description_type &,
-    std::size_t, std::size_t)> fmt_extended = extended_to_string<CharT>;
+    compare_type compare(void) const {
+      return do_compare();
+    }
 
-  std::function<bool(const description_type &,
-    const description_type &)> sort_cmp = option_comp<CharT>;
+  protected:
+    virtual string_type
+      do_typeset_option(const description_type &desc) const = 0;
+
+    virtual compare_type do_compare(void) const = 0;
 };
 
-typedef basic_cmd_option_fmt<char> cmd_option_fmt;
-typedef basic_cmd_option_fmt<wchar_t> wcmd_option_fmt;
+/*
+  Default option formatter
+
+  Formats the options wrapped to \c max_width() (default 72 characters)
+  into two columns (default 30 characters). If the first column is too
+  wide, then the second column is started on a new line.
+
+  First form:
+
+  key_description [column_pad] extended_description
+
+  Second Form:
+
+  key_desciption [newline]
+  [key_column_width] [column_pad] extended_description [newline]
+
+  Sorts the option_descriptions by key_description() if both are
+  present. If only rhs.key_description is present, returns true,
+  otherwise returns false.
+*/
+template<typename CharT>
+class basic_default_formatter : public basic_option_formatter<CharT> {
+  public:
+
+  protected:
+    using typename basic_option_formatter<CharT>::string_type;
+    using typename basic_option_formatter<CharT>::description_type;
+    using typename basic_option_formatter<CharT>::compare_type;
+
+    string_type do_typeset_option(const description_type &desc) const {
+      if(!desc.key_description)
+        return string_type();
+
+      string_type key_col = desc.key_description();
+
+      if(desc.make_value) {
+        if(desc.implicit_value && desc.implicit_value_description) {
+          key_col += " [arg=<";
+          key_col += desc.implicit_value_description();
+          key_col += ">]";
+        }
+        else
+          key_col += " arg";
+
+        if(key_col.size() > key_column_width()) {
+          key_col += "\n";
+          key_col += string_type(key_column_width()+column_pad(),' ');
+        }
+        else {
+          std::size_t per_pad = key_column_width()+column_pad()-key_col.size();
+          key_col += string_type(per_pad,' ');
+        }
+
+        string_type extended_col =
+          extended_to_string(desc,key_column_width()+column_pad(),max_width());
+        key_col += extended_col;
+      }
+
+      return key_col;
+    }
+
+    compare_type do_compare(void) const {
+      return [](const description_type &lhs, const description_type &rhs)
+        {
+          if(!rhs.key_description)
+            return true;
+
+          if(!lhs.key_description)
+            return false;
+
+          return lhs.key_description() < rhs.key_description();
+        };
+    }
+
+    std::size_t key_column_width(void) const {
+      return 24;
+    }
+
+    std::size_t column_pad(void) const {
+      return 2;
+    }
+
+    std::size_t max_width(void) const {
+      return 72;
+    }
+};
+
+
+
+typedef basic_option_formatter<char> cmd_option_fmt;
+typedef basic_option_formatter<wchar_t> wcmd_option_fmt;
 
 template<typename CharT>
 std::basic_string<CharT>
 to_string(const std::vector<basic_option_description<CharT> > &grp,
-  const basic_cmd_option_fmt<CharT> &fmt = basic_cmd_option_fmt<CharT>())
+  const basic_option_formatter<CharT> &fmt = basic_default_formatter<CharT>())
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_option_description<CharT> description_type;
@@ -2555,19 +2619,25 @@ to_string(const std::vector<basic_option_description<CharT> > &grp,
   for(auto &desc : grp) {
     // hidden means not long or short key descriptions
     if((desc.key_description)) {
-      output_grp.emplace_back(std::make_pair(&desc,fmt.fmt_option(desc)));
+      output_grp.emplace_back(std::make_pair(&desc,fmt.typeset_option(desc)));
       extent = std::max(extent,output_grp.back().second.size());
     }
   }
 
   // Sort the results if requested
-  if(fmt.sort_cmp) {
+  auto &&compare = fmt.compare();
+  if(compare) {
     std::sort(output_grp.begin(),output_grp.end(),
       [&](const output_pair_type &lhs, const output_pair_type &rhs) {
-        return fmt.sort_cmp(*lhs.first,*rhs.first);
+        return compare(*lhs.first,*rhs.first);
       });
   }
 
+  for(auto &pair : output_grp) {
+    out << pair.second << "\n";
+  }
+
+#if 0
   std::size_t total_width = fmt.width();
   std::size_t max_option_width = fmt.max_option_width();
   std::size_t spacing_width = fmt.spacing_width();
@@ -2584,41 +2654,10 @@ to_string(const std::vector<basic_option_description<CharT> > &grp,
     out << fmt.fmt_extended(*output_grp[i].first,rindent,total_width)
       << '\n';
   }
-
-  return out.str();
-}
-
-template<typename CharT>
-inline std::basic_string<CharT>
-to_string(const std::vector<basic_option_description<CharT> > &grp)
-{
-  return to_string(grp,basic_cmd_option_fmt<CharT>());
-}
-
-template<typename CharT>
-inline std::basic_string<CharT>
-to_string_debug(const basic_option_description<CharT> &option)
-{
-  std::basic_ostringstream<CharT> out;
-
-  out
-    << "map_long_key: " << bool(option.map_long_key) << "\n"
-    << "long_key_description: " << bool(option.long_key_description) << "\n"
-    << "map_short_key: " << bool(option.map_short_key) << "\n"
-    << "short_key_description: " << bool(option.short_key_description) << "\n"
-    << "extended_description: " << bool(option.extended_description) << "\n"
-    << "implicit_key: " << bool(option.implicit_key) << "\n"
-    << "implicit_value: " << bool(option.implicit_value) << "\n"
-    << "implicit_value_description: "
-      << bool(option.implicit_value_description) << "\n"
-    << "make_value: " << bool(option.make_value) << "\n"
-    << "finalize: " << bool(option.finalize) << "\n";
-
-  return out.str();
-};
-
-
 #endif
+  return out.str();
+}
+
 
 }
 

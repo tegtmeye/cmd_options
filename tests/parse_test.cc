@@ -109,7 +109,7 @@ option_description_type make_operand_at(std::size_t posn, std::size_t argn)
         return std::make_pair(true,_key);
       return std::make_pair(false,string_type());
     },
-    {},{},{},{},
+    {},{},
     [](const string_type &mapped_key, const string_type &value,
       const variable_map_type &) -> co::any
     {
