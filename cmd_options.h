@@ -37,15 +37,11 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-#include <stack>
 #include <string>
 #include <cassert>
-#include <sstream>
 #include <codecvt>
 #include <locale>
 #include <functional>
-
-#include <iostream>
 
 #define CMD_OPTION_QUOTE(x) #x
 #define CMD_OPTION_STR(x) CMD_OPTION_QUOTE(x)
@@ -2309,77 +2305,7 @@ inline basic_option_description<CharT> make_options_error(void)
     }};
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-  Adapted from rosettacode.org
-
-  https://www.rosettacode.org/wiki/Word_wrap#C.2B.2B
-*/
-template<typename CharT>
-std::basic_string<CharT>
-wrap_orig(const std::basic_string<CharT> &text, std::size_t width)
-{
-  std::basic_istringstream<CharT> words(text);
-  std::basic_ostringstream<CharT> wrapped;
-  std::basic_string<CharT> word;
-
-  if (words >> word) {
-    wrapped << word;
-    size_t space_left = width - word.length();
-    while (words >> word) {
-      if (space_left < word.length() + 1) {
-        wrapped << '\n' << word;
-        space_left = width - word.length();
-      }
-      else {
-        wrapped << ' ' << word;
-        space_left -= word.length() + 1;
-      }
-    }
-  }
-
-  return wrapped.str();
-}
+namespace detail {
 
 template<typename CharT>
 std::basic_string<CharT>
@@ -2446,34 +2372,7 @@ wrap(const std::basic_string<CharT> &text, std::size_t max_width)
   return wrapped;
 }
 
-
-/*
-  Indent is the amount of space from the left edge that the text will
-  start to be drawn. That is, in two column format, the column width is
-  (width-indent) whereas in a single column (or paragraph-mode), the
-  first line starts at indent and is (width-indent) wide.
-*/
-template<typename CharT>
-std::basic_string<CharT>
-extended_to_string(const basic_option_description<CharT> &desc,
-  std::size_t indent, std::size_t width)
-{
-  typedef std::basic_string<CharT> string_type;
-
-  static const string_type nl("\n");
-  static const std::basic_regex<CharT> regex("\n",
-    std::regex_constants::optimize);
-
-  if(desc.extended_description) {
-    string_type wrapped_text = wrap(desc.extended_description(),width-indent);
-
-    string_type pad(indent,' ');
-    return std::regex_replace(wrapped_text,regex,nl+pad);
-  }
-
-  return "no description";
 }
-
 
 /*
   Format an option description into a basic_string<CharT>
@@ -2493,6 +2392,8 @@ class basic_option_formatter {
 
     typedef std::function<bool(const description_type &,
       const description_type &)> compare_type;
+
+    virtual ~basic_option_formatter(void) {}
 
     string_type typeset_option(const description_type &desc) const {
       return do_typeset_option(desc);
@@ -2528,47 +2429,30 @@ class basic_option_formatter {
   Sorts the option_descriptions by key_description() if both are
   present. If only rhs.key_description is present, returns true,
   otherwise returns false.
+
+  key_description is one of the following forms (if each is present):
+  --long_name,-short_name _arg_
+  --long_name,-short_name [=_arg_<implicit>]
+
+  Where _arg_ is the argument string provided in the constructor
+  (default CharT "arg"). To use a different value, provide it in the
+  constructor according to type CharT
 */
 template<typename CharT>
 class basic_default_formatter : public basic_option_formatter<CharT> {
   public:
+    basic_default_formatter(void) :_arg{'a','r','g'} {}
+    template<typename ForwardIterator>
+    basic_default_formatter(ForwardIterator first, ForwardIterator last)
+      :_arg(first,last) {}
+    basic_default_formatter(const CharT *arg) :_arg(arg) {}
 
   protected:
     using typename basic_option_formatter<CharT>::string_type;
     using typename basic_option_formatter<CharT>::description_type;
     using typename basic_option_formatter<CharT>::compare_type;
 
-    string_type do_typeset_option(const description_type &desc) const {
-      if(!desc.key_description)
-        return string_type();
-
-      string_type key_col = desc.key_description();
-
-      if(desc.make_value) {
-        if(desc.implicit_value && desc.implicit_value_description) {
-          key_col += " [arg=<";
-          key_col += desc.implicit_value_description();
-          key_col += ">]";
-        }
-        else
-          key_col += " arg";
-
-        if(key_col.size() > key_column_width()) {
-          key_col += "\n";
-          key_col += string_type(key_column_width()+column_pad(),' ');
-        }
-        else {
-          std::size_t per_pad = key_column_width()+column_pad()-key_col.size();
-          key_col += string_type(per_pad,' ');
-        }
-
-        string_type extended_col =
-          extended_to_string(desc,key_column_width()+column_pad(),max_width());
-        key_col += extended_col;
-      }
-
-      return key_col;
-    }
+    string_type do_typeset_option(const description_type &desc) const;
 
     compare_type do_compare(void) const {
       return [](const description_type &lhs, const description_type &rhs)
@@ -2583,20 +2467,99 @@ class basic_default_formatter : public basic_option_formatter<CharT> {
         };
     }
 
-    std::size_t key_column_width(void) const {
+    virtual std::size_t key_column_width(void) const {
       return 24;
     }
 
-    std::size_t column_pad(void) const {
+    virtual std::size_t column_pad(void) const {
       return 2;
     }
 
-    std::size_t max_width(void) const {
+    virtual std::size_t max_width(void) const {
       return 72;
     }
+
+    string_type arg_str(void) const {
+      return _arg;
+    }
+
+  private:
+    string_type _arg;
 };
 
+/*
+  Default formatter provides a comparison function that sorts the
+  entries by long names (mapped_keys) and typsets the option description
+  into two columns. The first is the summary of the option in one of the
+  following forms:
+    --foo,f arg
+    --foo,f [arg=<implicit>]
 
+  The second column containing the option description starts of the same
+  line as the option summary if it fits or on the next line if it does
+  not.
+
+  Indent is the amount of space from the left edge that the text will
+  start to be drawn. That is, in two column format, the column width is
+  (width-indent) whereas in a single column (or paragraph-mode), the
+  first line starts at indent and is (width-indent) wide.
+
+  This takes advantage of the automatic widening that occurs for char->CharT
+  via intergral promotion.
+*/
+template<typename CharT>
+typename basic_default_formatter<CharT>:: string_type
+basic_default_formatter<CharT>::
+  do_typeset_option(const description_type &desc) const
+{
+  static const std::basic_regex<CharT> ex(string_type{'\n'},
+    std::regex_constants::optimize);
+
+
+  if(!desc.key_description)
+    return string_type();
+
+  string_type key_col = desc.key_description();
+
+  if(desc.make_value) {
+    if(desc.implicit_value && desc.implicit_value_description) {
+      key_col.append({' ','['});
+      key_col.append(arg_str());
+      key_col.append({'=','<'});
+      key_col.append(desc.implicit_value_description());
+      key_col.append({'>',']'});
+    }
+    else {
+      key_col.push_back(' ');
+      key_col.append(arg_str());
+    }
+
+    if(key_col.size() > key_column_width()) {
+      key_col.push_back('\n');
+      key_col.append(key_column_width()+column_pad(),' ');
+    }
+    else {
+      std::size_t per_pad = key_column_width()+column_pad()-key_col.size();
+      key_col.append(per_pad,' ');
+    }
+
+    std::size_t indent = key_column_width()+column_pad();
+    string_type extended_col;
+    if(desc.extended_description) {
+      string_type wrapped_text = detail::wrap(desc.extended_description(),
+        max_width()-indent);
+
+      string_type pad{'\n'};
+      pad.append(indent,' ');
+
+      extended_col = std::regex_replace(wrapped_text,ex,pad);
+    }
+
+    key_col.append(extended_col);
+  }
+
+  return key_col;
+}
 
 typedef basic_option_formatter<char> cmd_option_fmt;
 typedef basic_option_formatter<wchar_t> wcmd_option_fmt;
@@ -2609,7 +2572,7 @@ to_string(const std::vector<basic_option_description<CharT> > &grp,
   typedef std::basic_string<CharT> string_type;
   typedef basic_option_description<CharT> description_type;
 
-  std::basic_ostringstream<CharT> out;
+  string_type out;
 
   typedef std::pair<const description_type *,string_type> output_pair_type;
   std::vector<output_pair_type> output_grp;
@@ -2634,28 +2597,11 @@ to_string(const std::vector<basic_option_description<CharT> > &grp,
   }
 
   for(auto &pair : output_grp) {
-    out << pair.second << "\n";
+    out.append(pair.second);
+    out.push_back('\n');
   }
 
-#if 0
-  std::size_t total_width = fmt.width();
-  std::size_t max_option_width = fmt.max_option_width();
-  std::size_t spacing_width = fmt.spacing_width();
-  std::size_t rindent = std::min(extent+spacing_width,max_option_width);
-  string_type rindent_pad(rindent,' ');
-  for(std::size_t i=0; i<output_grp.size(); ++i) {
-    out << output_grp[i].second;
-
-    if(output_grp[i].second.size()+spacing_width > rindent)
-      out << '\n' << rindent_pad;
-    else
-      out << string_type(rindent-output_grp[i].second.size(),' ');
-
-    out << fmt.fmt_extended(*output_grp[i].first,rindent,total_width)
-      << '\n';
-  }
-#endif
-  return out.str();
+  return out;
 }
 
 
