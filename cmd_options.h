@@ -33,7 +33,6 @@
 #endif
 
 #include <map>
-#include <regex>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -42,6 +41,8 @@
 #include <codecvt>
 #include <locale>
 #include <functional>
+
+#include <iostream>
 
 #define CMD_OPTION_QUOTE(x) #x
 #define CMD_OPTION_STR(x) CMD_OPTION_QUOTE(x)
@@ -234,8 +235,9 @@ class mutually_inclusive_error : public constraint_error {
 
 /*
   Convenience function to translate CharT -> char for use in formatting
-  exception messages. It is assumed that chars are encoded as UTF8 and
-  CharT is encoded as UTF16 in all cases
+  exception messages. It is assumed that chars, char16, char32 are
+  UTF-encoded and wchar_t has fixed width encoding (possibly UCS2 or
+  UTF32 depending on platform.
 */
 inline std::string asUTF8(const std::basic_string<char> &str)
 {
@@ -245,12 +247,27 @@ inline std::string asUTF8(const std::basic_string<char> &str)
 /*
   CharT either char16_t, char32_t, or wchar_t
 */
-template<typename CharT>
-inline std::string asUTF8(const std::basic_string<CharT> &str)
+inline std::string asUTF8(const std::basic_string<char16_t> &str)
 {
-  std::wstring_convert<std::codecvt_utf8_utf16<CharT> > convert;
+  std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
   return convert.to_bytes(str);
 }
+
+inline std::string asUTF8(const std::basic_string<char32_t> &str)
+{
+  std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> convert;
+  return convert.to_bytes(str);
+}
+
+inline std::string asUTF8(const std::basic_string<wchar_t> &str)
+{
+  std::wstring_convert<std::codecvt_utf8<wchar_t> > convert;
+  return convert.to_bytes(str);
+}
+
+
+
+
 
 template<typename CharT>
 inline const std::basic_string<CharT> & default_operand_key(void)
@@ -1215,77 +1232,6 @@ struct value {
   std::shared_ptr<value_type> _implicit;
 };
 
-template<typename CharT>
-const std::basic_string<CharT> & default_long_prefix(void); // undefined
-
-template<>
-inline const std::basic_string<char> & default_long_prefix<char>(void)
-{
-  static const std::basic_string<char> val("--");
-
-  return val;
-}
-
-template<>
-inline const std::basic_string<wchar_t> & default_long_prefix<wchar_t>(void)
-{
-  static const std::basic_string<wchar_t> val(L"--");
-
-  return val;
-}
-
-template<typename CharT>
-const std::basic_string<CharT> & default_short_prefix(void); // undefined
-
-template<>
-inline const std::basic_string<char> & default_short_prefix<char>(void)
-{
-  static const std::basic_string<char> val("-");
-
-  return val;
-}
-
-template<>
-inline const std::basic_string<wchar_t> & default_short_prefix<wchar_t>(void)
-{
-  static const std::basic_string<wchar_t> val(L"-");
-
-  return val;
-}
-
-template<typename CharT>
-const std::basic_string<CharT> & default_accept_all(void); // undefined
-
-template<>
-inline const std::basic_string<char> & default_accept_all<char>(void)
-{
-  static const std::basic_string<char> val("*");
-
-  return val;
-}
-
-template<>
-inline const std::basic_string<wchar_t> & default_accept_all<wchar_t>(void)
-{
-  static const std::basic_string<wchar_t> val(L"*");
-
-  return val;
-}
-
-template<typename CharT>
-CharT default_option_delim(void); // undefined
-
-template<>
-inline char default_option_delim<char>(void)
-{
-  return ',';
-}
-
-template<>
-inline wchar_t default_option_delim<wchar_t>(void)
-{
-  return L',';
-}
 
 
 
@@ -1362,8 +1308,7 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
   if(opt_spec.empty() || (long_opt.empty() && short_opt.empty())) {
     if(!hidden) {
       desc.key_description = [=](void) {
-        return default_long_prefix<CharT>() + default_accept_all<CharT>()
-          + delim + default_short_prefix<CharT>() + default_accept_all<CharT>();
+        return string_type{'-','-','*',',','-'};
       };
     }
   }
@@ -1379,8 +1324,8 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
 
     if(!hidden) {
       desc.key_description = [=](void) {
-        return default_long_prefix<CharT>() + long_opt + delim
-          + default_short_prefix<CharT>() + short_opt;
+        return string_type{'-','-'} + long_opt + delim
+          + string_type{'-'} + short_opt;
       };
     }
   }
@@ -1396,7 +1341,7 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
 
     if(!hidden) {
       desc.key_description = [=](void) {
-        return default_long_prefix<CharT>() + long_opt;
+        return string_type{'-','-'} + long_opt;
       };
     }
   }
@@ -1412,7 +1357,7 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
 
     if(!hidden) {
       desc.key_description = [=](void) {
-        return default_short_prefix<CharT>() + short_opt;
+        return string_type{'-'} + short_opt;
       };
     }
   }
@@ -1830,7 +1775,7 @@ inline basic_option_description<CharT>
 make_option(const std::basic_string<CharT> &opt_spec,
   const std::basic_string<CharT> &extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
-  CharT delim = default_option_delim<CharT>())
+  CharT delim = CharT{','})
 {
   typedef std::basic_string<CharT> string_type;
 
@@ -1850,7 +1795,7 @@ template<typename CharT>
 inline basic_option_description<CharT>
 make_option(const CharT *opt_spec, const CharT *extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
-  CharT delim = default_option_delim<CharT>())
+  CharT delim = CharT{','})
 {
   return make_option(std::basic_string<CharT>(opt_spec),
     std::basic_string<CharT>(extended_desc),cnts,delim);
@@ -1861,7 +1806,7 @@ inline basic_option_description<CharT>
 make_option(const std::basic_string<CharT> &opt_spec,
   const CharT *extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
-  CharT delim = default_option_delim<CharT>())
+  CharT delim = CharT{','})
 {
   return make_option(opt_spec,std::basic_string<CharT>(extended_desc),
     cnts,delim);
@@ -1872,7 +1817,7 @@ inline basic_option_description<CharT>
 make_option(const CharT *opt_spec,
   const std::basic_string<CharT> &extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
-  CharT delim = default_option_delim<CharT>())
+  CharT delim = CharT{','})
 {
   return make_option(std::basic_string<CharT>(opt_spec),extended_desc,
     cnts,delim);
@@ -1886,7 +1831,7 @@ template<typename CharT>
 inline basic_option_description<CharT>
 make_hidden_option(const std::basic_string<CharT> &opt_spec,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
-  CharT delim = default_option_delim<CharT>())
+  CharT delim = CharT{','})
 {
   typedef std::basic_string<CharT> string_type;
 
@@ -1906,7 +1851,7 @@ template<typename CharT>
 inline basic_option_description<CharT>
 make_hidden_option(const CharT *opt_spec,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
-  CharT delim = default_option_delim<CharT>())
+  CharT delim = CharT{','})
 {
   return make_hidden_option(std::basic_string<CharT>(opt_spec),cnts,delim);
 }
@@ -1920,7 +1865,7 @@ inline basic_option_description<CharT>
 make_option(const std::basic_string<CharT> &opt_spec,
   const value<T> &val, const std::basic_string<CharT> &extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
-  CharT delim = default_option_delim<CharT>())
+  CharT delim = CharT{','})
 {
   typedef std::basic_string<CharT> string_type;
 
@@ -1945,7 +1890,7 @@ inline basic_option_description<CharT>
 make_option(const CharT *opt_spec,
   const value<T> &val, const CharT *extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
-  CharT delim = default_option_delim<CharT>())
+  CharT delim = CharT{','})
 {
   return make_option(std::basic_string<CharT>(opt_spec),val,
     std::basic_string<CharT>(extended_desc),cnts,delim);
@@ -1956,7 +1901,7 @@ inline basic_option_description<CharT>
 make_option(const std::basic_string<CharT> &opt_spec,
   const value<T> &val, const CharT *extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
-  CharT delim = default_option_delim<CharT>())
+  CharT delim = CharT{','})
 {
   return make_option(opt_spec,val,std::basic_string<CharT>(extended_desc),
     cnts,delim);
@@ -1967,7 +1912,7 @@ inline basic_option_description<CharT>
 make_option(const CharT *opt_spec,
   const value<T> &val, const std::basic_string<CharT> &extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
-  CharT delim = default_option_delim<CharT>())
+  CharT delim = CharT{','})
 {
   return make_option(std::basic_string<CharT>(opt_spec),val,extended_desc,
     cnts,delim);
@@ -1981,7 +1926,7 @@ inline basic_option_description<CharT>
 make_hidden_option(const std::basic_string<CharT> &opt_spec,
   const value<T> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
-  CharT delim = default_option_delim<CharT>())
+  CharT delim = CharT{','})
 {
   typedef std::basic_string<CharT> string_type;
 
@@ -2003,7 +1948,7 @@ template<typename CharT, typename T>
 inline basic_option_description<CharT>
 make_hidden_option(const CharT *opt_spec, const value<T> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
-  CharT delim = default_option_delim<CharT>())
+  CharT delim = CharT{','})
 {
   return make_hidden_option(std::basic_string<CharT>(opt_spec),val,cnts,delim);
 }
@@ -2308,6 +2253,15 @@ inline basic_option_description<CharT> make_options_error(void)
 namespace detail {
 
 template<typename CharT>
+inline bool is_C_space(CharT c)
+{
+  static const std::array<CharT,6> C_space{{0x20,0x0c,0x0a,0x0d,0x09,0x0b}};
+
+  return (std::find(C_space.begin(),C_space.end(),c) != C_space.end());
+}
+
+
+template<typename CharT>
 std::basic_string<CharT>
 wrap(const std::basic_string<CharT> &text, std::size_t max_width)
 {
@@ -2322,7 +2276,7 @@ wrap(const std::basic_string<CharT> &text, std::size_t max_width)
   while(cur != text.end()) {
     if(ignore_ws) {
       // eat all whitespace until find non-whitespace or newline
-      while(cur != text.end() && isspace(*cur) && *cur != '\n')
+      while(cur != text.end() && is_C_space(*cur) && *cur != '\n')
         ++cur;
 
       if(*cur == '\n') {
@@ -2333,7 +2287,7 @@ wrap(const std::basic_string<CharT> &text, std::size_t max_width)
       }
 
       // read complete word
-      while(cur != text.end() && !isspace(*cur))
+      while(cur != text.end() && !is_C_space(*cur))
         word += *cur++;
 
       if(width + word.size() + 1 > max_width) {
@@ -2356,12 +2310,13 @@ wrap(const std::basic_string<CharT> &text, std::size_t max_width)
     }
     else {
       // do not ignore whitespace
-      while(cur != text.end() && isspace(*cur)) {
+      while(cur != text.end() && is_C_space(*cur)) {
         if(width+1 > max_width) {
           wrapped += '\n';
           width = 0;
         }
         wrapped += *cur++;
+        ++width;
       }
 
       if(cur != text.end())
@@ -2487,6 +2442,123 @@ class basic_default_formatter : public basic_option_formatter<CharT> {
     string_type _arg;
 };
 
+struct u32string_identity_cvt {
+  const std::u32string & to_bytes(const std::u32string &str) const {
+    return str;
+  }
+
+  const std::u32string & from_bytes(const std::u32string &str) const {
+    return str;
+  }
+};
+
+
+/*
+  Ensure we are always operating on code points and not the underlying
+  char_type.
+
+  Helper traits to transform (if necessary) a CharT string into a code
+  point string. That is, if CharT string is a multibyte string,
+  transform it to a string where each element is a code point. Since
+  each element in a UTF32 string is a single unicode code point, then
+  convert the UTF{8,16} strings into UTF32. Since wchar_t is platform-
+  and local-dependent, then assume it represents a single code point and
+  ensure documentation states this. Specifically, wchar_t is NOT UTF16.
+*/
+template<typename CharT>
+struct code_point_traits;
+
+// UTF8
+template<>
+struct code_point_traits<char> {
+  typedef char char_type;
+  typedef char32_t code_point;
+
+  static std::basic_string<code_point>
+  convert_from(const std::basic_string<char_type> &str)
+  {
+    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
+    return cvt.from_bytes(str);
+  }
+
+  static std::basic_string<char_type>
+  convert_to(const std::basic_string<code_point> &str)
+  {
+    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
+    return cvt.to_bytes(str);
+  }
+};
+
+// UTF16
+template<>
+struct code_point_traits<char16_t> {
+  typedef char16_t char_type;
+  typedef char32_t code_point;
+
+  // Run conversion through UTF8. Appears like it is possible to just
+  // use std::codecvt_utf16 but not clear that this works with
+  // std::wstring_convert and generally poorly documented. May need to
+  // revisit if there is an unreasonable performance impact
+  static std::basic_string<code_point>
+  convert_from(const std::basic_string<char_type> &str)
+  {
+    std::wstring_convert<std::codecvt_utf8_utf16<char_type>, char_type> cvt16_8;
+    std::string utf8 = cvt16_8.to_bytes(str);
+
+    std::wstring_convert<std::codecvt_utf8<code_point>, code_point> cvt8_32;
+    return cvt8_32.from_bytes(utf8);
+  }
+
+  static std::basic_string<char_type>
+  convert_to(const std::basic_string<code_point> &str)
+  {
+    std::wstring_convert<std::codecvt_utf8<code_point>, code_point> cvt32_8;
+    std::string utf8 = cvt32_8.to_bytes(str);
+
+    std::wstring_convert<std::codecvt_utf8_utf16<char_type>, char_type> cvt8_16;
+    return cvt8_16.from_bytes(utf8);
+  }
+};
+
+// UTF32
+template<>
+struct code_point_traits<char32_t> {
+  typedef char32_t char_type;
+  typedef char32_t code_point;
+
+  static std::basic_string<code_point>
+  convert_from(const std::basic_string<char_type> &str)
+  {
+    return str;
+  }
+
+  static std::basic_string<char_type>
+  convert_to(const std::basic_string<code_point> &str)
+  {
+    return str;
+  }
+};
+
+// wchar_t
+template<>
+struct code_point_traits<wchar_t> {
+  typedef wchar_t char_type;
+  typedef wchar_t code_point;
+
+  static std::basic_string<code_point>
+  convert_from(const std::basic_string<char_type> &str)
+  {
+    return str;
+  }
+
+  static std::basic_string<char_type>
+  convert_to(const std::basic_string<code_point> &str)
+  {
+    return str;
+  }
+};
+
+
 /*
   Default formatter provides a comparison function that sorts the
   entries by long names (mapped_keys) and typsets the option description
@@ -2504,17 +2576,21 @@ class basic_default_formatter : public basic_option_formatter<CharT> {
   (width-indent) whereas in a single column (or paragraph-mode), the
   first line starts at indent and is (width-indent) wide.
 
-  This takes advantage of the automatic widening that occurs for char->CharT
-  via intergral promotion.
+  All text processing is done as UTF32 by converting the given CharT for
+  wrapping and indenting and then converting back again. Although this
+  adds a conversion and copy step, it is cleaner than multiple
+  implementations that handle the different UTF{8,16,32} and wchar_t
+  possibilities.
 */
 template<typename CharT>
-typename basic_default_formatter<CharT>:: string_type
+typename basic_default_formatter<CharT>::string_type
 basic_default_formatter<CharT>::
   do_typeset_option(const description_type &desc) const
 {
-  static const std::basic_regex<CharT> ex(string_type{'\n'},
-    std::regex_constants::optimize);
-
+  typedef code_point_traits<CharT> cpoint_traits;
+  typedef typename cpoint_traits::code_point code_point;
+  typedef std::basic_string<typename cpoint_traits::code_point>
+        cpstring_type;
 
   if(!desc.key_description)
     return string_type();
@@ -2546,13 +2622,21 @@ basic_default_formatter<CharT>::
     std::size_t indent = key_column_width()+column_pad();
     string_type extended_col;
     if(desc.extended_description) {
-      string_type wrapped_text = detail::wrap(desc.extended_description(),
+      cpstring_type cpextended_desc =
+        cpoint_traits::convert_from(desc.extended_description());
+
+      cpstring_type wrapped_text = detail::wrap(cpextended_desc,
         max_width()-indent);
 
-      string_type pad{'\n'};
-      pad.append(indent,' ');
+      cpextended_desc.clear();
+      for(auto c : wrapped_text) {
+        cpextended_desc += c;
+        if(c == code_point('\n'))
+          cpextended_desc.append(indent,code_point(' '));
+      }
 
-      extended_col = std::regex_replace(wrapped_text,ex,pad);
+      extended_col = cpoint_traits::convert_to(cpextended_desc);
+
     }
 
     key_col.append(extended_col);
@@ -2560,6 +2644,69 @@ basic_default_formatter<CharT>::
 
   return key_col;
 }
+
+
+#if 0
+template<typename CharT>
+typename basic_default_formatter<CharT>::string_type
+basic_default_formatter<CharT>::
+  do_typeset_option(const description_type &desc) const
+{
+  if(!desc.key_description)
+    return string_type();
+
+  string_type key_col = desc.key_description();
+
+  if(desc.make_value) {
+    if(desc.implicit_value && desc.implicit_value_description) {
+      key_col.append({' ','['});
+      key_col.append(arg_str());
+      key_col.append({'=','<'});
+      key_col.append(desc.implicit_value_description());
+      key_col.append({'>',']'});
+    }
+    else {
+      key_col.push_back(' ');
+      key_col.append(arg_str());
+    }
+
+    if(key_col.size() > key_column_width()) {
+      key_col.push_back('\n');
+      key_col.append(key_column_width()+column_pad(),' ');
+    }
+    else {
+      std::size_t per_pad = key_column_width()+column_pad()-key_col.size();
+      key_col.append(per_pad,' ');
+    }
+
+    std::size_t indent = key_column_width()+column_pad();
+    string_type extended_col;
+    if(desc.extended_description) {
+      // CharT - UTF32 - CharT conversion
+      typename wstring_convert_to_UTF32<CharT>::converter cvt;
+
+      std::u32string utf32_desc = cvt.from_bytes(desc.extended_description());
+      std::u32string wrapped_text = detail::wrap(utf32_desc,
+        max_width()-indent);
+
+      utf32_desc.clear();
+      for(char32_t c : wrapped_text) {
+        utf32_desc += c;
+        if(c == char32_t('\n'))
+          utf32_desc.append(indent,char32_t(' '));
+      }
+
+      extended_col = cvt.to_bytes(utf32_desc);
+    }
+
+    key_col.append(extended_col);
+  }
+
+  return key_col;
+}
+
+#endif
+
 
 typedef basic_option_formatter<char> cmd_option_fmt;
 typedef basic_option_formatter<wchar_t> wcmd_option_fmt;

@@ -28,13 +28,16 @@ typedef detail::std_stream_select<detail::check_char_t> stream_select;
  */
 BOOST_AUTO_TEST_CASE( all_flags_test )
 {
+  std::locale::global(std::locale("en_US.UTF-8"));
+
   options_group_type options = options_group_type{
     co::make_option(_LIT("a-really-long-option-name,b"),
-      co::value<string_type>().implicit(_LIT("implicit")),detail::ipsum),
-    co::make_option(_LIT("foo,f"),
-      co::value<string_type>(),detail::ipsum_par)
+      co::value<string_type>().implicit(_LIT("implicit")),detail::BMP_celebs),
+//     co::make_option(_LIT("foo,f"),
+//       co::value<string_type>(),detail::ipsum_par)
   };
 
+  stream_select::cout.imbue(std::locale());
   stream_select::cout << co::to_string(options);
 }
 

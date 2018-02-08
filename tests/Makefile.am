@@ -33,6 +33,15 @@ additional_cppflags= \
 char_cpp_flags= \
 	-DCMD_OPT_TEST_CHART=char -DLITERAL_PREFIX=
 
+char8_cpp_flags= \
+	-DCMD_OPT_TEST_CHART=char -DLITERAL_PREFIX=u8
+
+char16_cpp_flags= \
+	-DCMD_OPT_TEST_CHART=char16_t -DLITERAL_PREFIX=u
+
+char32_cpp_flags= \
+	-DCMD_OPT_TEST_CHART=char32_t -DLITERAL_PREFIX=U
+
 wchar_cpp_flags= \
 	-DCMD_OPT_TEST_CHART=wchar_t -DLITERAL_PREFIX=L
 
@@ -102,6 +111,9 @@ check_PROGRAMS=\
 	value_test \
 	wvalue_test \
 	format_test \
+	format8_test \
+	format16_test \
+	format32_test \
 	wformat_test
 
 basic_test_SOURCES=$(master_suite) \
@@ -462,6 +474,27 @@ format_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 format_test_LDFLAGS=$(additional_ldflags)
 format_test_LDADD=$(additional_libs)
 
+format8_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	format_test.cc
+format8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
+format8_test_LDFLAGS=$(additional_ldflags)
+format8_test_LDADD=$(additional_libs)
+
+format16_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	format_test.cc
+format16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
+format16_test_LDFLAGS=$(additional_ldflags)
+format16_test_LDADD=$(additional_libs)
+
+format32_test_SOURCES=$(master_suite) \
+	test_detail.h \
+	format_test.cc
+format32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
+format32_test_LDFLAGS=$(additional_ldflags)
+format32_test_LDADD=$(additional_libs)
+
 wformat_test_SOURCES=$(master_suite) \
 	test_detail.h \
 	format_test.cc
@@ -521,4 +554,7 @@ TESTS=\
 	value_test \
 	wvalue_test \
 	format_test \
+	format8_test \
+	format16_test \
+	format32_test \
 	wformat_test
