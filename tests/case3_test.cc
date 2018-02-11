@@ -75,9 +75,9 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         string_type(_LIT("--bar"))},
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         string_type(_LIT("blah"))},
       {_LIT("foo"),{}},
       {_LIT("foo"),{}}
@@ -151,9 +151,9 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         string_type(_LIT("--bar"))},
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         string_type(_LIT("blah"))},
       {_LIT("foo"),{}},
       {_LIT("foo"),{}},

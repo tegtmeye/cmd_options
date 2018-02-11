@@ -21,39 +21,91 @@ typedef co::basic_variable_map<detail::check_char_t> variable_map_type;
 typedef detail::std_stream_select<detail::check_char_t> stream_select;
 
 
-struct test_struct {
-  test_struct(const string_type &str=string_type()) :_str(str) {}
+struct userdef_struct {
+  userdef_struct(const string_type &str=string_type()) :_str(str) {}
 
-  bool operator==(const test_struct &rhs) const {
+  bool operator==(const userdef_struct &rhs) const {
     return rhs._str == _str;
   }
 
   string_type _str;
 };
 
-inline string_type to_string(const test_struct &ts)
+/*
+  operator>> and operator << are only going to be called in one of two
+  ways, char in the case where CharT is one of {char,char16_t,char32_t}
+  which means UTF and wchar_t which may be UCS2 or something else. Use
+  SFINAE so that this class be be used with all types for testing
+*/
+template<typename CharT>
+inline typename std::enable_if<std::is_same<CharT,char>::value,
+  std::basic_ostream<CharT> &>::type
+operator<<(std::basic_ostream<CharT> &out, const userdef_struct &ts)
 {
-  return ts._str;
+  return (out << co::detail::asUTF8(ts._str));
 }
 
-inline string_type to_wstring(const test_struct &ts)
+template<typename CharT>
+inline typename std::enable_if<std::is_same<CharT,wchar_t>::value,
+  std::basic_ostream<CharT> &>::type
+operator<<(std::basic_ostream<CharT> &out, const userdef_struct &ts)
 {
-  return ts._str;
+  return (out << ts._str);
 }
 
-inline std::basic_istream<detail::check_char_t> &
-operator>>(std::basic_istream<detail::check_char_t> &in, test_struct &rhs)
+template<typename CharT>
+inline typename std::enable_if<std::is_same<CharT,char>::value,
+  std::basic_istream<CharT> &>::type
+operator>>(std::basic_istream<CharT> &in, userdef_struct &rhs)
 {
-  rhs._str = string_type(std::istreambuf_iterator<detail::check_char_t>(in),
-    std::istreambuf_iterator<detail::check_char_t>());
+  std::istreambuf_iterator<CharT> first(in);
+  std::istreambuf_iterator<CharT> last;
+
+  rhs._str = co::detail::fromUTF8<detail::check_char_t>({first,last});
+
+  return in;
+}
+
+template<typename CharT>
+inline typename std::enable_if<std::is_same<CharT,wchar_t>::value,
+  std::basic_istream<CharT> &>::type
+operator>>(std::basic_istream<CharT> &in, userdef_struct &rhs)
+{
+  std::istreambuf_iterator<CharT> first(in);
+  std::istreambuf_iterator<CharT> last;
+
+  rhs._str.assign(first,last);
 
   return in;
 }
 
 
+struct userdef_convert_struct {
+  userdef_convert_struct(const string_type &str=string_type()) :_str(str) {}
+
+  bool operator==(const userdef_convert_struct &rhs) const {
+    return rhs._str == _str;
+  }
+
+  string_type _str;
+};
+
+template<>
+struct co::convert_value<userdef_convert_struct> {
+  static userdef_convert_struct from_string(const string_type &str)
+  {
+    return userdef_convert_struct(str);
+  }
+
+  static void to_string(string_type &str, const userdef_convert_struct &val)
+  {
+    str = val._str;
+  }
+};
+
+
 
 BOOST_AUTO_TEST_SUITE( value_test_suite )
-
 
 /**
   Check fundamental values
@@ -84,86 +136,70 @@ BOOST_AUTO_TEST_CASE( bool_value_test )
       detail::check_value(_LIT("bool"),static_cast<bool>(0)),
     }
   ));
+
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--bool=11"),
+  };
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.size(),argv2.data(),options),
+    std::invalid_argument, [](const std::invalid_argument &ex) {
+        return (ex.what() == std::string("11"));
+      }
+  );
+
+  std::vector<const detail::check_char_t *> argv3{
+    _LIT("--bool=foobar"),
+  };
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv3.size(),argv3.data(),options),
+    std::invalid_argument, [](const std::invalid_argument &ex) {
+        return (ex.what() == std::string("foobar"));
+      }
+  );
+
+  std::vector<const detail::check_char_t *> argv4{
+    _LIT("--bool=truefoo"),
+  };
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv4.size(),argv4.data(),options),
+    std::invalid_argument, [](const std::invalid_argument &ex) {
+        return (ex.what() == std::string("truefoo"));
+      }
+  );
 }
 
-BOOST_AUTO_TEST_CASE( char_value_test )
+BOOST_AUTO_TEST_CASE( CharT_value_test )
 {
   variable_map_type vm;
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
-    _LIT("--char=a"),
+    _LIT("--CharT=a"),
   };
 
   options = options_group_type{
-    co::make_option(_LIT("char"),co::value<char>(),_LIT("case 6")),
+    co::make_option(_LIT("CharT"),co::value<detail::check_char_t>(),
+      _LIT("case 6")),
   };
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  BOOST_REQUIRE(detail::vm_check(vm,{
-      detail::check_value(_LIT("char"),static_cast<char>('a')),
-    }
-  ));
-}
-
-BOOST_AUTO_TEST_CASE( signed_char_value_test )
-{
-  variable_map_type vm;
-  options_group_type options;
-  std::vector<const detail::check_char_t *> argv{
-    _LIT("--schar=a"),
-  };
-
-  options = options_group_type{
-    co::make_option(_LIT("schar"),co::value<signed char>(),_LIT("case 6")),
-  };
-
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+//   stream_select::cerr
+//     << detail::to_string(vm,co::value<detail::check_char_t>());
 
   BOOST_REQUIRE(detail::vm_check(vm,{
-      detail::check_value(_LIT("schar"),static_cast<signed char>('a')),
+      detail::check_value(_LIT("CharT"),static_cast<detail::check_char_t>('a'))
     }
   ));
-}
 
-BOOST_AUTO_TEST_CASE( unsigned_char_value_test )
-{
-  variable_map_type vm;
-  options_group_type options;
-  std::vector<const detail::check_char_t *> argv{
-    _LIT("--uchar=a"),
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--CharT=aa"),
   };
 
-  options = options_group_type{
-    co::make_option(_LIT("uchar"),co::value<unsigned char>(),_LIT("case 6")),
-  };
-
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
-
-  BOOST_REQUIRE(detail::vm_check(vm,{
-      detail::check_value(_LIT("uchar"),static_cast<unsigned char>('a')),
-    }
-  ));
-}
-
-BOOST_AUTO_TEST_CASE( wchar_value_test )
-{
-  variable_map_type vm;
-  options_group_type options;
-  std::vector<const detail::check_char_t *> argv{
-    _LIT("--wchar=w"),
-  };
-
-  options = options_group_type{
-    co::make_option(_LIT("wchar"),co::value<wchar_t>(),_LIT("case 6")),
-  };
-
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
-
-  BOOST_REQUIRE(detail::vm_check(vm,{
-      detail::check_value(_LIT("wchar"),static_cast<wchar_t>('w')),
-    }
-  ));
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.size(),argv2.data(),options),
+    std::invalid_argument, [](const std::invalid_argument &ex) {
+        return (ex.what() == std::string("aa"));
+      }
+  );
 }
 
 BOOST_AUTO_TEST_CASE( short_value_test )
@@ -400,8 +436,7 @@ BOOST_AUTO_TEST_CASE( fundamental_value_test )
   variable_map_type vm;
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
-    _LIT("--char=a"),
-//     _LIT("--wchar=w"),
+    _LIT("--CharT=a"),
     _LIT("--short=11"),
     _LIT("--ushort=21"),
     _LIT("--int=12"),
@@ -416,7 +451,8 @@ BOOST_AUTO_TEST_CASE( fundamental_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("char"),co::value<char>(),_LIT("case 6")),
+    co::make_option(_LIT("CharT"),co::value<detail::check_char_t>(),
+      _LIT("case 6")),
     co::make_option(_LIT("short"),co::value<short>(),_LIT("case 6")),
     co::make_option(_LIT("ushort"),co::value<unsigned short>(),_LIT("case 6")),
     co::make_option(_LIT("int"),co::value<int>(),_LIT("case 6")),
@@ -435,7 +471,7 @@ BOOST_AUTO_TEST_CASE( fundamental_value_test )
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
-      detail::check_value(_LIT("char"),static_cast<char>('a')),
+      detail::check_value(_LIT("CharT"),static_cast<detail::check_char_t>('a')),
       detail::check_value(_LIT("double"),static_cast<double>(6.1),
         detail::essentiallyEqual<double>()),
       detail::check_value(_LIT("float"),static_cast<float>(5.1),
@@ -486,7 +522,7 @@ BOOST_AUTO_TEST_CASE( userdef_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("userdef"),co::value<test_struct>(),
+    co::make_option(_LIT("userdef"),co::value<userdef_struct>(),
       _LIT("case 6"))
   };
 
@@ -494,7 +530,29 @@ BOOST_AUTO_TEST_CASE( userdef_value_test )
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("userdef"),
-        static_cast<test_struct>(_LIT("Hello World"))),
+        static_cast<userdef_struct>(_LIT("Hello World"))),
+    }
+  ));
+}
+
+BOOST_AUTO_TEST_CASE( userdef_convert_value_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--userdef=Hello World")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("userdef"),co::value<userdef_convert_struct>(),
+      _LIT("case 6"))
+  };
+
+  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+
+  BOOST_REQUIRE(detail::vm_check(vm,{
+      detail::check_value(_LIT("userdef"),
+        static_cast<userdef_convert_struct>(_LIT("Hello World"))),
     }
   ));
 }

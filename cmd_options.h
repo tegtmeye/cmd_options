@@ -51,6 +51,7 @@
 #define CMD_OPTIONS_DEFAULT_OPERAND_KEY
 #endif
 
+// CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR in UTF8
 #define CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR  \
   CMD_OPTION_STR(CMD_OPTIONS_DEFAULT_OPERAND_KEY)
 
@@ -233,13 +234,22 @@ class mutually_inclusive_error : public constraint_error {
 };
 
 
+namespace detail {
 /*
-  Convenience function to translate CharT -> char for use in formatting
-  exception messages. It is assumed that chars, char16, char32 are
-  UTF-encoded and wchar_t has fixed width encoding (possibly UCS2 or
-  UTF32 depending on platform.
+  Convenience function to translate CharT -> char -> CharT for use in
+  formatting exception messages. It is assumed that chars, char16,
+  char32 are UTF-encoded and wchar_t has fixed width encoding (possibly
+  UCS2 or UTF32 depending on platform.
 */
 inline std::string asUTF8(const std::basic_string<char> &str)
+{
+  return str;
+}
+
+template<typename CharT>
+inline typename std::enable_if<std::is_same<CharT, char>::value,
+  std::basic_string<char> >::type
+fromUTF8(const std::string &str)
 {
   return str;
 }
@@ -253,10 +263,28 @@ inline std::string asUTF8(const std::basic_string<char16_t> &str)
   return convert.to_bytes(str);
 }
 
+template<typename CharT>
+inline typename std::enable_if<std::is_same<CharT, char16_t>::value,
+  std::basic_string<char16_t> >::type
+fromUTF8(const std::string &str)
+{
+  std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+  return convert.from_bytes(str);
+}
+
 inline std::string asUTF8(const std::basic_string<char32_t> &str)
 {
   std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> convert;
   return convert.to_bytes(str);
+}
+
+template<typename CharT>
+inline typename std::enable_if<std::is_same<CharT, char32_t>::value,
+  std::basic_string<char32_t> >::type
+fromUTF8(const std::string &str)
+{
+  std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> convert;
+  return convert.from_bytes(str);
 }
 
 inline std::string asUTF8(const std::basic_string<wchar_t> &str)
@@ -265,33 +293,28 @@ inline std::string asUTF8(const std::basic_string<wchar_t> &str)
   return convert.to_bytes(str);
 }
 
+template<typename CharT>
+inline typename std::enable_if<std::is_same<CharT, wchar_t>::value,
+  std::basic_string<wchar_t> >::type
+fromUTF8(const std::string &str)
+{
+  std::wstring_convert<std::codecvt_utf8<wchar_t> > convert;
+  return convert.from_bytes(str);
+}
 
 
 
-
+// fixme move up one namespace
 template<typename CharT>
 inline const std::basic_string<CharT> & default_operand_key(void)
 {
-  static const auto cvt = [](const char *str) -> std::basic_string<CharT> {
-    std::wstring_convert<std::codecvt_utf8_utf16<CharT> > convert;
-    return convert.from_bytes(str);
-  };
-
-  static const std::basic_string<CharT> str =
-    cvt(CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR);
+  static const std::basic_string<CharT>
+    str{fromUTF8<CharT>(CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR)};
 
   return str;
 }
 
-template<>
-inline const std::basic_string<char> & default_operand_key<char>(void)
-{
-  static const std::string str(CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR);
-
-  return str;
 }
-
-
 
 
 
@@ -995,12 +1018,12 @@ parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
             continue;
 
           std::pair<bool,string_type> operand_key{false,
-            default_operand_key<CharT>()};
+            detail::default_operand_key<CharT>()};
 
           if(desc->mapped_key) {
             operand_key =
-              desc->mapped_key(default_operand_key<CharT>(),operand_count,
-                arg_count,_vm);
+              desc->mapped_key(detail::default_operand_key<CharT>(),
+                operand_count,arg_count,_vm);
             if(!operand_key.first)
               continue;
           }
@@ -1234,45 +1257,297 @@ struct value {
 
 
 
+/*
+  Intermediary conversion class to handle conversion to and from
+  basic_string<CharT> and value T.
 
+  If CharT is char or wchar, basically calls operator<< and operator>>
+  for type T as is. If CharT is char16_t or char32_t, then the stream is
+  of type char and is considered UTF8. The correct string type is then
+  transcoded from this.
+
+  Deals with two issues:
+    - Lack of support in C++11 for formatted stream of char16_t and char32_t
+    - The case where a user needs finer grained handling of string to
+      value conversions.
+
+  For item (1), it is what it is. If another way of dealing with this
+  emerges, it is worth rethinking this design.
+
+  For item (2), it is a a real possibility that a userdefined type needs
+  separate formatted IO handling. That is, if operator{<<,>>} is already
+  overloaded for things like serialization or human readable input or
+  debugging, then that IO probably doesn't make very good command
+  argument IO. In this case, simply specialize convert_value for your
+  own type similar to convert_value<bool>.
+*/
+
+template<typename T>
+struct convert_value {
+  template<typename CharT>
+  static T from_string(const std::basic_string<CharT> &str)
+  {
+    typedef std::basic_istringstream<CharT> istream_type;
+
+    T _val;
+    istream_type in(str);
+    in >> _val;
+    if(in.peek() != istream_type::traits_type::eof())
+      throw std::invalid_argument(detail::asUTF8(str));
+
+    return _val;
+  }
+
+  static T from_string(const std::u16string &str)
+  {
+    return from_string(detail::asUTF8(str));
+  }
+
+  static T from_string(const std::u32string &str)
+  {
+    return from_string(detail::asUTF8(str));
+  }
+
+  template<typename CharT>
+  static void to_string(std::basic_string<CharT> &str, const T &val)
+  {
+    std::basic_ostringstream<CharT> out;
+    out << val;
+
+    str = out.str();
+  }
+
+  static void to_string(std::u16string &str, const T &val)
+  {
+    std::string _str;
+    to_string(_str,val);
+    str = detail::fromUTF8<char16_t>(_str);
+  }
+
+  static void to_string(std::u32string &str, const T &val)
+  {
+    std::string _str;
+    to_string(_str,val);
+    str = detail::fromUTF8<char32_t>(_str);
+  }
+};
+
+template<typename CharT>
+struct convert_value<std::basic_string<CharT> > {
+  static const std::basic_string<CharT> &
+  from_string(const std::basic_string<CharT> &str)
+  {
+    return str;
+  }
+
+  template<typename OtherCharT>
+  static void to_string(std::basic_string<OtherCharT> &str,
+    const std::basic_string<CharT> &val)
+  {
+    str = val;
+  }
+};
+
+template<>
+struct convert_value<bool> {
+  template<typename CharT>
+  static bool from_string(const std::basic_string<CharT> &str)
+  {
+    typedef std::basic_istringstream<CharT> istream_type;
+
+    bool _val;
+    istream_type in(str);
+    if(!(in >> std::noboolalpha >> _val)) {
+      in.clear();
+      in.str(str);
+      if(!(in >> std::boolalpha >> _val))
+        throw std::invalid_argument(detail::asUTF8(str));
+    }
+
+    if(in.peek() != istream_type::traits_type::eof())
+      throw std::invalid_argument(detail::asUTF8(str));
+
+    return _val;
+  }
+
+  static bool from_string(const std::u16string &str)
+  {
+    return from_string(detail::asUTF8(str));
+  }
+
+  static bool from_string(const std::u32string &str)
+  {
+    return from_string(detail::asUTF8(str));
+  }
+
+  template<typename CharT>
+  static void to_string(std::basic_string<CharT> &str, bool val)
+  {
+    std::basic_ostringstream<CharT> out;
+    out << std::boolalpha << val;
+
+    str = out.str();
+  }
+
+  static void to_string(std::u16string &str, const bool &val)
+  {
+    std::string _str;
+    to_string(_str,val);
+    str = detail::fromUTF8<char16_t>(_str);
+  }
+
+  static void to_string(std::u32string &str, const bool &val)
+  {
+    std::string _str;
+    to_string(_str,val);
+    str = detail::fromUTF8<char32_t>(_str);
+  }
+};
+
+template<>
+struct convert_value<char16_t> {
+  static char16_t from_string(const std::basic_string<char16_t> &str)
+  {
+    if(str.size() != 1)
+      throw std::invalid_argument(detail::asUTF8(str));
+
+    return str.front();
+  }
+
+  static void to_string(std::u16string &str, char16_t val)
+  {
+    str = val;
+  }
+};
+
+template<>
+struct convert_value<char32_t> {
+  static char32_t from_string(const std::basic_string<char32_t> &str)
+  {
+    if(str.size() != 1)
+      throw std::invalid_argument(detail::asUTF8(str));
+
+    return str.front();
+  }
+
+  static void to_string(std::u32string &str, char32_t val)
+  {
+    str = val;
+  }
+};
 
 
 
 
 namespace detail {
 
-template <typename CharT>
-inline const std::basic_string<CharT> &
-to_xstring(std::basic_string<CharT> &str)
-{
-    return str;
-}
 
 /*
-  to_xstring taken from:
+  Ensure we are always operating on code points and not the underlying
+  char_type.
 
-  http://stackoverflow.com/questions/34961274/implement-to-xstring-to-unite-to-string-and-to-wstring
+  Helper traits to transform (if necessary) a CharT string into a code
+  point string. That is, if CharT string is a multibyte string,
+  transform it to a string where each element is a code point. Since
+  each element in a UTF32 string is a single unicode code point, then
+  convert the UTF{8,16} strings into UTF32. Since wchar_t is platform-
+  and local-dependent, then assume it represents a single code point and
+  ensure documentation states this. Specifically, wchar_t is only UTF16
+  if the code point fits into 2 bytes if sizeof(wchar_t) == 2.
 */
-template <typename CharT, typename T>
-inline
-typename std::enable_if<std::is_same<CharT, char>::value, std::string>::type
-    to_xstring(const T &t)
-{
-  using namespace std;
+template<typename CharT>
+struct code_point_traits;
 
-  return to_string(t);
-}
+// UTF8
+template<>
+struct code_point_traits<char> {
+  typedef char char_type;
+  typedef char32_t code_point;
 
+  static std::basic_string<code_point>
+  convert_from(const std::basic_string<char_type> &str)
+  {
+    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
+    return cvt.from_bytes(str);
+  }
 
-template <typename CharT, typename T>
-inline
-typename std::enable_if<std::is_same<CharT, wchar_t>::value, std::wstring>::type
-    to_xstring(const T &t)
-{
-  using namespace std;
+  static std::basic_string<char_type>
+  convert_to(const std::basic_string<code_point> &str)
+  {
+    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
+    return cvt.to_bytes(str);
+  }
+};
 
-  return to_wstring(t);
-}
+// UTF16
+template<>
+struct code_point_traits<char16_t> {
+  typedef char16_t char_type;
+  typedef char32_t code_point;
+
+  // Run conversion through UTF8. Appears like it is possible to just
+  // use std::codecvt_utf16 but not clear that this works with
+  // std::wstring_convert and generally poorly documented. May need to
+  // revisit if there is an unreasonable performance impact
+  static std::basic_string<code_point>
+  convert_from(const std::basic_string<char_type> &str)
+  {
+    std::wstring_convert<std::codecvt_utf8_utf16<char_type>, char_type> cvt16_8;
+    std::string utf8 = cvt16_8.to_bytes(str);
+
+    std::wstring_convert<std::codecvt_utf8<code_point>, code_point> cvt8_32;
+    return cvt8_32.from_bytes(utf8);
+  }
+
+  static std::basic_string<char_type>
+  convert_to(const std::basic_string<code_point> &str)
+  {
+    std::wstring_convert<std::codecvt_utf8<code_point>, code_point> cvt32_8;
+    std::string utf8 = cvt32_8.to_bytes(str);
+
+    std::wstring_convert<std::codecvt_utf8_utf16<char_type>, char_type> cvt8_16;
+    return cvt8_16.from_bytes(utf8);
+  }
+};
+
+// UTF32
+template<>
+struct code_point_traits<char32_t> {
+  typedef char32_t char_type;
+  typedef char32_t code_point;
+
+  static std::basic_string<code_point>
+  convert_from(const std::basic_string<char_type> &str)
+  {
+    return str;
+  }
+
+  static std::basic_string<char_type>
+  convert_to(const std::basic_string<code_point> &str)
+  {
+    return str;
+  }
+};
+
+// wchar_t
+template<>
+struct code_point_traits<wchar_t> {
+  typedef wchar_t char_type;
+  typedef wchar_t code_point;
+
+  static std::basic_string<code_point>
+  convert_from(const std::basic_string<char_type> &str)
+  {
+    return str;
+  }
+
+  static std::basic_string<char_type>
+  convert_to(const std::basic_string<code_point> &str)
+  {
+    return str;
+  }
+};
+
 
 template<typename CharT>
 inline std::pair<std::basic_string<CharT>,std::basic_string<CharT> >
@@ -1365,261 +1640,6 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
   return std::make_pair(long_opt,short_opt);
 }
 
-
-
-
-template<typename T>
-struct convert {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
-  {
-    typedef std::basic_istringstream<CharT> istream_type;
-    T _val;
-    istream_type in(val);
-    in >> _val;
-    if(in.peek() != istream_type::traits_type::eof())
-      throw std::invalid_argument(asUTF8(val));
-
-    return any(_val);
-  }
-};
-
-template<typename CharT>
-struct convert<std::basic_string<CharT> > {
-  static any from_value(const std::basic_string<CharT> &,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
-  {
-    return any(val);
-  }
-};
-
-template<>
-struct convert<bool> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
-  {
-    bool _val;
-    std::basic_istringstream<CharT> in(val);
-    if(!(in >> std::noboolalpha >> _val)) {
-      in.clear();
-      if(!(in >> std::boolalpha >> _val))
-        throw std::invalid_argument(asUTF8(val));
-    }
-
-    return any(static_cast<bool>(_val));
-  }
-};
-
-template<>
-struct convert<char> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
-  {
-    if(val.size() != 1)
-      throw std::invalid_argument(asUTF8(val));
-
-    int _i = val.front();
-    if(_i < std::numeric_limits<char>::min()
-      || _i > std::numeric_limits<char>::max())
-    {
-      throw std::out_of_range(asUTF8(val));
-    }
-
-    return any(static_cast<char>(_i));
-  }
-};
-
-template<>
-struct convert<signed char> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
-  {
-    if(val.size() != 1)
-      throw std::invalid_argument(asUTF8(val));
-
-    int _i = val.front();
-    if(_i < std::numeric_limits<signed char>::min()
-      || _i > std::numeric_limits<signed char>::max())
-    {
-      throw std::out_of_range(asUTF8(val));
-    }
-
-    return any(static_cast<signed char>(_i));
-  }
-};
-
-template<>
-struct convert<wchar_t> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
-  {
-    if(val.size() != 1)
-      throw std::invalid_argument(asUTF8(val));
-
-    int _i = val.front();
-    if(_i < std::numeric_limits<wchar_t>::min()
-      || _i > std::numeric_limits<wchar_t>::max())
-    {
-      throw std::out_of_range(asUTF8(val));
-    }
-
-    return any(static_cast<wchar_t>(_i));
-  }
-};
-
-template<>
-struct convert<short> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
-  {
-    int _i = std::stoi(val);
-    if(_i < std::numeric_limits<short>::min()
-      || _i > std::numeric_limits<short>::max())
-    {
-      throw std::out_of_range(asUTF8(val));
-    }
-
-    return any(static_cast<short>(_i));
-  }
-};
-
-template<>
-struct convert<int> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &key,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
-  {
-    return any(std::stoi(val));
-  }
-};
-
-template<>
-struct convert<long> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &key,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
-  {
-    return any(std::stol(val));
-  }
-};
-
-template<>
-struct convert<long long> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
-  {
-    return any(std::stoll(val));
-  }
-};
-
-template<>
-struct convert<unsigned char> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
-  {
-    if(val.size() != 1)
-      throw std::invalid_argument(asUTF8(val));
-
-    int _i = val.front();
-    if(_i < std::numeric_limits<unsigned char>::min()
-      || _i > std::numeric_limits<unsigned char>::max())
-    {
-      throw std::out_of_range(asUTF8(val));
-    }
-
-    return any(static_cast<unsigned char>(_i));
-  }
-};
-
-template<>
-struct convert<unsigned short> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &)
-  {
-    unsigned long _i = std::stoul(val);
-    if(_i > std::numeric_limits<unsigned short>::max())
-      throw std::out_of_range(asUTF8(val));
-
-    return any(static_cast<unsigned short>(_i));
-  }
-};
-
-template<>
-struct convert<unsigned int> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &key,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
-  {
-    // unsigned long may be larger than unsigned int
-    unsigned long _i = std::stoul(val);
-    if(_i > std::numeric_limits<unsigned int>::max())
-      throw std::out_of_range(asUTF8(val));
-
-    return any(static_cast<unsigned int>(_i));
-  }
-};
-
-template<>
-struct convert<unsigned long> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &key,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
-  {
-    return any(std::stoul(val));
-  }
-};
-
-template<>
-struct convert<unsigned long long> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &key,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
-  {
-    return any(std::stoull(val));
-  }
-};
-
-template<>
-struct convert<float> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &key,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
-  {
-    return any(std::stof(val));
-  }
-};
-
-template<>
-struct convert<double> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &key,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
-  {
-    return any(std::stod(val));
-  }
-};
-
-template<>
-struct convert<long double> {
-  template<typename CharT>
-  static any from_value(const std::basic_string<CharT> &key,
-    const std::basic_string<CharT> &val, const basic_variable_map<CharT> &vm)
-  {
-    return any(std::stold(val));
-  }
-};
-
-
-
 template<typename T, typename CharT>
 inline void add_option_value(const value<T> &val,
   basic_option_description<CharT> &desc)
@@ -1632,17 +1652,17 @@ inline void add_option_value(const value<T> &val,
     {
       return any(*(val._implicit));
     };
-
     desc.implicit_value_description = [=](void) {
-      return to_xstring<CharT>(*(val._implicit));
+      string_type str;
+      convert_value<T>::to_string(str,*(val._implicit));
+      return str;
     };
   }
 
-  desc.make_value = [](const string_type &mapped_key, const string_type &value,
-      const variable_map_type &vm)
+  desc.make_value = [](const string_type &, const string_type &value,
+      const variable_map_type &)
   {
-    //return to_value<T>(mapped_key,value,vm);
-    return convert<T>::from_value(mapped_key,value,vm);
+    return any(convert_value<T>::from_string(value));
   };
 }
 
@@ -1664,8 +1684,7 @@ inline void add_operand_value(const value<T> &val,
     desc.make_value = [](const string_type &mapped_key,
       const string_type &value, const variable_map_type &vm)
     {
-      //return to_value<T>(mapped_key,value,vm);
-      return convert<T>::from_value(mapped_key,value,vm);
+      return any(convert_value<T>::from_string(value));
     };
   }
 }
@@ -1707,20 +1726,20 @@ void add_option_constraints(const basic_constraint<CharT> &cnts,
 
     std::size_t occurrances = vm.count(mapped_key);
     if(occurrances > cnts._max || occurrances < cnts._min) {
-      throw occurrence_error(asUTF8(mapped_key),cnts._min,cnts._max,
+      throw occurrence_error(detail::asUTF8(mapped_key),cnts._min,cnts._max,
         occurrances);
     }
 
     for(auto &exclusive_key : cnts._mutually_exclusive) {
       if(vm.count(exclusive_key) != 0)
-        throw mutually_exclusive_error(asUTF8(mapped_key),
-          asUTF8(exclusive_key));
+        throw mutually_exclusive_error(detail::asUTF8(mapped_key),
+          detail::asUTF8(exclusive_key));
     }
 
     for(auto &inclusive_key : cnts._mutually_inclusive) {
       if(vm.count(inclusive_key) == 0)
-        throw mutually_inclusive_error(asUTF8(mapped_key),
-          asUTF8(inclusive_key));
+        throw mutually_inclusive_error(detail::asUTF8(mapped_key),
+          detail::asUTF8(inclusive_key));
     }
   };
 }
@@ -1736,20 +1755,20 @@ void add_operand_constraints(const basic_constraint<CharT> &cnts,
   desc.finalize = [=](const basic_variable_map<CharT> &vm) {
     std::size_t occurrances = vm.count(mapped_key);
     if(occurrances < cnts._min || occurrances > cnts._max) {
-        throw occurrence_error(asUTF8(mapped_key),cnts._min,cnts._max,
+        throw occurrence_error(detail::asUTF8(mapped_key),cnts._min,cnts._max,
           occurrances);
     }
 
     for(auto &exclusive_key : cnts._mutually_exclusive) {
       if(vm.count(exclusive_key) != 0)
-        throw mutually_exclusive_error(asUTF8(mapped_key),
-          asUTF8(exclusive_key));
+        throw mutually_exclusive_error(detail::asUTF8(mapped_key),
+          detail::asUTF8(exclusive_key));
     }
 
     for(auto &inclusive_key : cnts._mutually_inclusive) {
       if(vm.count(inclusive_key) == 0)
-        throw mutually_inclusive_error(asUTF8(mapped_key),
-          asUTF8(inclusive_key));
+        throw mutually_inclusive_error(detail::asUTF8(mapped_key),
+          detail::asUTF8(inclusive_key));
     }
   };
 }
@@ -1986,10 +2005,11 @@ make_operand(const std::basic_string<CharT> &extended_desc, const value<T> &val,
 
   detail::add_operand_value(val,desc);
 
-  detail::add_operand_key(default_operand_key<CharT>(),cnts._position,
+  detail::add_operand_key(detail::default_operand_key<CharT>(),cnts._position,
     cnts._argument,desc);
 
-  detail::add_operand_constraints(cnts,default_operand_key<CharT>(),desc);
+  detail::add_operand_constraints(cnts,detail::default_operand_key<CharT>(),
+    desc);
 
   return desc;
 }
@@ -2015,10 +2035,11 @@ make_hidden_operand(const value<T> &val,
 
   detail::add_operand_value(val,desc);
 
-  detail::add_operand_key(default_operand_key<CharT>(),cnts._position,
+  detail::add_operand_key(detail::default_operand_key<CharT>(),cnts._position,
     cnts._argument,desc);
 
-  detail::add_operand_constraints(cnts,default_operand_key<CharT>(),desc);
+  detail::add_operand_constraints(cnts,detail::default_operand_key<CharT>(),
+    desc);
 
   return desc;
 }
@@ -2117,10 +2138,11 @@ make_operand(const std::basic_string<CharT> &extended_desc,
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  detail::add_operand_key(default_operand_key<CharT>(),cnts._position,
+  detail::add_operand_key(detail::default_operand_key<CharT>(),cnts._position,
     cnts._argument,desc);
 
-  detail::add_operand_constraints(cnts,default_operand_key<CharT>(),desc);
+  detail::add_operand_constraints(cnts,detail::default_operand_key<CharT>(),
+    desc);
 
   return desc;
 }
@@ -2143,10 +2165,11 @@ make_hidden_operand(
 {
   basic_option_description<CharT> desc;
 
-  detail::add_operand_key(default_operand_key<CharT>(),cnts._position,
+  detail::add_operand_key(detail::default_operand_key<CharT>(),cnts._position,
     cnts._argument,desc);
 
-  detail::add_operand_constraints(cnts,default_operand_key<CharT>(),desc);
+  detail::add_operand_constraints(cnts,detail::default_operand_key<CharT>(),
+    desc);
 
   return desc;
 }
@@ -2452,113 +2475,6 @@ struct u32string_identity_cvt {
   }
 };
 
-
-/*
-  Ensure we are always operating on code points and not the underlying
-  char_type.
-
-  Helper traits to transform (if necessary) a CharT string into a code
-  point string. That is, if CharT string is a multibyte string,
-  transform it to a string where each element is a code point. Since
-  each element in a UTF32 string is a single unicode code point, then
-  convert the UTF{8,16} strings into UTF32. Since wchar_t is platform-
-  and local-dependent, then assume it represents a single code point and
-  ensure documentation states this. Specifically, wchar_t is NOT UTF16.
-*/
-template<typename CharT>
-struct code_point_traits;
-
-// UTF8
-template<>
-struct code_point_traits<char> {
-  typedef char char_type;
-  typedef char32_t code_point;
-
-  static std::basic_string<code_point>
-  convert_from(const std::basic_string<char_type> &str)
-  {
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
-    return cvt.from_bytes(str);
-  }
-
-  static std::basic_string<char_type>
-  convert_to(const std::basic_string<code_point> &str)
-  {
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
-    return cvt.to_bytes(str);
-  }
-};
-
-// UTF16
-template<>
-struct code_point_traits<char16_t> {
-  typedef char16_t char_type;
-  typedef char32_t code_point;
-
-  // Run conversion through UTF8. Appears like it is possible to just
-  // use std::codecvt_utf16 but not clear that this works with
-  // std::wstring_convert and generally poorly documented. May need to
-  // revisit if there is an unreasonable performance impact
-  static std::basic_string<code_point>
-  convert_from(const std::basic_string<char_type> &str)
-  {
-    std::wstring_convert<std::codecvt_utf8_utf16<char_type>, char_type> cvt16_8;
-    std::string utf8 = cvt16_8.to_bytes(str);
-
-    std::wstring_convert<std::codecvt_utf8<code_point>, code_point> cvt8_32;
-    return cvt8_32.from_bytes(utf8);
-  }
-
-  static std::basic_string<char_type>
-  convert_to(const std::basic_string<code_point> &str)
-  {
-    std::wstring_convert<std::codecvt_utf8<code_point>, code_point> cvt32_8;
-    std::string utf8 = cvt32_8.to_bytes(str);
-
-    std::wstring_convert<std::codecvt_utf8_utf16<char_type>, char_type> cvt8_16;
-    return cvt8_16.from_bytes(utf8);
-  }
-};
-
-// UTF32
-template<>
-struct code_point_traits<char32_t> {
-  typedef char32_t char_type;
-  typedef char32_t code_point;
-
-  static std::basic_string<code_point>
-  convert_from(const std::basic_string<char_type> &str)
-  {
-    return str;
-  }
-
-  static std::basic_string<char_type>
-  convert_to(const std::basic_string<code_point> &str)
-  {
-    return str;
-  }
-};
-
-// wchar_t
-template<>
-struct code_point_traits<wchar_t> {
-  typedef wchar_t char_type;
-  typedef wchar_t code_point;
-
-  static std::basic_string<code_point>
-  convert_from(const std::basic_string<char_type> &str)
-  {
-    return str;
-  }
-
-  static std::basic_string<char_type>
-  convert_to(const std::basic_string<code_point> &str)
-  {
-    return str;
-  }
-};
-
-
 /*
   Default formatter provides a comparison function that sorts the
   entries by long names (mapped_keys) and typsets the option description
@@ -2587,7 +2503,7 @@ typename basic_default_formatter<CharT>::string_type
 basic_default_formatter<CharT>::
   do_typeset_option(const description_type &desc) const
 {
-  typedef code_point_traits<CharT> cpoint_traits;
+  typedef detail::code_point_traits<CharT> cpoint_traits;
   typedef typename cpoint_traits::code_point code_point;
   typedef std::basic_string<typename cpoint_traits::code_point>
         cpstring_type;
@@ -2644,72 +2560,6 @@ basic_default_formatter<CharT>::
 
   return key_col;
 }
-
-
-#if 0
-template<typename CharT>
-typename basic_default_formatter<CharT>::string_type
-basic_default_formatter<CharT>::
-  do_typeset_option(const description_type &desc) const
-{
-  if(!desc.key_description)
-    return string_type();
-
-  string_type key_col = desc.key_description();
-
-  if(desc.make_value) {
-    if(desc.implicit_value && desc.implicit_value_description) {
-      key_col.append({' ','['});
-      key_col.append(arg_str());
-      key_col.append({'=','<'});
-      key_col.append(desc.implicit_value_description());
-      key_col.append({'>',']'});
-    }
-    else {
-      key_col.push_back(' ');
-      key_col.append(arg_str());
-    }
-
-    if(key_col.size() > key_column_width()) {
-      key_col.push_back('\n');
-      key_col.append(key_column_width()+column_pad(),' ');
-    }
-    else {
-      std::size_t per_pad = key_column_width()+column_pad()-key_col.size();
-      key_col.append(per_pad,' ');
-    }
-
-    std::size_t indent = key_column_width()+column_pad();
-    string_type extended_col;
-    if(desc.extended_description) {
-      // CharT - UTF32 - CharT conversion
-      typename wstring_convert_to_UTF32<CharT>::converter cvt;
-
-      std::u32string utf32_desc = cvt.from_bytes(desc.extended_description());
-      std::u32string wrapped_text = detail::wrap(utf32_desc,
-        max_width()-indent);
-
-      utf32_desc.clear();
-      for(char32_t c : wrapped_text) {
-        utf32_desc += c;
-        if(c == char32_t('\n'))
-          utf32_desc.append(indent,char32_t(' '));
-      }
-
-      extended_col = cvt.to_bytes(utf32_desc);
-    }
-
-    key_col.append(extended_col);
-  }
-
-  return key_col;
-}
-
-#endif
-
-
-typedef basic_option_formatter<char> cmd_option_fmt;
-typedef basic_option_formatter<wchar_t> wcmd_option_fmt;
 
 template<typename CharT>
 std::basic_string<CharT>

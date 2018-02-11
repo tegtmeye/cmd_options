@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE( parse_nested_option_test )
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE( parse_nested_operand_test )
 
   vm =  co::parse_arguments(argv.size(),argv.data(),options);
 
-  stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{

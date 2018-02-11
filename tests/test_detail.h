@@ -24,21 +24,26 @@ bool operator==(const basic_option_pack<CharT> &lhs,
 }
 }
 
+namespace co = lemma::cmd_options;
+
 std::basic_ostream<char> & operator<<(std::basic_ostream<char> &out,
   const std::basic_string<char16_t> &str)
 {
-  return (out << (std::wstring_convert<
-    std::codecvt_utf8_utf16<char16_t>, char16_t>{}.to_bytes(str)));
+  return (out << co::detail::asUTF8(str));
 }
 
 std::basic_ostream<char> & operator<<(std::basic_ostream<char> &out,
   const std::basic_string<char32_t> &str)
 {
-  return (out << (std::wstring_convert<
-    std::codecvt_utf8_utf16<char32_t>, char32_t>{}.to_bytes(str)));
+  return (out << co::detail::asUTF8(str));
 }
 
-namespace co = lemma::cmd_options;
+std::basic_ostream<char> & operator<<(std::basic_ostream<char> &out,
+  const std::basic_string<wchar_t> &str)
+{
+  return (out << co::detail::asUTF8(str));
+}
+
 
 namespace detail {
 
@@ -331,43 +336,36 @@ inline bool is_hidden_empty_keyed_operand(
 
 
 template<typename CharT>
-inline std::basic_string<CharT>
+inline std::string
 to_string(const co::basic_option_description<CharT> &desc)
 {
-  std::basic_stringstream<CharT> out;
+  std::stringstream out;
   out
-    << _LIT("unpack_option: ") << bool(desc.unpack_option)
-      << _LIT("\n")
-    << _LIT("mapped_key: ")
-      << bool(desc.mapped_key) << _LIT("\n")
-    << _LIT("key_description: ") << bool(desc.key_description)
-      << _LIT("\n")
-    << _LIT("extended_description: ") << bool(desc.extended_description)
-      << _LIT("\n")
-    << _LIT("implicit_value: ") << bool(desc.implicit_value)
-      << _LIT("\n")
-    << _LIT("implicit_value_description: ")
-      << bool(desc.implicit_value_description) << _LIT("\n")
-    << _LIT("make_value: ") << bool(desc.make_value)
-      << _LIT("\n")
-    << _LIT("finalize: ") << bool(desc.finalize)
-      << _LIT("\n");
+    << "unpack_option: " << bool(desc.unpack_option) << "\n"
+    << "mapped_key: " << bool(desc.mapped_key) << "\n"
+    << "key_description: " << bool(desc.key_description) << "\n"
+    << "extended_description: " << bool(desc.extended_description) << "\n"
+    << "implicit_value: " << bool(desc.implicit_value) << "\n"
+    << "implicit_value_description: "
+      << bool(desc.implicit_value_description) << "\n"
+    << "make_value: " << bool(desc.make_value) << "\n"
+    << "finalize: " << bool(desc.finalize) << "\n";
 
   return out.str();
 }
 
 template<typename CharT, typename T>
-std::basic_string<CharT>
-to_string(const co::basic_variable_map<CharT> &vm, const co::value<T> &)
+inline std::string to_string(const co::basic_variable_map<CharT> &vm,
+  const co::value<T> &)
 {
-  std::basic_stringstream<CharT> out;
+  std::stringstream out;
 
   for(auto && pair : vm) {
-    out << pair.first << _LIT(" -> ");
+    out << pair.first << " -> ";
     if(co::is_empty(pair.second))
-      out << _LIT("[empty]\n");
+      out << "[empty]\n";
     else
-      out << co::any_cast<T>(pair.second) << _LIT("\n");
+      out << co::any_cast<T>(pair.second) << "\n";
   }
 
   return out.str();
@@ -438,17 +436,17 @@ bool check_exclusive(const co::basic_option_description<CharT> &desc,
 
 #if 1
   if(!fn(desc)) {
-    std_stream_select<CharT>::cerr
-      << _LIT("Given function returned false\n")
-      << to_string(desc) << _LIT("\n");
+    std::cerr
+      << "Given function returned false\n"
+      << to_string(desc) << "\n";
     return false;
   }
 
   for(std::size_t i=0; i<exclusive.size(); ++i) {
     if(exclusive[i].second(desc)) {
-      std_stream_select<CharT>::cerr
-        << _LIT("check_exclusive is true for : ") << exclusive[i].first
-        << _LIT("\n") << to_string(desc) << ("\n");
+      std::cerr
+        << "check_exclusive is true for : " << exclusive[i].first
+        << "\n" << to_string(desc) << "\n";
       return false;
     }
   }
@@ -592,12 +590,17 @@ check_value(const std::basic_string<CharT> &key, const T &value,
     }
 
     try {
-//        std::cerr << "checking: " <<
-//         val.second.type().name() << "\n";
+//
+//       std_stream_select<CharT>::cerr
+//         << co::detail::asUTF8(_LIT("checking: '"))
+//         << val.second.type().name() << co::detail::asUTF8(_LIT("' ("))
+//         << typeid(T).name()
+//         << co::detail::asUTF8(_LIT(")\n"))
+//         << std::setprecision(std::numeric_limits<T>::digits10 + 1)
+//         << co::any_cast<T>(val.second)
+//         << co::detail::asUTF8(_LIT(" and "))
+//         << value << co::detail::asUTF8(_LIT("\n"));
 
-//         std::setprecision(std::numeric_limits<T>::digits10 + 1)
-//       << co::any_cast<T>(val.second) << " and "
-//         << value << "\n";
       return eq(co::any_cast<T>(val.second),value);
     }
     catch(const co::bad_any_cast &ex) {

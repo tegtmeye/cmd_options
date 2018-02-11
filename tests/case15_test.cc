@@ -43,13 +43,13 @@ BOOST_AUTO_TEST_CASE( all_key_value_test )
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         {string_type(_LIT("-f"))}},
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         {string_type(_LIT("-f42"))}},
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         {string_type(_LIT("--bar"))}},
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         {string_type(_LIT("--bar=43"))}},
     }));
 }
@@ -88,15 +88,15 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         {string_type(_LIT("operand1"))}},
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         {string_type(_LIT("operand2"))}},
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         {string_type(_LIT("operand3"))}},
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         {string_type(_LIT("operand4"))}},
-      {co::default_operand_key<detail::check_char_t>(),
+      {co::detail::default_operand_key<detail::check_char_t>(),
         {string_type(_LIT("operand5"))}},
       {_LIT("f"),{string_type(_LIT("f_arg"))}},
       {_LIT("f"),{string_type(_LIT("42"))}},

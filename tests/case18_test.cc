@@ -45,10 +45,10 @@ BOOST_AUTO_TEST_CASE( all_key_value_test )
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
-      {co::default_operand_key<detail::check_char_t>(),{}},
-      {co::default_operand_key<detail::check_char_t>(),{}},
-      {co::default_operand_key<detail::check_char_t>(),{}},
-      {co::default_operand_key<detail::check_char_t>(),{}}
+      {co::detail::default_operand_key<detail::check_char_t>(),{}},
+      {co::detail::default_operand_key<detail::check_char_t>(),{}},
+      {co::detail::default_operand_key<detail::check_char_t>(),{}},
+      {co::detail::default_operand_key<detail::check_char_t>(),{}}
     }));
 }
 
@@ -86,11 +86,11 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
-      {co::default_operand_key<detail::check_char_t>(),{}},
-      {co::default_operand_key<detail::check_char_t>(),{}},
-      {co::default_operand_key<detail::check_char_t>(),{}},
-      {co::default_operand_key<detail::check_char_t>(),{}},
-      {co::default_operand_key<detail::check_char_t>(),{}},
+      {co::detail::default_operand_key<detail::check_char_t>(),{}},
+      {co::detail::default_operand_key<detail::check_char_t>(),{}},
+      {co::detail::default_operand_key<detail::check_char_t>(),{}},
+      {co::detail::default_operand_key<detail::check_char_t>(),{}},
+      {co::detail::default_operand_key<detail::check_char_t>(),{}},
       {_LIT("f"),{string_type(_LIT("f_arg"))}},
       {_LIT("f"),{string_type(_LIT("42"))}},
       {_LIT("bar"),{string_type(_LIT("bar_arg"))}},
