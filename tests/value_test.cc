@@ -10,7 +10,7 @@
   Check for fundmental and STL value handling
  */
 
-namespace co = lemma::cmd_options;
+namespace co = cmd_options;
 
 typedef std::basic_string<detail::check_char_t> string_type;
 typedef co::basic_option_pack<detail::check_char_t> option_pack_type;

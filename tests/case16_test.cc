@@ -13,7 +13,7 @@
 BOOST_AUTO_TEST_SUITE( case16_test_suite )
 
 
-namespace co = lemma::cmd_options;
+namespace co = cmd_options;
 
 typedef std::basic_string<detail::check_char_t> string_type;
 typedef co::basic_option_pack<detail::check_char_t> option_pack_type;

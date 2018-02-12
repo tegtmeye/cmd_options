@@ -25,8 +25,8 @@
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LEMMA_CMD_OPTIONS_H
-#define LEMMA_CMD_OPTIONS_H
+#ifndef CMD_OPTIONS_H
+#define CMD_OPTIONS_H
 
 #if __cplusplus < 201703L
 #include <boost/any.hpp>
@@ -54,8 +54,6 @@
 // CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR in UTF8
 #define CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR  \
   CMD_OPTION_STR(CMD_OPTIONS_DEFAULT_OPERAND_KEY)
-
-namespace lemma {
 
 namespace cmd_options {
 
@@ -2604,7 +2602,6 @@ to_string(const std::vector<basic_option_description<CharT> > &grp,
 
 }
 
-}
 
 
 

@@ -1,4 +1,4 @@
-#  Copyright (c) 2012-2018, Mike Tegtmeyer
+#  Copyright (c) 2012-2017, Mike Tegtmeyer
 #  All rights reserved.
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are met:
@@ -23,17 +23,36 @@
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 #  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-ACLOCAL_AMFLAGS = -I m4
+AC_PREREQ(2.59)
+AC_INIT(cmd_options, 0.0.1)
+AC_CONFIG_SRCDIR([Makefile.am])
+AM_CONFIG_HEADER(config.h)
+AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_SYSTEM
+AM_INIT_AUTOMAKE([foreign tar-pax])
+AC_CONFIG_MACRO_DIR([m4])
 
-include_HEADERS=cmd_options.h
+# Checks for programs.
 
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = cmd_options.pc
+AC_PROG_CC
+AC_PROG_CXX
+AC_PROG_INSTALL
+AC_PROG_LIBTOOL
 
-SUBDIRS=\
-	tests
+# We need boost
+BOOST_REQUIRE([1.56])
+BOOST_TEST
 
-EXTRA_DIST=\
-  COPYING \
-  INSTALL \
-  README.md
+# Use SYSTEM_BOOST_CPPFLAGS to add includes with -isystem instead of -I
+# to suppress boost compiler warnings
+AC_SUBST([SYSTEM_BOOST_CPPFLAGS], [`echo $BOOST_CPPFLAGS | sed -e 's|^-I|-isystem |g' -e 's|[[:space:]]\{1,\}-I| -isystem |g'`])
+
+# Check for C++11 support
+AX_CXX_COMPILE_STDCXX([11],[noext],[mandatory])
+
+AC_CONFIG_FILES( \
+		 cmd_options.pc \
+		 tests/Makefile \
+		 Makefile)
+
+AC_OUTPUT

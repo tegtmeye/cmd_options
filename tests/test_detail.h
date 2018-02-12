@@ -7,7 +7,6 @@
 #include <iomanip>
 #include <cmath>
 
-namespace lemma {
 namespace cmd_options {
 
 template<typename CharT>
@@ -22,9 +21,8 @@ bool operator==(const basic_option_pack<CharT> &lhs,
 }
 
 }
-}
 
-namespace co = lemma::cmd_options;
+namespace co = cmd_options;
 
 std::basic_ostream<char> & operator<<(std::basic_ostream<char> &out,
   const std::basic_string<char16_t> &str)
