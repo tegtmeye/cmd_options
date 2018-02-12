@@ -1,13 +1,17 @@
-lemma
+cmd_options
 =======
 
-Stuff Worth Abstracting
+Single header file options parsing library that can do things others can't.
 
+Supports most common usage patterns including POSIX and GNU-style processing in an easy to use interface similar to boost's program_options but additional support for non-standard or specialized syntaxes.
 
+Requires c++11 and boost::any. If you are compiling with C++17 then there are no external dependancies outside of the language--simply drop the file into your project and go.
+
+Take a look at the wiki for additional documentation on advantages, limitations, and sample code.
 
 # License
 
-Copyright (c) 2012, Mike Tegtmeyer
+Copyright (c) 2012-2018, Mike Tegtmeyer
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
