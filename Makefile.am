@@ -31,7 +31,8 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = cmd_options.pc
 
 SUBDIRS=\
-	tests
+	tests \
+	examples
 
 EXTRA_DIST=\
   COPYING \

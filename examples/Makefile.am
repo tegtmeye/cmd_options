@@ -1,4 +1,4 @@
-#  Copyright (c) 2012-2017, Mike Tegtmeyer
+#  Copyright (c) 2016-2018, Mike Tegtmeyer
 #  All rights reserved.
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are met:
@@ -23,37 +23,22 @@
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 #  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-AC_PREREQ(2.59)
-AC_INIT(cmd_options, 0.0.1)
-AC_CONFIG_SRCDIR([Makefile.am])
-AM_CONFIG_HEADER(config.h)
-AC_CONFIG_AUX_DIR(config)
-AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE([foreign tar-pax])
-AC_CONFIG_MACRO_DIR([m4])
+additional_cppflags= \
+	-pedantic -Wall -I$(top_srcdir) \
+	$(SYSTEM_BOOST_CPPFLAGS)
 
-# Checks for programs.
+additional_cflags=
 
-AC_PROG_CC
-AC_PROG_CXX
-AC_PROG_INSTALL
-AC_PROG_LIBTOOL
+additional_libs=
 
-# We need boost
-BOOST_REQUIRE([1.56])
-BOOST_TEST
+additional_ldflags= \
+        $(BOOST_LDFLAGS)
 
-# Use SYSTEM_BOOST_CPPFLAGS to add includes with -isystem instead of -I
-# to suppress boost compiler warnings
-AC_SUBST([SYSTEM_BOOST_CPPFLAGS], [`echo $BOOST_CPPFLAGS | sed -e 's|^-I|-isystem |g' -e 's|[[:space:]]\{1,\}-I| -isystem |g'`])
 
-# Check for C++11 support
-AX_CXX_COMPILE_STDCXX([11],[noext],[mandatory])
+noinst_PROGRAMS=\
+	impatient
 
-AC_CONFIG_FILES( \
-		 cmd_options.pc \
-		 tests/Makefile \
-		 examples/Makefile \
-		 Makefile)
-
-AC_OUTPUT
+impatient_SOURCES=impatient.cc
+impatient_CPPFLAGS=$(additional_cppflags)
+impatient_LDFLAGS=$(additional_ldflags)
+impatient_LDADD=$(additional_libs)
