@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_test )
       co::value<string_type>().implicit(_LIT("blar")))
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_test )
       co::value<string_type>().implicit(_LIT("blar")))
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
       co::value<string_type>().implicit(_LIT("blar")))
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
       co::value<string_type>().implicit(_LIT("blar")))
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{

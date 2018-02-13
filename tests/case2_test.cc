@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE( all_flags_test )
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
     co::make_operand(_LIT("accept all operands"),co::value<string_type>())
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_test )
     co::make_option(_LIT(",d"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
     co::make_operand(_LIT("accept all operands"),co::value<string_type>())
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE( flags_packed_arg_test )
 //   stream_select::cerr << detail::to_string(options.front()) << _LIT("\n");
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::unexpected_argument_error);
 }
 
@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE( flags_invalid_posarg_test )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::unexpected_operand_error);
 }
 
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE( flags_invalid_option_test )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::unknown_option_error);
 }
 
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE( flags_invalid_packed_option_test )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::unknown_option_error);
 }
 
@@ -274,7 +274,7 @@ BOOST_AUTO_TEST_CASE( flags_invalid_packed_cease_test )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::unknown_option_error);
 }
 
@@ -300,7 +300,7 @@ BOOST_AUTO_TEST_CASE( multi_packed_flags_test )
     co::make_option(_LIT(",e"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 

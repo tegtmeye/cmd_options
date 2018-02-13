@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE( all_key_value_test )
     co::make_operand(_LIT("key"),_LIT("case 16"),co::value<string_type>())
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
     co::make_operand(_LIT("key"),_LIT("case 16"),co::value<string_type>())
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   std::cerr << detail::to_string<string_type>(vm);
 

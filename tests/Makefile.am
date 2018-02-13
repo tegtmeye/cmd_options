@@ -1000,8 +1000,8 @@ TESTS=\
 	basic_test basic8_test basic16_test basic32_test wbasic_test \
 	parse_test parse8_test parse16_test parse32_test wparse_test \
 	accept_test accept8_test accept16_test accept32_test waccept_test \
-	case2_test case2_8_test case2_16_test case2_32_test wcase2_test
-	case3_test case3_8_test case3_16_test case3_32_test wcase3_test
+	case2_test case2_8_test case2_16_test case2_32_test wcase2_test \
+	case3_test case3_8_test case3_16_test case3_32_test wcase3_test \
 	case4_test case4_8_test case4_16_test case4_32_test wcase4_test \
 	case5_test case5_8_test case5_16_test case5_32_test wcase5_test \
 	case6_test case6_8_test case6_16_test case6_32_test wcase6_test \

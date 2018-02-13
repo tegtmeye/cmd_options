@@ -845,10 +845,13 @@ basic_option_pack<CharT> unpack_gnu(const std::basic_string<CharT> &str)
   can successfully unpack "-b" then "-b" is considered an option and not an
   option_argument even if it is an invalid option
 */
-template<typename CharT>
+template<typename BidirectionalIterator,
+  typename CharT = typename std::remove_pointer<
+    typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
 basic_variable_map<CharT>
-parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
-  const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm,
+parse_incremental_arguments(BidirectionalIterator first,
+  BidirectionalIterator last, const basic_options_group<CharT> &grp,
+  const basic_variable_map<CharT> &vm,
   const std::basic_string<CharT> &end_of_options)
 {
   typedef std::basic_string<CharT> string_type;
@@ -863,8 +866,8 @@ parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
 
   cmd_stack_type cmd_stack{
     args_list{
-      std::reverse_iterator<const CharT **>(_argv+_argc),
-      std::reverse_iterator<const CharT **>(_argv)
+      std::reverse_iterator<BidirectionalIterator>(last),
+      std::reverse_iterator<BidirectionalIterator>(first)
     }
   };
 
@@ -1053,24 +1056,29 @@ parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
   return _vm;
 }
 
-template<typename CharT>
+
+template<typename BidirectionalIterator,
+  typename CharT = typename std::remove_pointer<
+    typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
 inline basic_variable_map<CharT>
-parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
-  const basic_options_group<CharT> &grp,
+parse_incremental_arguments(BidirectionalIterator first,
+  BidirectionalIterator last, const basic_options_group<CharT> &grp,
   const std::basic_string<CharT> &end_of_options)
 {
-  return parse_incremental_arguments(_argc,_argv,grp,
+  return parse_incremental_arguments(first,last,grp,
     basic_variable_map<CharT>(),end_of_options);
 }
 
-template<typename CharT>
+template<typename BidirectionalIterator,
+  typename CharT = typename std::remove_pointer<
+    typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
 inline basic_variable_map<CharT>
-parse_arguments(std::size_t _argc, const CharT *_argv[],
+parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
   const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm,
   const std::basic_string<CharT> &end_of_options)
 {
   basic_variable_map<CharT> _vm =
-    std::move(parse_incremental_arguments(_argc,_argv,grp,vm,end_of_options));
+    std::move(parse_incremental_arguments(first,last,grp,vm,end_of_options));
 
   for(auto &desc : grp) {
     if(desc.finalize)
@@ -1080,52 +1088,63 @@ parse_arguments(std::size_t _argc, const CharT *_argv[],
   return _vm;
 }
 
-template<typename CharT>
+template<typename BidirectionalIterator,
+  typename CharT = typename std::remove_pointer<
+    typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
 inline basic_variable_map<CharT>
-parse_arguments(std::size_t _argc, const CharT *_argv[],
+parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
   const basic_options_group<CharT> &grp,
   const std::basic_string<CharT> &end_of_options)
 {
-  return parse_arguments(_argc,_argv,grp,basic_variable_map<CharT>(),
+  return parse_arguments(first,last,grp,basic_variable_map<CharT>(),
     end_of_options);
 }
 
 /*
   Convenience specializations of parse_incremental_arguments
 */
-template<typename CharT>
+template<typename BidirectionalIterator,
+  typename CharT = typename std::remove_pointer<
+    typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
 inline basic_variable_map<CharT>
-parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
-  const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm)
+parse_incremental_arguments(BidirectionalIterator first,
+  BidirectionalIterator last, const basic_options_group<CharT> &grp,
+  const basic_variable_map<CharT> &vm)
 {
-  return parse_incremental_arguments(_argc,_argv,grp,vm,
+  return parse_incremental_arguments(first,last,grp,vm,
     std::basic_string<CharT>{'-','-'});
 }
 
-template<typename CharT>
+template<typename BidirectionalIterator,
+  typename CharT = typename std::remove_pointer<
+    typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
 inline basic_variable_map<CharT>
-parse_incremental_arguments(std::size_t _argc, const CharT *_argv[],
-  const basic_options_group<CharT> &grp)
+parse_incremental_arguments(BidirectionalIterator first,
+  BidirectionalIterator last, const basic_options_group<CharT> &grp)
 {
-  return parse_incremental_arguments(_argc,_argv,grp,
+  return parse_incremental_arguments(first,last,grp,
     basic_variable_map<CharT>(),std::basic_string<CharT>{'-','-'});
 }
 
-template<typename CharT>
+template<typename BidirectionalIterator,
+  typename CharT = typename std::remove_pointer<
+    typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
 inline basic_variable_map<CharT>
-parse_arguments(std::size_t _argc, const CharT *_argv[],
+parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
   const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm)
 {
-  return parse_incremental_arguments(_argc,_argv,grp,vm,
+  return parse_incremental_arguments(first,last,grp,vm,
     std::basic_string<CharT>{'-','-'});
 }
 
-template<typename CharT>
+template<typename BidirectionalIterator,
+  typename CharT = typename std::remove_pointer<
+    typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
 inline basic_variable_map<CharT>
-parse_arguments(std::size_t _argc, const CharT *_argv[],
+parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
   const basic_options_group<CharT> &grp)
 {
-  return parse_arguments(_argc,_argv,grp,
+  return parse_arguments(first,last,grp,
     basic_variable_map<CharT>(),std::basic_string<CharT>{'-','-'});
 }
 

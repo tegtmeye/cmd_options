@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
     co::make_hidden_option(_LIT("foo,f"),co::value<string_type>())
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
     co::make_hidden_option(_LIT("foo,f"),co::value<string_type>())
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE( all_invalid_POSIX_key_value_test )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::missing_argument_error);
 }
 
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test1 )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::unknown_option_error);
 }
 
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test2 )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::missing_argument_error);
 }
 
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
     co::make_operand<string_type>("accept all operands")
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_test )
     co::make_hidden_option(_LIT(""))
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
@@ -248,7 +248,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
     co::make_operand<string_type>("accept all operands")
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
@@ -284,7 +284,7 @@ BOOST_AUTO_TEST_CASE( flags_packed_arg_test )
 
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::unexpected_argument_error);
 }
 
@@ -306,7 +306,7 @@ BOOST_AUTO_TEST_CASE( flags_invalid_posarg_test )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::unexpected_operand_error);
 }
 
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE( flags_invalid_packed_cease_test )
     co::make_hidden_option(_LIT(""))
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -356,7 +356,7 @@ BOOST_AUTO_TEST_CASE( multi_packed_flags_test )
     co::make_hidden_option(_LIT(""))
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 

@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE( option_numbering_test )
     check_pos_arg(co::make_option(_LIT("foo3"),_LIT("case 2")),2,2),
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 }
 
 BOOST_AUTO_TEST_CASE( operand_numbering_test )
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE( operand_numbering_test )
     throw_operand
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 }
 
 BOOST_AUTO_TEST_CASE( option_operand_numbering_test1 )
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE( option_operand_numbering_test1 )
     throw_operand
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 }
 
 BOOST_AUTO_TEST_CASE( option_operand_numbering_test2 )
@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE( option_operand_numbering_test2 )
     throw_operand
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 }
 
 
@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE( parse_nested_option_test )
     check_pos_arg(co::make_option(_LIT(",c"),_LIT("case 2")),6,6)
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
@@ -310,7 +310,7 @@ BOOST_AUTO_TEST_CASE( parse_nested_operand_test )
     throw_operand
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 

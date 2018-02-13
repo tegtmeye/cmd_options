@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
     co::make_hidden_option(_LIT(""),co::value<string_type>())
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
     co::make_hidden_option(_LIT(""),co::value<string_type>())
   };
 
-  vm =  co::parse_arguments(argv.size(),argv.data(),options);
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
 
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE( all_invalid_POSIX_key_value_test )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::missing_argument_error);
 }
 
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test1 )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::missing_argument_error);
 }
 
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test2 )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.size(),argv.data(),options)),
+    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::missing_argument_error);
 }
 
