@@ -1,6 +1,7 @@
 #include "cmd_options.h"
 
 #include <string>
+#include <iostream>
 
 int main (int argc, char *argv[])
 {
@@ -49,6 +50,15 @@ int main (int argc, char *argv[])
   for (auto i = irange.first; i != irange.second; ++i)
     std::cout << "  " << i->first << ": "
       << co::any_cast<int>(i->second) << '\n';
+
+  auto orange = vm.equal_range("");
+  if(orange.first != orange.second)
+    std::cout << "Operands have values:\n";
+  else
+    std::cout << "An operand was not provided\n";
+  for (auto i = orange.first; i != orange.second; ++i)
+    std::cout << "  " << i->first << ": "
+      << co::any_cast<std::string>(i->second) << '\n';
 
   return 0;
 }
