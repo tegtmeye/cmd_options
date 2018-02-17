@@ -8,8 +8,8 @@ int main (int argc, char *argv[])
   namespace co = cmd_options;
 
   co::options_group grp{
-    // accepts --foo and -f without an argument
-    co::make_option("foo,f","Description of this no-arg option"),
+    // accepts --help and -h without an argument
+    co::make_option("help,h","Display a help message"),
 
     // accepts -b <arg> The mapped value is a string
     co::make_option(",b",co::value<std::string>(),
@@ -28,9 +28,10 @@ int main (int argc, char *argv[])
   // the first argument (argv[0]) is the program name!
   co::variable_map vm = co::parse_arguments(argv+1,argv+argc,grp);
 
-  std::size_t foo_n = vm.count("foo");
-  if(foo_n)
-    std::cout << "--foo or -f was given " << foo_n << " times\n";
+  if(vm.count("help")) {
+    std::cout << co::to_string(grp) << "\n";
+    return 0;
+  }
 
   auto brange = vm.equal_range("b");
   if(brange.first != brange.second)

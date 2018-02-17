@@ -845,8 +845,8 @@ basic_option_pack<CharT> unpack_gnu(const std::basic_string<CharT> &str)
   can successfully unpack "-b" then "-b" is considered an option and not an
   option_argument even if it is an invalid option
 */
-template<typename BidirectionalIterator,
-  typename CharT = typename std::remove_pointer<
+template<typename BidirectionalIterator, typename CharT =
+  typename std::remove_pointer<
     typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
 basic_variable_map<CharT>
 parse_incremental_arguments(BidirectionalIterator first,
@@ -1822,6 +1822,8 @@ make_option(const std::basic_string<CharT> &opt_spec,
   std::tie(long_opt,short_opt) =
     detail::add_option_spec(opt_spec,delim,desc,false);
 
+  desc.extended_description = [=](void) { return extended_desc; };
+
   detail::add_option_constraints(cnts,desc,long_opt);
 
   return desc;
@@ -2542,38 +2544,38 @@ basic_default_formatter<CharT>::
       key_col.push_back(' ');
       key_col.append(arg_str());
     }
-
-    if(key_col.size() > key_column_width()) {
-      key_col.push_back('\n');
-      key_col.append(key_column_width()+column_pad(),' ');
-    }
-    else {
-      std::size_t per_pad = key_column_width()+column_pad()-key_col.size();
-      key_col.append(per_pad,' ');
-    }
-
-    std::size_t indent = key_column_width()+column_pad();
-    string_type extended_col;
-    if(desc.extended_description) {
-      cpstring_type cpextended_desc =
-        cpoint_traits::convert_from(desc.extended_description());
-
-      cpstring_type wrapped_text = detail::wrap(cpextended_desc,
-        max_width()-indent);
-
-      cpextended_desc.clear();
-      for(auto c : wrapped_text) {
-        cpextended_desc += c;
-        if(c == code_point('\n'))
-          cpextended_desc.append(indent,code_point(' '));
-      }
-
-      extended_col = cpoint_traits::convert_to(cpextended_desc);
-
-    }
-
-    key_col.append(extended_col);
   }
+
+  if(key_col.size() > key_column_width()) {
+    key_col.push_back('\n');
+    key_col.append(key_column_width()+column_pad(),' ');
+  }
+  else {
+    std::size_t per_pad = key_column_width()+column_pad()-key_col.size();
+    key_col.append(per_pad,' ');
+  }
+
+  std::size_t indent = key_column_width()+column_pad();
+  string_type extended_col;
+  if(desc.extended_description) {
+    cpstring_type cpextended_desc =
+      cpoint_traits::convert_from(desc.extended_description());
+
+    cpstring_type wrapped_text = detail::wrap(cpextended_desc,
+      max_width()-indent);
+
+    cpextended_desc.clear();
+    for(auto c : wrapped_text) {
+      cpextended_desc += c;
+      if(c == code_point('\n'))
+        cpextended_desc.append(indent,code_point(' '));
+    }
+
+    extended_col = cpoint_traits::convert_to(cpextended_desc);
+
+  }
+
+  key_col.append(extended_col);
 
   return key_col;
 }
