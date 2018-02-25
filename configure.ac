@@ -47,6 +47,17 @@ BOOST_TEST
 # to suppress boost compiler warnings
 AC_SUBST([SYSTEM_BOOST_CPPFLAGS], [`echo $BOOST_CPPFLAGS | sed -e 's|^-I|-isystem |g' -e 's|[[:space:]]\{1,\}-I| -isystem |g'`])
 
+# Check for single testsuite
+AC_ARG_WITH([examples],
+[AS_HELP_STRING([--with-examples],
+        [build examples @<:@default=yes@:>@])],
+[case "${withval}" in
+  yes) ;;
+  no) ;;
+  *) AC_MSG_ERROR([bad value ${withval} for --with-examples]) ;;
+esac],[with_examples=yes])
+AM_CONDITIONAL([EXAMPLES], [test "x$with_examples" == xyes])
+
 # Check for C++11 support
 AX_CXX_COMPILE_STDCXX([11],[noext],[mandatory])
 

@@ -30,9 +30,11 @@ include_HEADERS=cmd_options.h
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = cmd_options.pc
 
-SUBDIRS=\
-	tests \
-	examples
+if EXAMPLES
+  MAYBE_EXAMPLES=examples
+endif
+
+SUBDIRS=tests $(MAYBE_EXAMPLES)
 
 EXTRA_DIST=\
   COPYING \
