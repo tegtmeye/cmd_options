@@ -91,39 +91,14 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
     detail::is_raw_mapped_optional_option<detail::check_char_t>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_operand(_LIT("line 14"),co::value<string_type>()),
-    detail::is_keyed_interpret_operand<detail::check_char_t>));
+    // line 14
+    co::make_operand(_LIT("key"),co::value<string_type>()),
+    detail::is_operand_with_key_value<detail::check_char_t>));
 
-  BOOST_REQUIRE(detail::check_exclusive(
     // line 15
-    co::make_hidden_operand<detail::check_char_t>(co::value<string_type>()),
-    detail::is_hidden_keyed_interpret_operand<detail::check_char_t>));
-
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_operand(_LIT("key"),_LIT("line 16"),
-      co::value<string_type>()),
-    detail::is_keyed_interpret_operand<detail::check_char_t>));
-
-  BOOST_REQUIRE(detail::check_exclusive(
-    // line 17
-    co::make_hidden_operand(_LIT("key"),co::value<string_type>()),
-    detail::is_hidden_keyed_interpret_operand<detail::check_char_t>));
-
-  BOOST_REQUIRE(detail::check_exclusive(
-    co::make_operand(_LIT("line 18")),
-    detail::is_empty_keyed_operand<detail::check_char_t>));
-
-  BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_operand<detail::check_char_t>(), // line 19
-    detail::is_hidden_empty_keyed_operand<detail::check_char_t>));
-
-  BOOST_REQUIRE(detail::check_exclusive(
-    co::make_operand(_LIT("key"),_LIT("line 20")),
-    detail::is_empty_keyed_operand<detail::check_char_t>));
-
-  BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_operand(_LIT("key")), // line 21
-    detail::is_hidden_empty_keyed_operand<detail::check_char_t>));
+    co::make_operand(_LIT("key")),
+    detail::is_operand_with_key<detail::check_char_t>));
 }
 
 /**

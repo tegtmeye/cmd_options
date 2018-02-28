@@ -44,17 +44,6 @@
 
 #include <iostream>
 
-#define CMD_OPTION_QUOTE(x) #x
-#define CMD_OPTION_STR(x) CMD_OPTION_QUOTE(x)
-
-#ifndef CMD_OPTIONS_DEFAULT_OPERAND_KEY
-#define CMD_OPTIONS_DEFAULT_OPERAND_KEY
-#endif
-
-// CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR in UTF8
-#define CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR  \
-  CMD_OPTION_STR(CMD_OPTIONS_DEFAULT_OPERAND_KEY)
-
 namespace cmd_options {
 
 /*
@@ -298,18 +287,6 @@ fromUTF8(const std::string &str)
 {
   std::wstring_convert<std::codecvt_utf8<wchar_t> > convert;
   return convert.from_bytes(str);
-}
-
-
-
-// fixme move up one namespace
-template<typename CharT>
-inline const std::basic_string<CharT> & default_operand_key(void)
-{
-  static const std::basic_string<CharT>
-    str{fromUTF8<CharT>(CMD_OPTIONS_DEFAULT_OPERAND_KEY_STR)};
-
-  return str;
 }
 
 }
@@ -1015,19 +992,13 @@ parse_incremental_arguments(BidirectionalIterator first,
 
         // always process as operand, try to find desc to handle it
         for(desc = grp.begin(); desc != grp.end(); ++desc) {
-          if(desc->unpack_option)
+          if(desc->unpack_option || !desc->mapped_key)
             continue;
 
-          std::pair<bool,string_type> operand_key{false,
-            detail::default_operand_key<CharT>()};
-
-          if(desc->mapped_key) {
-            operand_key =
-              desc->mapped_key(detail::default_operand_key<CharT>(),
-                operand_count,arg_count,_vm);
-            if(!operand_key.first)
-              continue;
-          }
+          std::pair<bool,string_type> operand_key =
+            desc->mapped_key(string_type(),operand_count,arg_count,_vm);
+          if(!operand_key.first)
+            continue;
 
           // handle this operand
           if(desc->make_value) {
@@ -1992,7 +1963,7 @@ make_hidden_option(const CharT *opt_spec, const value<T> &val,
 }
 
 /*
-  The \c make_operand and \c make_hidden_operand EZ interface do not map
+  The \c make_operand and \c make_operand EZ interface do not map
   directly to case lines but the same effect can be achieved.
 
   In cases 14-17, an operand value is translated into an \c any of some
@@ -2013,256 +1984,56 @@ make_hidden_option(const CharT *opt_spec, const value<T> &val,
 /*
   Case line 14
 */
+
 template<typename CharT, typename T>
 inline basic_option_description<CharT>
-make_operand(const std::basic_string<CharT> &extended_desc, const value<T> &val,
+make_operand(const std::basic_string<CharT> &mapped_key,
+  const value<T> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
   basic_option_description<CharT> desc;
 
-  desc.extended_description = [=](void) { return extended_desc; };
+  detail::add_option_value(val,desc);
 
-  detail::add_operand_value(val,desc);
+  detail::add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
 
-  detail::add_operand_key(detail::default_operand_key<CharT>(),cnts._position,
-    cnts._argument,desc);
-
-  detail::add_operand_constraints(cnts,detail::default_operand_key<CharT>(),
-    desc);
+  detail::add_operand_constraints(cnts,mapped_key,desc);
 
   return desc;
 }
 
 template<typename CharT, typename T>
 inline basic_option_description<CharT>
-make_operand(const CharT *extended_desc, const value<T> &val,
+make_operand(const CharT *mapped_key, const value<T> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
-  return make_operand(std::basic_string<CharT>(extended_desc),val,cnts);
-
+  return make_operand(std::basic_string<CharT>(mapped_key),val,cnts);
 }
+
 
 /*
   Case line 15
 */
-template<typename CharT, typename T>
-inline basic_option_description<CharT>
-make_hidden_operand(const value<T> &val,
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  basic_option_description<CharT> desc;
-
-  detail::add_operand_value(val,desc);
-
-  detail::add_operand_key(detail::default_operand_key<CharT>(),cnts._position,
-    cnts._argument,desc);
-
-  detail::add_operand_constraints(cnts,detail::default_operand_key<CharT>(),
-    desc);
-
-  return desc;
-}
-
-/*
-  Case line 16
-*/
-
-template<typename CharT, typename T>
+template<typename CharT>
 inline basic_option_description<CharT>
 make_operand(const std::basic_string<CharT> &mapped_key,
-  const std::basic_string<CharT> &extended_desc, const value<T> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
   basic_option_description<CharT> desc;
-
-  desc.extended_description = [=](void) { return extended_desc; };
-
-  detail::add_option_value(val,desc);
 
   detail::add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
 
   detail::add_operand_constraints(cnts,mapped_key,desc);
 
   return desc;
-}
-
-template<typename CharT, typename T>
-inline basic_option_description<CharT>
-make_operand(const CharT *mapped_key, const CharT *extended_desc,
-  const value<T> &val,
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  return make_operand(std::basic_string<CharT>(mapped_key),
-    std::basic_string<CharT>(extended_desc),val,cnts);
-}
-
-template<typename CharT, typename T>
-inline basic_option_description<CharT>
-make_operand(const CharT *mapped_key,
-  const std::basic_string<CharT> &extended_desc, const value<T> &val,
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  return make_operand(std::basic_string<CharT>(mapped_key),
-    extended_desc,val,cnts);
-}
-
-template<typename CharT, typename T>
-inline basic_option_description<CharT>
-make_operand(const std::basic_string<CharT> &mapped_key,
-  const CharT *extended_desc, const value<T> &val,
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  return make_operand(mapped_key,std::basic_string<CharT>(extended_desc),
-    val,cnts);
-}
-
-
-/*
-  Case line 17
-*/
-template<typename CharT, typename T>
-inline basic_option_description<CharT>
-make_hidden_operand(const std::basic_string<CharT> &mapped_key,
-  const value<T> &val,
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  basic_option_description<CharT> desc;
-
-  detail::add_option_value(val,desc);
-
-  detail::add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
-
-  detail::add_operand_constraints(cnts,mapped_key,desc);
-
-  return desc;
-}
-
-template<typename CharT, typename T>
-inline basic_option_description<CharT>
-make_hidden_operand(const CharT *mapped_key, const value<T> &val,
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  return make_hidden_operand(std::basic_string<CharT>(mapped_key),val,cnts);
-}
-
-/*
-  Case line 18
-*/
-template<typename CharT>
-inline basic_option_description<CharT>
-make_operand(const std::basic_string<CharT> &extended_desc,
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  basic_option_description<CharT> desc;
-
-  desc.extended_description = [=](void) { return extended_desc; };
-
-  detail::add_operand_key(detail::default_operand_key<CharT>(),cnts._position,
-    cnts._argument,desc);
-
-  detail::add_operand_constraints(cnts,detail::default_operand_key<CharT>(),
-    desc);
-
-  return desc;
-}
-
-template<typename CharT>
-inline basic_option_description<CharT>
-make_operand(const CharT *extended_desc,
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  return make_operand(std::basic_string<CharT>(extended_desc),cnts);
-}
-
-/*
-  Case line 19
-*/
-template<typename CharT>
-inline basic_option_description<CharT>
-make_hidden_operand(
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  basic_option_description<CharT> desc;
-
-  detail::add_operand_key(detail::default_operand_key<CharT>(),cnts._position,
-    cnts._argument,desc);
-
-  detail::add_operand_constraints(cnts,detail::default_operand_key<CharT>(),
-    desc);
-
-  return desc;
-}
-
-/*
-  Case line 20
-*/
-template<typename CharT>
-inline basic_option_description<CharT>
-make_operand(const std::basic_string<CharT> &mapped_key,
-  const std::basic_string<CharT> &extended_desc,
-  const basic_constraint<CharT> &cnts = basic_constraint<char>())
-{
-  basic_option_description<CharT> desc;
-
-  desc.extended_description = [=](void) { return extended_desc; };
-
-  detail::add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
-
-  detail::add_operand_constraints(cnts,mapped_key,desc);
-
-  return desc;
-}
-
-template<typename CharT>
-inline basic_option_description<CharT>
-make_operand(const CharT *mapped_key, const CharT *extended_desc,
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  return make_operand(std::basic_string<CharT>(mapped_key),
-    std::basic_string<CharT>(extended_desc),cnts);
-}
-
-template<typename CharT>
-inline basic_option_description<CharT>
-make_operand(const std::basic_string<CharT> &mapped_key,
-  const CharT *extended_desc,
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  return make_operand(mapped_key,std::basic_string<CharT>(extended_desc),cnts);
 }
 
 template<typename CharT>
 inline basic_option_description<CharT>
 make_operand(const CharT *mapped_key,
-  const std::basic_string<CharT> &extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
-  return make_operand(std::basic_string<CharT>(mapped_key),extended_desc,cnts);
-}
-
-/*
-  Case line 21
-*/
-template<typename CharT>
-inline basic_option_description<CharT>
-make_hidden_operand(const std::basic_string<CharT> &mapped_key,
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  basic_option_description<CharT> desc;
-
-  detail::add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
-
-  detail::add_operand_constraints(cnts,mapped_key,desc);
-
-  return desc;
-}
-
-template<typename CharT>
-inline basic_option_description<CharT>
-make_hidden_operand(const CharT *mapped_key,
-  const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
-{
-  return make_hidden_operand(std::basic_string<CharT>(mapped_key),cnts);
+  return make_operand(std::basic_string<CharT>(mapped_key),cnts);
 }
 
 /*

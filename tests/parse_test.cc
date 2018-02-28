@@ -102,11 +102,11 @@ option_description_type make_operand_at(std::size_t posn, std::size_t argn)
 {
   return option_description_type{
     {},
-    [=](const string_type &_key, std::size_t _posn, std::size_t _argn,
+    [=](const string_type &, std::size_t _posn, std::size_t _argn,
       const variable_map_type &)
     {
       if(_posn == posn && _argn == argn)
-        return std::make_pair(true,_key);
+        return std::make_pair(true,string_type(_LIT("operand_key")));
       return std::make_pair(false,string_type());
     },
     {},{},
@@ -316,7 +316,7 @@ BOOST_AUTO_TEST_CASE( parse_nested_operand_test )
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
-      {_LIT("alt_key"),{string_type(_LIT("pos"))}},
+      {_LIT("operand_key"),{string_type(_LIT("pos"))}},
       {_LIT("a"),{}},
       {_LIT("bar"),{}},
       {_LIT("c"),{}},

@@ -7,7 +7,7 @@
 #include <iostream>
 
 /**
-  case 14, Operand
+  case 14, operand
  */
 
 BOOST_AUTO_TEST_SUITE( case14_test_suite )
@@ -38,21 +38,17 @@ BOOST_AUTO_TEST_CASE( all_key_value_test )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("case 14"),co::value<string_type>())
+    co::make_operand(_LIT("key"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        {string_type(_LIT("-f"))}},
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        {string_type(_LIT("-f42"))}},
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        {string_type(_LIT("--bar"))}},
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        {string_type(_LIT("--bar=43"))}},
+      {_LIT("key"),{string_type(_LIT("-f"))}},
+      {_LIT("key"),{string_type(_LIT("-f42"))}},
+      {_LIT("key"),{string_type(_LIT("--bar"))}},
+      {_LIT("key"),{string_type(_LIT("--bar=43"))}},
     }));
 }
 
@@ -80,8 +76,8 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
 
   options = options_group_type{
     co::make_option(_LIT(""),
-      co::value<string_type>().implicit(_LIT("floo")),_LIT("case 14")),
-    co::make_operand(_LIT("case 14"),co::value<string_type>())
+      co::value<string_type>().implicit(_LIT("floo")),_LIT("case 17")),
+    co::make_operand(_LIT("key"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -90,16 +86,11 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        {string_type(_LIT("operand1"))}},
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        {string_type(_LIT("operand2"))}},
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        {string_type(_LIT("operand3"))}},
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        {string_type(_LIT("operand4"))}},
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        {string_type(_LIT("operand5"))}},
+      {_LIT("key"),{string_type(_LIT("operand1"))}},
+      {_LIT("key"),{string_type(_LIT("operand2"))}},
+      {_LIT("key"),{string_type(_LIT("operand3"))}},
+      {_LIT("key"),{string_type(_LIT("operand4"))}},
+      {_LIT("key"),{string_type(_LIT("operand5"))}},
       {_LIT("f"),{string_type(_LIT("f_arg"))}},
       {_LIT("f"),{string_type(_LIT("42"))}},
       {_LIT("bar"),{string_type(_LIT("bar_arg"))}},

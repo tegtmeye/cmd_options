@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
 
   options = options_group_type{
     co::make_hidden_option(_LIT("foo,f")),
-    co::make_operand(_LIT("accept all operands"),co::value<string_type>())
+    co::make_operand(_LIT("operand_key"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -75,10 +75,8 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        string_type(_LIT("--bar"))},
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        string_type(_LIT("blah"))},
+      {_LIT("operand_key"),string_type(_LIT("--bar"))},
+      {_LIT("operand_key"),string_type(_LIT("blah"))},
       {_LIT("foo"),{}},
       {_LIT("foo"),{}}
     }));
@@ -142,7 +140,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
     co::make_hidden_option(_LIT(",b")),
     co::make_hidden_option(_LIT(",c")),
     co::make_hidden_option(_LIT(",d")),
-    co::make_operand(_LIT("accept all operands"),co::value<string_type>())
+    co::make_operand(_LIT("operand_key"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -151,10 +149,8 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        string_type(_LIT("--bar"))},
-      {co::detail::default_operand_key<detail::check_char_t>(),
-        string_type(_LIT("blah"))},
+      {_LIT("operand_key"),string_type(_LIT("--bar"))},
+      {_LIT("operand_key"),string_type(_LIT("blah"))},
       {_LIT("foo"),{}},
       {_LIT("foo"),{}},
       {_LIT("a"),{}},

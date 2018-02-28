@@ -245,19 +245,11 @@ inline bool is_raw_mapped_optional_option(
     && desc.make_value && desc.implicit_value);
 }
 
-/*
-  In the EZ interface for row 14, 15, 18, and 19 mapped key is set to
-  allow for position and argument number constraints. That is row 14 and
-  row 15 are actually another occurrences of row 16 and row 17 and row
-  18 and 19 are another occurrences of row 20 and 21. The mapped key
-  simply provides the raw key which is the default behavior if it wasn't
-  present. So this check is not used and here for completeness only.
-*/
 template<typename CharT>
-inline bool is_interpret_operand(
+inline bool is_operand_with_key_value(
   const co::basic_option_description<CharT> &desc)
 {
-  return (!desc.unpack_option && !desc.mapped_key && desc.extended_description
+  return (!desc.unpack_option && desc.mapped_key && !desc.extended_description
     && desc.make_value && !desc.implicit_value);
 }
 
@@ -265,62 +257,11 @@ inline bool is_interpret_operand(
   Row 15
 */
 template<typename CharT>
-inline bool is_hidden_interpret_operand(
-  const co::basic_option_description<CharT> &desc)
-{
-  return (!desc.unpack_option && !desc.mapped_key && !desc.extended_description
-    && desc.make_value && !desc.implicit_value);
-}
-
-template<typename CharT>
-inline bool is_keyed_interpret_operand(
-  const co::basic_option_description<CharT> &desc)
-{
-  return (!desc.unpack_option && desc.mapped_key && desc.extended_description
-    && desc.make_value && !desc.implicit_value);
-}
-
-template<typename CharT>
-inline bool is_hidden_keyed_interpret_operand(
+inline bool is_operand_with_key(
   const co::basic_option_description<CharT> &desc)
 {
   return (!desc.unpack_option && desc.mapped_key && !desc.extended_description
-    && desc.make_value && !desc.implicit_value);
-}
-
-template<typename CharT>
-inline bool is_empty_operand(
-  const co::basic_option_description<CharT> &desc)
-{
-  return (!desc.unpack_option && !desc.mapped_key && desc.extended_description
-    && !desc.make_value);
-}
-
-template<typename CharT>
-inline bool is_hidden_empty_operand(
-  const co::basic_option_description<CharT> &desc)
-{
-  return (!desc.unpack_option && !desc.mapped_key && !desc.extended_description
-    && !desc.make_value);
-}
-
-/*
-  Row 20
-*/
-template<typename CharT>
-inline bool is_empty_keyed_operand(
-  const co::basic_option_description<CharT> &desc)
-{
-  return (!desc.unpack_option && desc.mapped_key && desc.extended_description
-    && !desc.make_value);
-}
-
-template<typename CharT>
-inline bool is_hidden_empty_keyed_operand(
-  const co::basic_option_description<CharT> &desc)
-{
-  return (!desc.unpack_option && desc.mapped_key && !desc.extended_description
-    && !desc.make_value);
+    && !desc.make_value && !desc.implicit_value);
 }
 
 
@@ -402,22 +343,10 @@ bool check_exclusive(const co::basic_option_description<CharT> &desc,
       is_raw_optional_option<CharT>},
     {_LIT("is_raw_mapped_optional_option"),
       is_raw_mapped_optional_option<CharT>},
-    {_LIT("is_interpret_operand"),
-      is_interpret_operand<CharT>},
-    {_LIT("is_hidden_interpret_operand"),
-      is_hidden_interpret_operand<CharT>},
-    {_LIT("is_keyed_interpret_operand"),
-      is_keyed_interpret_operand<CharT>},
-    {_LIT("is_hidden_keyed_interpret_operand"),
-      is_hidden_keyed_interpret_operand<CharT>},
-    {_LIT("is_empty_operand"),
-      is_empty_operand<CharT>},
-    {_LIT("is_hidden_empty_operand"),
-      is_hidden_empty_operand<CharT>},
-    {_LIT("is_empty_keyed_operand"),
-      is_empty_keyed_operand<CharT>},
-    {_LIT("is_hidden_empty_keyed_operand"),
-      is_hidden_empty_keyed_operand<CharT>}
+    {_LIT("is_operand_with_key_value"),
+      is_operand_with_key_value<CharT>},
+    {_LIT("is_operand_with_key"),
+      is_operand_with_key<CharT>}
   };
 
   std::vector<pair_type> exclusive = cases;

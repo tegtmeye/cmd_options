@@ -25,7 +25,6 @@
 
 additional_cppflags= \
 	-pedantic -Wall -I$(top_srcdir) \
-	-DCMD_OPTIONS_DEFAULT_OPERAND_KEY=alt_key \
 	$(SYSTEM_BOOST_CPPFLAGS)
 
 char_cpp_flags= \
@@ -75,12 +74,6 @@ check_PROGRAMS=\
 	case13_test case13_8_test case13_16_test case13_32_test wcase13_test \
 	case14_test case14_8_test case14_16_test case14_32_test wcase14_test \
 	case15_test case15_8_test case15_16_test case15_32_test wcase15_test \
-	case16_test case16_8_test case16_16_test case16_32_test wcase16_test \
-	case17_test case17_8_test case17_16_test case17_32_test wcase17_test \
-	case18_test case18_8_test case18_16_test case18_32_test wcase18_test \
-	case19_test case19_8_test case19_16_test case19_32_test wcase19_test \
-	case20_test case20_8_test case20_16_test case20_32_test wcase20_test \
-	case21_test case21_8_test case21_16_test case21_32_test wcase21_test \
 	constraints_test constraints8_test constraints16_test constraints32_test \
 	  wconstraints_test \
 	value_test value8_test value16_test value32_test wvalue_test \
@@ -681,216 +674,6 @@ wcase15_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase15_test_LDFLAGS=$(additional_ldflags)
 wcase15_test_LDADD=$(additional_libs)
 
-case16_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case16_test.cc
-case16_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
-case16_test_LDFLAGS=$(additional_ldflags)
-case16_test_LDADD=$(additional_libs)
-
-case16_8_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case16_test.cc
-case16_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
-case16_8_test_LDFLAGS=$(additional_ldflags)
-case16_8_test_LDADD=$(additional_libs)
-
-case16_16_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case16_test.cc
-case16_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
-case16_16_test_LDFLAGS=$(additional_ldflags)
-case16_16_test_LDADD=$(additional_libs)
-
-case16_32_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case16_test.cc
-case16_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
-case16_32_test_LDFLAGS=$(additional_ldflags)
-case16_32_test_LDADD=$(additional_libs)
-
-wcase16_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case16_test.cc
-wcase16_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
-wcase16_test_LDFLAGS=$(additional_ldflags)
-wcase16_test_LDADD=$(additional_libs)
-
-case17_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case17_test.cc
-case17_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
-case17_test_LDFLAGS=$(additional_ldflags)
-case17_test_LDADD=$(additional_libs)
-
-case17_8_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case17_test.cc
-case17_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
-case17_8_test_LDFLAGS=$(additional_ldflags)
-case17_8_test_LDADD=$(additional_libs)
-
-case17_16_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case17_test.cc
-case17_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
-case17_16_test_LDFLAGS=$(additional_ldflags)
-case17_16_test_LDADD=$(additional_libs)
-
-case17_32_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case17_test.cc
-case17_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
-case17_32_test_LDFLAGS=$(additional_ldflags)
-case17_32_test_LDADD=$(additional_libs)
-
-wcase17_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case17_test.cc
-wcase17_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
-wcase17_test_LDFLAGS=$(additional_ldflags)
-wcase17_test_LDADD=$(additional_libs)
-
-case18_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case18_test.cc
-case18_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
-case18_test_LDFLAGS=$(additional_ldflags)
-case18_test_LDADD=$(additional_libs)
-
-case18_8_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case18_test.cc
-case18_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
-case18_8_test_LDFLAGS=$(additional_ldflags)
-case18_8_test_LDADD=$(additional_libs)
-
-case18_16_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case18_test.cc
-case18_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
-case18_16_test_LDFLAGS=$(additional_ldflags)
-case18_16_test_LDADD=$(additional_libs)
-
-case18_32_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case18_test.cc
-case18_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
-case18_32_test_LDFLAGS=$(additional_ldflags)
-case18_32_test_LDADD=$(additional_libs)
-
-wcase18_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case18_test.cc
-wcase18_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
-wcase18_test_LDFLAGS=$(additional_ldflags)
-wcase18_test_LDADD=$(additional_libs)
-
-case19_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case19_test.cc
-case19_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
-case19_test_LDFLAGS=$(additional_ldflags)
-case19_test_LDADD=$(additional_libs)
-
-case19_8_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case19_test.cc
-case19_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
-case19_8_test_LDFLAGS=$(additional_ldflags)
-case19_8_test_LDADD=$(additional_libs)
-
-case19_16_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case19_test.cc
-case19_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
-case19_16_test_LDFLAGS=$(additional_ldflags)
-case19_16_test_LDADD=$(additional_libs)
-
-case19_32_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case19_test.cc
-case19_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
-case19_32_test_LDFLAGS=$(additional_ldflags)
-case19_32_test_LDADD=$(additional_libs)
-
-wcase19_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case19_test.cc
-wcase19_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
-wcase19_test_LDFLAGS=$(additional_ldflags)
-wcase19_test_LDADD=$(additional_libs)
-
-case20_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case20_test.cc
-case20_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
-case20_test_LDFLAGS=$(additional_ldflags)
-case20_test_LDADD=$(additional_libs)
-
-case20_8_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case20_test.cc
-case20_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
-case20_8_test_LDFLAGS=$(additional_ldflags)
-case20_8_test_LDADD=$(additional_libs)
-
-case20_16_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case20_test.cc
-case20_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
-case20_16_test_LDFLAGS=$(additional_ldflags)
-case20_16_test_LDADD=$(additional_libs)
-
-case20_32_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case20_test.cc
-case20_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
-case20_32_test_LDFLAGS=$(additional_ldflags)
-case20_32_test_LDADD=$(additional_libs)
-
-wcase20_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case20_test.cc
-wcase20_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
-wcase20_test_LDFLAGS=$(additional_ldflags)
-wcase20_test_LDADD=$(additional_libs)
-
-case21_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case21_test.cc
-case21_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
-case21_test_LDFLAGS=$(additional_ldflags)
-case21_test_LDADD=$(additional_libs)
-
-case21_8_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case21_test.cc
-case21_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
-case21_8_test_LDFLAGS=$(additional_ldflags)
-case21_8_test_LDADD=$(additional_libs)
-
-case21_16_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case21_test.cc
-case21_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
-case21_16_test_LDFLAGS=$(additional_ldflags)
-case21_16_test_LDADD=$(additional_libs)
-
-case21_32_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case21_test.cc
-case21_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
-case21_32_test_LDFLAGS=$(additional_ldflags)
-case21_32_test_LDADD=$(additional_libs)
-
-wcase21_test_SOURCES=master_suite.cc \
-	test_detail.h \
-	case21_test.cc
-wcase21_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
-wcase21_test_LDFLAGS=$(additional_ldflags)
-wcase21_test_LDADD=$(additional_libs)
-
 constraints_test_SOURCES=master_suite.cc \
 	test_detail.h \
 	constraints_test.cc
@@ -1014,12 +797,6 @@ TESTS=\
 	case13_test case13_8_test case13_16_test case13_32_test wcase13_test \
 	case14_test case14_8_test case14_16_test case14_32_test wcase14_test \
 	case15_test case15_8_test case15_16_test case15_32_test wcase15_test \
-	case16_test case16_8_test case16_16_test case16_32_test wcase16_test \
-	case17_test case17_8_test case17_16_test case17_32_test wcase17_test \
-	case18_test case18_8_test case18_16_test case18_32_test wcase18_test \
-	case19_test case19_8_test case19_16_test case19_32_test wcase19_test \
-	case20_test case20_8_test case20_16_test case20_32_test wcase20_test \
-	case21_test case21_8_test case21_16_test case21_32_test wcase21_test \
 	constraints_test constraints8_test constraints16_test \
 		constraints32_test wconstraints_test \
 	value_test value8_test value16_test value32_test wvalue_test \

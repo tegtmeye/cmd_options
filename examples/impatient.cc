@@ -20,8 +20,7 @@ int main (int argc, char *argv[])
       "Description of option with an optional integer argument"),
 
     // accepts an operand in any position. The mapped value is a string
-    co::make_operand("Description of this operand that takes a string",
-      co::value<std::string>())
+    co::make_operand("operand_key",co::value<std::string>())
   };
 
   // parse the options and put into the variable map. Don't forget that
@@ -45,9 +44,9 @@ int main (int argc, char *argv[])
       << co::any_cast<int>(i->second) << '\n';
   }
 
-  auto oprange = vm.equal_range("");
+  auto oprange = vm.equal_range("operand_key");
   for (auto i = oprange.first; i != oprange.second; ++i)
-    std::cout << "operand was given with value: "
+    std::cout << i->first << " was given: "
       << co::any_cast<std::string>(i->second) << '\n';
 
   return 0;
