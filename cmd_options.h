@@ -1993,7 +1993,7 @@ make_operand(const std::basic_string<CharT> &mapped_key,
 {
   basic_option_description<CharT> desc;
 
-  detail::add_option_value(val,desc);
+  detail::add_operand_value(val,desc);
 
   detail::add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
 
