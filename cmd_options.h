@@ -1838,7 +1838,7 @@ make_option(const CharT *opt_spec,
 */
 template<typename CharT>
 inline basic_option_description<CharT>
-make_hidden_option(const std::basic_string<CharT> &opt_spec,
+make_option(const std::basic_string<CharT> &opt_spec,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
   CharT delim = CharT{','})
 {
@@ -1858,11 +1858,11 @@ make_hidden_option(const std::basic_string<CharT> &opt_spec,
 
 template<typename CharT>
 inline basic_option_description<CharT>
-make_hidden_option(const CharT *opt_spec,
+make_option(const CharT *opt_spec,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
   CharT delim = CharT{','})
 {
-  return make_hidden_option(std::basic_string<CharT>(opt_spec),cnts,delim);
+  return make_option(std::basic_string<CharT>(opt_spec),cnts,delim);
 }
 
 
@@ -1932,7 +1932,7 @@ make_option(const CharT *opt_spec,
 */
 template<typename CharT, typename T>
 inline basic_option_description<CharT>
-make_hidden_option(const std::basic_string<CharT> &opt_spec,
+make_option(const std::basic_string<CharT> &opt_spec,
   const value<T> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
   CharT delim = CharT{','})
@@ -1955,11 +1955,11 @@ make_hidden_option(const std::basic_string<CharT> &opt_spec,
 
 template<typename CharT, typename T>
 inline basic_option_description<CharT>
-make_hidden_option(const CharT *opt_spec, const value<T> &val,
+make_option(const CharT *opt_spec, const value<T> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
   CharT delim = CharT{','})
 {
-  return make_hidden_option(std::basic_string<CharT>(opt_spec),val,cnts,delim);
+  return make_option(std::basic_string<CharT>(opt_spec),val,cnts,delim);
 }
 
 /*

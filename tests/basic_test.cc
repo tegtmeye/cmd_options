@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
     detail::is_mapped_isolated_option<detail::check_char_t>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_option(_LIT("foo")), // line 3
+    co::make_option(_LIT("foo")), // line 3
     detail::is_hidden_mapped_isolated_option<detail::check_char_t>));
 
   BOOST_REQUIRE(detail::check_exclusive(
@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
     detail::is_raw_isolated_option<detail::check_char_t>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_option(_LIT("")), // line 5
+    co::make_option(_LIT("")), // line 5
     detail::is_hidden_raw_isolated_option<detail::check_char_t>));
 
   BOOST_REQUIRE(detail::check_exclusive(
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
 
   BOOST_REQUIRE(detail::check_exclusive(
     // line 7
-    co::make_hidden_option(_LIT("foo"),co::value<string_type>()),
+    co::make_option(_LIT("foo"),co::value<string_type>()),
     detail::is_hidden_mapped_reqired_option<detail::check_char_t>));
 
   BOOST_REQUIRE(detail::check_exclusive(
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
     detail::is_raw_reqired_option<detail::check_char_t>));
 
   BOOST_REQUIRE(detail::check_exclusive(
-    co::make_hidden_option(_LIT(""),co::value<string_type>()), // line 9
+    co::make_option(_LIT(""),co::value<string_type>()), // line 9
     detail::is_raw_mapped_reqired_option<detail::check_char_t>));
 
   BOOST_REQUIRE(detail::check_exclusive(
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
 
   BOOST_REQUIRE(detail::check_exclusive(
     // line 11
-    co::make_hidden_option(_LIT("foo"),
+    co::make_option(_LIT("foo"),
       co::value<string_type>().implicit(_LIT("bar"))),
     detail::is_hidden_mapped_optional_option<detail::check_char_t>));
 
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE( constraint_description_construction_test )
 
   BOOST_REQUIRE(detail::check_exclusive(
     // line 13
-    co::make_hidden_option(_LIT(""),
+    co::make_option(_LIT(""),
       co::value<string_type>().implicit(_LIT("bar"))),
     detail::is_raw_mapped_optional_option<detail::check_char_t>));
 

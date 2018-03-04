@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
   };
 
   options =   {
-    co::make_hidden_option(_LIT(""),co::value<string_type>())
+    co::make_option(_LIT(""),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""),co::value<string_type>())
+    co::make_option(_LIT(""),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE( all_invalid_POSIX_key_value_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""),co::value<string_type>())
+    co::make_option(_LIT(""),co::value<string_type>())
   };
 
   BOOST_REQUIRE_THROW(
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test1 )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""),co::value<string_type>())
+    co::make_option(_LIT(""),co::value<string_type>())
   };
 
   BOOST_REQUIRE_THROW(
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test2 )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""),co::value<string_type>())
+    co::make_option(_LIT(""),co::value<string_type>())
   };
 
   BOOST_REQUIRE_THROW(

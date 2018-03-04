@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT("foo,f"),co::value<string_type>())
+    co::make_option(_LIT("foo,f"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT("foo,f"),co::value<string_type>())
+    co::make_option(_LIT("foo,f"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE( all_invalid_POSIX_key_value_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT("foo,f"),co::value<string_type>())
+    co::make_option(_LIT("foo,f"),co::value<string_type>())
   };
 
   BOOST_REQUIRE_THROW(
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test1 )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT("foo,f"),co::value<string_type>())
+    co::make_option(_LIT("foo,f"),co::value<string_type>())
   };
 
   BOOST_REQUIRE_THROW(
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test2 )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT("foo,f"),co::value<string_type>())
+    co::make_option(_LIT("foo,f"),co::value<string_type>())
   };
 
   BOOST_REQUIRE_THROW(
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT("")),
+    co::make_option(_LIT("")),
     co::make_operand<string_type>("accept all operands")
   };
 
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""))
+    co::make_option(_LIT(""))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -244,7 +244,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT("")),
+    co::make_option(_LIT("")),
     co::make_operand<string_type>("accept all operands")
   };
 
@@ -279,7 +279,7 @@ BOOST_AUTO_TEST_CASE( flags_packed_arg_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""))
+    co::make_option(_LIT(""))
   };
 
 
@@ -302,7 +302,7 @@ BOOST_AUTO_TEST_CASE( flags_invalid_posarg_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""))
+    co::make_option(_LIT(""))
   };
 
   BOOST_REQUIRE_THROW(
@@ -324,7 +324,7 @@ BOOST_AUTO_TEST_CASE( flags_invalid_packed_cease_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""))
+    co::make_option(_LIT(""))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -353,7 +353,7 @@ BOOST_AUTO_TEST_CASE( multi_packed_flags_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""))
+    co::make_option(_LIT(""))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);

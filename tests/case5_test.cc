@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE( all_flags_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""))
+    co::make_option(_LIT(""))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT("")),
+    co::make_option(_LIT("")),
     co::make_operand(_LIT("operand_key"),co::value<string_type>())
   };
 
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""))
+    co::make_option(_LIT(""))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT("")),
+    co::make_option(_LIT("")),
     co::make_operand(_LIT("operand_key"),co::value<string_type>())
   };
 
@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE( flags_packed_arg_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""))
+    co::make_option(_LIT(""))
   };
 
 //   std::cerr << detail::to_string<string_type>(vm);
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE( flags_invalid_posarg_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""))
+    co::make_option(_LIT(""))
   };
 
   BOOST_REQUIRE_THROW(
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE( flags_invalid_packed_cease_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""))
+    co::make_option(_LIT(""))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE( multi_packed_flags_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""))
+    co::make_option(_LIT(""))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);

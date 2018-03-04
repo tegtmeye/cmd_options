@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""),
+    co::make_option(_LIT(""),
       co::value<string_type>().implicit(_LIT("floo")))
   };
 
@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""),co::value<string_type>().implicit(_LIT("floo")))
+    co::make_option(_LIT(""),co::value<string_type>().implicit(_LIT("floo")))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""),
+    co::make_option(_LIT(""),
       co::value<string_type>().implicit(_LIT("floo")))
   };
 
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
   };
 
   options = options_group_type{
-    co::make_hidden_option(_LIT(""),
+    co::make_option(_LIT(""),
       co::value<string_type>().implicit(_LIT("floo")))
   };
 
