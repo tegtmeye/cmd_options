@@ -1104,8 +1104,16 @@ inline basic_variable_map<CharT>
 parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
   const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm)
 {
-  return parse_incremental_arguments(first,last,grp,vm,
-    std::basic_string<CharT>{'-','-'});
+  basic_variable_map<CharT> _vm =
+    std::move(parse_incremental_arguments(first,last,grp,vm,
+      std::basic_string<CharT>{'-','-'}));
+
+  for(auto &desc : grp) {
+    if(desc.finalize)
+      desc.finalize(_vm);
+  }
+
+  return _vm;
 }
 
 template<typename BidirectionalIterator,
