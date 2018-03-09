@@ -1288,7 +1288,7 @@ struct convert_value {
     T _val;
     istream_type in(str);
     in >> _val;
-    if(in.peek() != istream_type::traits_type::eof())
+    if(!in || in.peek() != istream_type::traits_type::eof())
       throw std::invalid_argument(detail::asUTF8(str));
 
     return _val;

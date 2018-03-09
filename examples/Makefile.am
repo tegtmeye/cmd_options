@@ -38,7 +38,8 @@ additional_ldflags= \
 noinst_PROGRAMS=\
 	impatient \
 	posix \
-	parsing
+	parsing \
+	scenario1
 
 impatient_SOURCES=impatient.cc
 impatient_CPPFLAGS=$(additional_cppflags)
@@ -54,3 +55,8 @@ parsing_SOURCES=parsing.cc
 parsing_CPPFLAGS=$(additional_cppflags)
 parsing_LDFLAGS=$(additional_ldflags)
 parsing_LDADD=$(additional_libs)
+
+scenario1_SOURCES=scenario1.cc
+scenario1_CPPFLAGS=$(additional_cppflags)
+scenario1_LDFLAGS=$(additional_ldflags)
+scenario1_LDADD=$(additional_libs)

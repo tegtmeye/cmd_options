@@ -141,30 +141,33 @@ BOOST_AUTO_TEST_CASE( bool_value_test )
     _LIT("--bool=11"),
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),argv2.data()+argv2.size(),options),
-    std::invalid_argument, [](const std::invalid_argument &ex) {
-        return (ex.what() == std::string("11"));
-      }
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("11"));
+        }
   );
 
   std::vector<const detail::check_char_t *> argv3{
     _LIT("--bool=foobar"),
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv3.data(),argv3.data()+argv3.size(),options),
-    std::invalid_argument, [](const std::invalid_argument &ex) {
-        return (ex.what() == std::string("foobar"));
-      }
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv3.data(),
+    argv3.data()+argv3.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("foobar"));
+        }
   );
 
   std::vector<const detail::check_char_t *> argv4{
     _LIT("--bool=truefoo"),
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv4.data(),argv4.data()+argv4.size(),options),
-    std::invalid_argument, [](const std::invalid_argument &ex) {
-        return (ex.what() == std::string("truefoo"));
-      }
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv4.data(),
+    argv4.data()+argv4.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("truefoo"));
+        }
   );
 }
 
@@ -195,10 +198,11 @@ BOOST_AUTO_TEST_CASE( CharT_value_test )
     _LIT("--CharT=aa"),
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),argv2.data()+argv2.size(),options),
-    std::invalid_argument, [](const std::invalid_argument &ex) {
-        return (ex.what() == std::string("aa"));
-      }
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("aa"));
+        }
   );
 }
 
@@ -208,6 +212,18 @@ BOOST_AUTO_TEST_CASE( short_value_test )
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
     _LIT("--short=11"),
+  };
+
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--short=foo"),
+  };
+
+  std::vector<const detail::check_char_t *> argv3{
+    _LIT("--short=3.14"),
+  };
+
+  std::vector<const detail::check_char_t *> argv4{
+    _LIT("--short=11 foo"),
   };
 
   options = options_group_type{
@@ -220,6 +236,27 @@ BOOST_AUTO_TEST_CASE( short_value_test )
       detail::check_value(_LIT("short"),static_cast<short>(11)),
     }
   ));
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("foo"));
+        }
+  );
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv3.data(),
+    argv3.data()+argv3.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("3.14"));
+        }
+  );
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv4.data(),
+    argv4.data()+argv4.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("11 foo"));
+        }
+  );
 }
 
 BOOST_AUTO_TEST_CASE( ushort_value_test )
@@ -228,6 +265,10 @@ BOOST_AUTO_TEST_CASE( ushort_value_test )
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
     _LIT("--ushort=21"),
+  };
+
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--ushort=foo"),
   };
 
   options = options_group_type{
@@ -240,6 +281,13 @@ BOOST_AUTO_TEST_CASE( ushort_value_test )
       detail::check_value(_LIT("ushort"),static_cast<unsigned short>(21))
     }
   ));
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("foo"));
+        }
+  );
 }
 
 BOOST_AUTO_TEST_CASE( int_value_test )
@@ -248,6 +296,10 @@ BOOST_AUTO_TEST_CASE( int_value_test )
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
     _LIT("--int=12"),
+  };
+
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--int=foo"),
   };
 
   options = options_group_type{
@@ -260,6 +312,13 @@ BOOST_AUTO_TEST_CASE( int_value_test )
       detail::check_value(_LIT("int"),static_cast<int>(12)),
     }
   ));
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("foo"));
+        }
+  );
 }
 
 BOOST_AUTO_TEST_CASE( uint_value_test )
@@ -268,6 +327,10 @@ BOOST_AUTO_TEST_CASE( uint_value_test )
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
     _LIT("--uint=22"),
+  };
+
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--uint=foo"),
   };
 
   options = options_group_type{
@@ -280,6 +343,13 @@ BOOST_AUTO_TEST_CASE( uint_value_test )
       detail::check_value(_LIT("uint"),static_cast<unsigned int>(22)),
     }
   ));
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("foo"));
+        }
+  );
 }
 
 BOOST_AUTO_TEST_CASE( long_value_test )
@@ -288,6 +358,10 @@ BOOST_AUTO_TEST_CASE( long_value_test )
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
     _LIT("--long=13"),
+  };
+
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--long=foo"),
   };
 
   options = options_group_type{
@@ -300,6 +374,13 @@ BOOST_AUTO_TEST_CASE( long_value_test )
       detail::check_value(_LIT("long"),static_cast<long>(13)),
     }
   ));
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("foo"));
+        }
+  );
 }
 
 BOOST_AUTO_TEST_CASE( ulong_value_test )
@@ -308,6 +389,10 @@ BOOST_AUTO_TEST_CASE( ulong_value_test )
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
     _LIT("--ulong=23"),
+  };
+
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--ulong=foo"),
   };
 
   options = options_group_type{
@@ -320,6 +405,13 @@ BOOST_AUTO_TEST_CASE( ulong_value_test )
       detail::check_value(_LIT("ulong"),static_cast<unsigned long>(23)),
     }
   ));
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("foo"));
+        }
+  );
 }
 
 BOOST_AUTO_TEST_CASE( longlong_value_test )
@@ -328,6 +420,10 @@ BOOST_AUTO_TEST_CASE( longlong_value_test )
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
     _LIT("--longlong=14"),
+  };
+
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--longlong=foo"),
   };
 
   options = options_group_type{
@@ -340,6 +436,13 @@ BOOST_AUTO_TEST_CASE( longlong_value_test )
       detail::check_value(_LIT("longlong"),static_cast<long long>(14)),
     }
   ));
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("foo"));
+        }
+  );
 }
 
 BOOST_AUTO_TEST_CASE( ulonglong_value_test )
@@ -348,6 +451,10 @@ BOOST_AUTO_TEST_CASE( ulonglong_value_test )
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
     _LIT("--ulonglong=24"),
+  };
+
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--ulonglong=foo"),
   };
 
   options = options_group_type{
@@ -362,6 +469,13 @@ BOOST_AUTO_TEST_CASE( ulonglong_value_test )
         static_cast<unsigned long long>(24)),
     }
   ));
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("foo"));
+        }
+  );
 }
 
 BOOST_AUTO_TEST_CASE( float_value_test )
@@ -370,6 +484,10 @@ BOOST_AUTO_TEST_CASE( float_value_test )
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
     _LIT("--float=5.1"),
+  };
+
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--float=foo"),
   };
 
   options = options_group_type{
@@ -383,6 +501,13 @@ BOOST_AUTO_TEST_CASE( float_value_test )
         detail::essentiallyEqual<float>()),
     }
   ));
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("foo"));
+        }
+  );
 }
 
 BOOST_AUTO_TEST_CASE( double_value_test )
@@ -391,6 +516,10 @@ BOOST_AUTO_TEST_CASE( double_value_test )
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
     _LIT("--double=6.1"),
+  };
+
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--double=foo"),
   };
 
   options = options_group_type{
@@ -404,6 +533,13 @@ BOOST_AUTO_TEST_CASE( double_value_test )
         detail::essentiallyEqual<double>()),
     }
   ));
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("foo"));
+        }
+  );
 }
 
 BOOST_AUTO_TEST_CASE( long_double_value_test )
@@ -412,6 +548,10 @@ BOOST_AUTO_TEST_CASE( long_double_value_test )
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
     _LIT("--longdouble=7.1")
+  };
+
+  std::vector<const detail::check_char_t *> argv2{
+    _LIT("--longdouble=foo"),
   };
 
   options = options_group_type{
@@ -426,6 +566,13 @@ BOOST_AUTO_TEST_CASE( long_double_value_test )
         detail::essentiallyEqual<long double>())
     }
   ));
+
+  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
+    argv2.data()+argv2.size(),options),
+      std::invalid_argument, [](const std::invalid_argument &ex) {
+          return (ex.what() == std::string("foo"));
+        }
+  );
 }
 
 /**
