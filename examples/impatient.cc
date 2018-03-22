@@ -43,7 +43,8 @@ int main (int argc, char *argv[])
       "Description of option that requires a string argument"),
 
     // accepts -i <arg> or -i The mapped value is an int with default 42
-    co::make_option(",i",co::value<int>().implicit(42),
+    // indexed by the 'meaning_of_life' key
+    co::make_option(",i,meaning_of_life",co::value<int>().implicit(42),
       "Description of option with an optional integer argument"),
 
     // accepts an operand in any position. The mapped value is a string
@@ -65,7 +66,7 @@ int main (int argc, char *argv[])
       << co::any_cast<std::string>(i->second) << '\n';
   }
 
-  auto irange = vm.equal_range("i");
+  auto irange = vm.equal_range("meaning_of_life");
   for (auto i = irange.first; i != irange.second; ++i) {
     std::cout << i->first << " was given: "
       << co::any_cast<int>(i->second) << '\n';
