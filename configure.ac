@@ -42,6 +42,7 @@ AC_PROG_LIBTOOL
 # We need boost
 BOOST_REQUIRE([1.56])
 BOOST_TEST
+BOOST_PROGRAM_OPTIONS
 
 # Use SYSTEM_BOOST_CPPFLAGS to add includes with -isystem instead of -I
 # to suppress boost compiler warnings

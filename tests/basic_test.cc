@@ -9,6 +9,7 @@
 BOOST_AUTO_TEST_SUITE( basic_test_suite )
 
 namespace co = cmd_options;
+namespace utf = boost::unit_test;
 
 typedef std::basic_string<detail::check_char_t> string_type;
 typedef co::basic_option_pack<detail::check_char_t> option_pack;
@@ -23,6 +24,157 @@ BOOST_AUTO_TEST_CASE( default_description_test )
 {
   co::option_description desc;
   BOOST_REQUIRE(detail::is_empty(desc));
+}
+
+/**
+  Check for proper option spec decompilation
+ */
+BOOST_AUTO_TEST_CASE( option_full_spec_split_test )
+{
+  string_type long_opt;
+  string_type short_opt;
+  string_type map_key;
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT("foo,f,key"),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt == _LIT("foo"));
+  BOOST_REQUIRE(short_opt == _LIT("f"));
+  BOOST_REQUIRE(map_key == _LIT("key"));
+}
+
+BOOST_AUTO_TEST_CASE( option_empty_split_test )
+{
+  string_type long_opt;
+  string_type short_opt;
+  string_type map_key;
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT(""),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt.empty());
+  BOOST_REQUIRE(short_opt.empty());
+  BOOST_REQUIRE(map_key.empty());
+
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT(","),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt.empty());
+  BOOST_REQUIRE(short_opt.empty());
+  BOOST_REQUIRE(map_key.empty());
+
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT(",,"),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt.empty());
+  BOOST_REQUIRE(short_opt.empty());
+  BOOST_REQUIRE(map_key.empty());
+}
+
+BOOST_AUTO_TEST_CASE( option_long_spec_split_test )
+{
+  string_type long_opt;
+  string_type short_opt;
+  string_type map_key;
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT("foo"),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt == _LIT("foo"));
+  BOOST_REQUIRE(short_opt.empty());
+  BOOST_REQUIRE(map_key.empty());
+
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT("foo,"),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt == _LIT("foo"));
+  BOOST_REQUIRE(short_opt.empty());
+  BOOST_REQUIRE(map_key.empty());
+
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT("foo,,"),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt == _LIT("foo"));
+  BOOST_REQUIRE(short_opt.empty());
+  BOOST_REQUIRE(map_key.empty());
+}
+
+BOOST_AUTO_TEST_CASE( option_short_spec_split_test )
+{
+  string_type long_opt;
+  string_type short_opt;
+  string_type map_key;
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT(",f"),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt.empty());
+  BOOST_REQUIRE(short_opt == _LIT("f"));
+  BOOST_REQUIRE(map_key.empty());
+
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT(",f,"),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt.empty());
+  BOOST_REQUIRE(short_opt == _LIT("f"));
+  BOOST_REQUIRE(map_key.empty());
+}
+
+BOOST_AUTO_TEST_CASE( option_long_short_spec_split_test )
+{
+  string_type long_opt;
+  string_type short_opt;
+  string_type map_key;
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT("foo,f"),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt == _LIT("foo"));
+  BOOST_REQUIRE(short_opt == _LIT("f"));
+  BOOST_REQUIRE(map_key.empty());
+
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT("foo,f,"),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt == _LIT("foo"));
+  BOOST_REQUIRE(short_opt == _LIT("f"));
+  BOOST_REQUIRE(map_key.empty());
+}
+
+BOOST_AUTO_TEST_CASE( option_map_spec_split_test )
+{
+  string_type long_opt;
+  string_type short_opt;
+  string_type map_key;
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT(",,key"),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt.empty());
+  BOOST_REQUIRE(short_opt.empty());
+  BOOST_REQUIRE(map_key == _LIT("key"));
+
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT(",f,key"),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt.empty());
+  BOOST_REQUIRE(short_opt == _LIT("f"));
+  BOOST_REQUIRE(map_key == _LIT("key"));
+
+  std::tie(long_opt,short_opt,map_key) =
+    co::detail::split<detail::check_char_t>(
+      _LIT("foo,f,key"),detail::check_char_t(','));
+
+  BOOST_REQUIRE(long_opt == _LIT("foo"));
+  BOOST_REQUIRE(short_opt == _LIT("f"));
+  BOOST_REQUIRE(map_key == _LIT("key"));
 }
 
 /**
@@ -349,7 +501,6 @@ BOOST_AUTO_TEST_CASE( unpack_gnu_arg_test )
     option_pack{true,true,_LIT("--"),_LIT("foo"),{},
       _LIT("--")}));
 }
-
 
 BOOST_AUTO_TEST_SUITE_END()
 

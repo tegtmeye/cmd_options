@@ -39,7 +39,11 @@ noinst_PROGRAMS=\
 	impatient \
 	posix \
 	parsing \
-	scenario1
+	scenario1 \
+	scenario2 \
+	scenario3 \
+	co_first \
+	co_multiple_sources
 
 impatient_SOURCES=impatient.cc
 impatient_CPPFLAGS=$(additional_cppflags)
@@ -60,3 +64,23 @@ scenario1_SOURCES=scenario1.cc
 scenario1_CPPFLAGS=$(additional_cppflags)
 scenario1_LDFLAGS=$(additional_ldflags)
 scenario1_LDADD=$(additional_libs)
+
+scenario2_SOURCES=scenario2.cc
+scenario2_CPPFLAGS=$(additional_cppflags)
+scenario2_LDFLAGS=$(additional_ldflags)
+scenario2_LDADD=$(additional_libs)
+
+scenario3_SOURCES=scenario3.cc
+scenario3_CPPFLAGS=$(additional_cppflags)
+scenario3_LDFLAGS=$(additional_ldflags)
+scenario3_LDADD=$(additional_libs)
+
+co_first_SOURCES=co_first.cc
+co_first_CPPFLAGS=$(additional_cppflags)
+co_first_LDFLAGS=$(additional_ldflags)
+co_first_LDADD=$(additional_libs)
+
+co_multiple_sources_SOURCES=co_multiple_sources.cc
+co_multiple_sources_CPPFLAGS=$(additional_cppflags)
+co_multiple_sources_LDFLAGS=$(additional_ldflags)
+co_multiple_sources_LDADD=$(additional_libs)

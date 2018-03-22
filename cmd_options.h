@@ -41,7 +41,7 @@
 #include <codecvt>
 #include <locale>
 #include <functional>
-
+#include <algorithm>
 #include <iostream>
 
 namespace cmd_options {
@@ -1545,6 +1545,7 @@ struct code_point_traits<wchar_t> {
 };
 
 
+#if 0
 template<typename CharT>
 inline std::pair<std::basic_string<CharT>,std::basic_string<CharT> >
 split(const std::basic_string<CharT> &str, CharT delim)
@@ -1557,38 +1558,116 @@ split(const std::basic_string<CharT> &str, CharT delim)
 
   return std::make_pair(str.substr(0,loc),str.substr(loc+1));
 }
+#endif
 
 template<typename CharT>
-std::pair<std::basic_string<CharT>,std::basic_string<CharT> >
+inline bool is_portable(CharT c)
+{
+  return (c == 0x00) || (c >= 0x07 && c <= 0x0D) || (c >= 0x20 && c < 0x7F);
+}
+
+/*
+  Split a format string of the form:
+    [long_name][delim][short_name][delim][map_key]
+  where everything after a missing delim is optional. The following is ok:
+
+    long
+    long,
+    long,,
+    long,short
+    long,short,
+    long,short,key
+    long,,key
+    ,short
+    ,short,
+    ,short,key
+    ,,key
+
+  Assertion failure for trailing delims. That is,
+
+    long,short,key,*.*
+*/
+template<typename CharT>
+inline std::array<std::basic_string<CharT>,3>
+split(const std::basic_string<CharT> &str, CharT delim)
+{
+  typedef std::basic_string<CharT> string_type;
+
+  std::array<std::basic_string<CharT>,3> result{};
+
+  auto sloc = std::find(str.begin(),str.end(),delim);
+  result[0] = string_type(str.begin(),sloc);
+
+  if(sloc != str.end()) {
+    auto kloc = std::find(sloc+1,str.end(),delim);
+    result[1] = string_type(sloc+1,kloc);
+
+    if(kloc != str.end()) {
+      auto eloc = std::find(kloc+1,str.end(),delim);
+      assert(eloc == str.end()); // extra delim
+      result[2] = string_type(kloc+1,str.end());
+    }
+  }
+
+  return result;
+}
+
+/*
+  If opt_spec is empty, then 'accept all options' and the mapped key is
+  the given option verbatim.
+
+  If a long or short opt is given, then enforce POSIX and it must be
+  from the portable character set (subset of ASCII). If given the short
+  opt must be a single character. The mapped_key can be of any length or
+  value.
+
+  If the mapped_key is not given, then it is the long_opt if it is given
+  otherwise it is the short_opt.
+
+  Return the mapped_key used for contraint violation exceptions only
+*/
+template<typename CharT>
+std::basic_string<CharT>
 add_option_spec(const std::basic_string<CharT> &opt_spec,
   CharT delim, basic_option_description<CharT> &desc, bool hidden)
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_variable_map<CharT> variable_map_type;
 
-  string_type long_opt;
-  string_type short_opt;
-  std::tie(long_opt,short_opt) = detail::split(opt_spec,delim);
-
-  /*
-    If both are provided, the long option is the vm key
-
-    If none are provided, then it is unmapped_key
-  */
-  string_type key_desc;
-  if(opt_spec.empty() || (long_opt.empty() && short_opt.empty())) {
+  if(opt_spec.empty()) {
     if(!hidden) {
       desc.key_description = [=](void) {
-        return string_type{'-','-','*',',','-'};
+        return string_type{'-','-','*'} + delim + string_type{'-','*'};
       };
     }
+
+    return string_type{'*'};
   }
-  else if(!long_opt.empty() && !short_opt.empty()) {
+
+  string_type long_opt;
+  string_type short_opt;
+  string_type mapped_key;
+  std::tie(long_opt,short_opt,mapped_key) = detail::split(opt_spec,delim);
+
+  assert(!(long_opt.empty() && short_opt.empty()));
+  assert(short_opt.size() < 2);
+  // long and short_opt must be from the portable character set
+  assert(std::all_of(long_opt.begin(),long_opt.end(),is_portable<CharT>));
+  assert(std::all_of(short_opt.begin(),short_opt.end(),is_portable<CharT>));
+
+  if(mapped_key.empty()) {
+    if(long_opt.empty())
+      mapped_key = short_opt;
+    else
+      mapped_key = long_opt;
+  }
+
+  if(!long_opt.empty() && !short_opt.empty()) {
     desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
       const variable_map_type &)
       {
         if(_opt == long_opt || _opt == short_opt)
-          return std::make_pair(true,long_opt);
+          return std::make_pair(true,mapped_key);
 
         return std::make_pair(false,string_type());
       };
@@ -1605,7 +1684,7 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
       const variable_map_type &)
       {
         if(_opt == long_opt)
-          return std::make_pair(true,_opt);
+          return std::make_pair(true,mapped_key);
 
         return std::make_pair(false,string_type());
       };
@@ -1621,7 +1700,7 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
       const variable_map_type &)
       {
         if(_opt == short_opt)
-          return std::make_pair(true,_opt);
+          return std::make_pair(true,mapped_key);
 
         return std::make_pair(false,string_type());
       };
@@ -1633,7 +1712,7 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
     }
   }
 
-  return std::make_pair(long_opt,short_opt);
+  return mapped_key;
 }
 
 template<typename T, typename CharT>
@@ -1796,14 +1875,11 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
   basic_option_description<CharT> desc{unpack_gnu<true,CharT>};
 
-  string_type long_opt;
-  string_type short_opt;
-  std::tie(long_opt,short_opt) =
-    detail::add_option_spec(opt_spec,delim,desc,false);
+  string_type mapped_key = detail::add_option_spec(opt_spec,delim,desc,false);
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  detail::add_option_constraints(cnts,desc,long_opt);
+  detail::add_option_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -1854,12 +1930,9 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
   basic_option_description<CharT> desc{unpack_gnu<true,CharT>};
 
-  string_type long_opt;
-  string_type short_opt;
-  std::tie(long_opt,short_opt) =
-    detail::add_option_spec(opt_spec,delim,desc,true);
+  string_type mapped_key = detail::add_option_spec(opt_spec,delim,desc,true);
 
-  detail::add_option_constraints(cnts,desc,long_opt);
+  detail::add_option_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -1888,16 +1961,13 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
   basic_option_description<CharT> desc{unpack_gnu<false,CharT>};
 
-  string_type long_opt;
-  string_type short_opt;
-  std::tie(long_opt,short_opt) =
-    detail::add_option_spec(opt_spec,delim,desc,false);
+  string_type mapped_key = detail::add_option_spec(opt_spec,delim,desc,false);
 
   detail::add_option_value(val,desc);
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  detail::add_option_constraints(cnts,desc,long_opt);
+  detail::add_option_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -1949,14 +2019,11 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
   basic_option_description<CharT> desc{unpack_gnu<false,CharT>};
 
-  string_type long_opt;
-  string_type short_opt;
-  std::tie(long_opt,short_opt) =
-    detail::add_option_spec(opt_spec,delim,desc,true);
+  string_type mapped_key = detail::add_option_spec(opt_spec,delim,desc,true);
 
   detail::add_option_value(val,desc);
 
-  detail::add_option_constraints(cnts,desc,long_opt);
+  detail::add_option_constraints(cnts,desc,mapped_key);
 
   return desc;
 }

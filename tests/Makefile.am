@@ -57,6 +57,10 @@ additional_ldflags= \
 
 
 check_PROGRAMS=\
+  option_extra_delim_spec_split_test option_extra_delim_spec_split_test8 \
+  option_extra_delim_spec_split_test16 option_extra_delim_spec_split_test32 \
+  option_extra_delim2_spec_split_test option_extra_delim2_spec_split_test8 \
+  option_extra_delim2_spec_split_test16 option_extra_delim2_spec_split_test32 \
 	basic_test basic8_test basic16_test basic32_test wbasic_test \
 	parse_test parse8_test parse16_test parse32_test wparse_test \
 	accept_test accept8_test accept16_test accept32_test waccept_test \
@@ -74,10 +78,116 @@ check_PROGRAMS=\
 	case13_test case13_8_test case13_16_test case13_32_test wcase13_test \
 	case14_test case14_8_test case14_16_test case14_32_test wcase14_test \
 	case15_test case15_8_test case15_16_test case15_32_test wcase15_test \
-	constraints_test constraints8_test constraints16_test constraints32_test \
-	  wconstraints_test \
+	constraints_test constraints8_test constraints16_test \
+		constraints32_test wconstraints_test \
 	value_test value8_test value16_test value32_test wvalue_test \
 	format_test format8_test format16_test format32_test wformat_test
+
+TESTS=\
+  option_extra_delim_spec_split_test option_extra_delim_spec_split_test8 \
+  option_extra_delim_spec_split_test16 option_extra_delim_spec_split_test32 \
+  option_extra_delim2_spec_split_test option_extra_delim2_spec_split_test8 \
+  option_extra_delim2_spec_split_test16 option_extra_delim2_spec_split_test32 \
+	basic_test basic8_test basic16_test basic32_test wbasic_test \
+	parse_test parse8_test parse16_test parse32_test wparse_test \
+	accept_test accept8_test accept16_test accept32_test waccept_test \
+	case2_test case2_8_test case2_16_test case2_32_test wcase2_test \
+	case3_test case3_8_test case3_16_test case3_32_test wcase3_test \
+	case4_test case4_8_test case4_16_test case4_32_test wcase4_test \
+	case5_test case5_8_test case5_16_test case5_32_test wcase5_test \
+	case6_test case6_8_test case6_16_test case6_32_test wcase6_test \
+	case7_test case7_8_test case7_16_test case7_32_test wcase7_test \
+	case8_test case8_8_test case8_16_test case8_32_test wcase8_test \
+	case9_test case9_8_test case9_16_test case9_32_test wcase9_test \
+	case10_test case10_8_test case10_16_test case10_32_test wcase10_test \
+	case11_test case11_8_test case11_16_test case11_32_test wcase11_test \
+	case12_test case12_8_test case12_16_test case12_32_test wcase12_test \
+	case13_test case13_8_test case13_16_test case13_32_test wcase13_test \
+	case14_test case14_8_test case14_16_test case14_32_test wcase14_test \
+	case15_test case15_8_test case15_16_test case15_32_test wcase15_test \
+	constraints_test constraints8_test constraints16_test \
+		constraints32_test wconstraints_test \
+	value_test value8_test value16_test value32_test wvalue_test \
+	format_test format8_test format16_test format32_test wformat_test
+
+XFAIL_TESTS=\
+  option_extra_delim_spec_split_test option_extra_delim_spec_split_test8 \
+  option_extra_delim_spec_split_test16 option_extra_delim_spec_split_test32 \
+  option_extra_delim2_spec_split_test option_extra_delim2_spec_split_test8 \
+  option_extra_delim2_spec_split_test16 option_extra_delim2_spec_split_test32
+
+
+option_extra_delim_spec_split_test_SOURCES=\
+	test_detail.h \
+  option_extra_delim_spec_split_test.cc
+option_extra_delim_spec_split_test_CPPFLAGS=\
+  $(char_cpp_flags) $(additional_cppflags)
+option_extra_delim_spec_split_test_LDFLAGS=\
+  $(additional_ldflags)
+option_extra_delim_spec_split_test_LDADD=$(additional_libs)
+
+option_extra_delim_spec_split_test8_SOURCES=\
+	test_detail.h \
+  option_extra_delim_spec_split_test.cc
+option_extra_delim_spec_split_test8_CPPFLAGS=\
+  $(char8_cpp_flags) $(additional_cppflags)
+option_extra_delim_spec_split_test8_LDFLAGS=\
+  $(additional_ldflags)
+option_extra_delim_spec_split_test8_LDADD=$(additional_libs)
+
+option_extra_delim_spec_split_test16_SOURCES=\
+	test_detail.h \
+  option_extra_delim_spec_split_test.cc
+option_extra_delim_spec_split_test16_CPPFLAGS=\
+  $(char16_cpp_flags) $(additional_cppflags)
+option_extra_delim_spec_split_test16_LDFLAGS=\
+  $(additional_ldflags)
+option_extra_delim_spec_split_test16_LDADD=$(additional_libs)
+
+option_extra_delim_spec_split_test32_SOURCES=\
+	test_detail.h \
+  option_extra_delim_spec_split_test.cc
+option_extra_delim_spec_split_test32_CPPFLAGS=\
+  $(char32_cpp_flags) $(additional_cppflags)
+option_extra_delim_spec_split_test32_LDFLAGS=\
+  $(additional_ldflags)
+option_extra_delim_spec_split_test32_LDADD=$(additional_libs)
+
+option_extra_delim2_spec_split_test_SOURCES=\
+	test_detail.h \
+  option_extra_delim2_spec_split_test.cc
+option_extra_delim2_spec_split_test_CPPFLAGS=\
+  $(char_cpp_flags) $(additional_cppflags)
+option_extra_delim2_spec_split_test_LDFLAGS=\
+  $(additional_ldflags)
+option_extra_delim2_spec_split_test_LDADD=$(additional_libs)
+
+option_extra_delim2_spec_split_test8_SOURCES=\
+	test_detail.h \
+  option_extra_delim2_spec_split_test.cc
+option_extra_delim2_spec_split_test8_CPPFLAGS=\
+  $(char8_cpp_flags) $(additional_cppflags)
+option_extra_delim2_spec_split_test8_LDFLAGS=\
+  $(additional_ldflags)
+option_extra_delim2_spec_split_test8_LDADD=$(additional_libs)
+
+option_extra_delim2_spec_split_test16_SOURCES=\
+	test_detail.h \
+  option_extra_delim2_spec_split_test.cc
+option_extra_delim2_spec_split_test16_CPPFLAGS=\
+  $(char16_cpp_flags) $(additional_cppflags)
+option_extra_delim2_spec_split_test16_LDFLAGS=\
+  $(additional_ldflags)
+option_extra_delim2_spec_split_test16_LDADD=$(additional_libs)
+
+option_extra_delim2_spec_split_test32_SOURCES=\
+	test_detail.h \
+  option_extra_delim2_spec_split_test.cc
+option_extra_delim2_spec_split_test32_CPPFLAGS=\
+  $(char32_cpp_flags) $(additional_cppflags)
+option_extra_delim2_spec_split_test32_LDFLAGS=\
+  $(additional_ldflags)
+option_extra_delim2_spec_split_test32_LDADD=$(additional_libs)
 
 basic_test_SOURCES=master_suite.cc \
 	test_detail.h \
@@ -779,25 +889,3 @@ wformat_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wformat_test_LDFLAGS=$(additional_ldflags)
 wformat_test_LDADD=$(additional_libs)
 
-TESTS=\
-	basic_test basic8_test basic16_test basic32_test wbasic_test \
-	parse_test parse8_test parse16_test parse32_test wparse_test \
-	accept_test accept8_test accept16_test accept32_test waccept_test \
-	case2_test case2_8_test case2_16_test case2_32_test wcase2_test \
-	case3_test case3_8_test case3_16_test case3_32_test wcase3_test \
-	case4_test case4_8_test case4_16_test case4_32_test wcase4_test \
-	case5_test case5_8_test case5_16_test case5_32_test wcase5_test \
-	case6_test case6_8_test case6_16_test case6_32_test wcase6_test \
-	case7_test case7_8_test case7_16_test case7_32_test wcase7_test \
-	case8_test case8_8_test case8_16_test case8_32_test wcase8_test \
-	case9_test case9_8_test case9_16_test case9_32_test wcase9_test \
-	case10_test case10_8_test case10_16_test case10_32_test wcase10_test \
-	case11_test case11_8_test case11_16_test case11_32_test wcase11_test \
-	case12_test case12_8_test case12_16_test case12_32_test wcase12_test \
-	case13_test case13_8_test case13_16_test case13_32_test wcase13_test \
-	case14_test case14_8_test case14_16_test case14_32_test wcase14_test \
-	case15_test case15_8_test case15_16_test case15_32_test wcase15_test \
-	constraints_test constraints8_test constraints16_test \
-		constraints32_test wconstraints_test \
-	value_test value8_test value16_test value32_test wvalue_test \
-	format_test format8_test format16_test format32_test wformat_test
