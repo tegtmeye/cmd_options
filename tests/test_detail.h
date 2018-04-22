@@ -135,7 +135,7 @@ inline bool is_empty(const co::basic_option_description<CharT> &desc)
   return (
     !desc.unpack_option && !desc.mapped_key &&
     !desc.key_description && !desc.extended_description &&
-    !desc.implicit_value &&
+    !desc.make_implicit_value &&
     !desc.implicit_value_description && !desc.make_value &&
     !desc.finalize);
 }
@@ -183,7 +183,7 @@ inline bool is_mapped_reqired_option(
   const co::basic_option_description<CharT> &desc)
 {
   return (desc.unpack_option && desc.mapped_key && desc.key_description
-    && desc.make_value && !desc.implicit_value);
+    && desc.make_value && !desc.make_implicit_value);
 }
 
 template<typename CharT>
@@ -191,7 +191,7 @@ inline bool is_hidden_mapped_reqired_option(
   const co::basic_option_description<CharT> &desc)
 {
   return (desc.unpack_option && desc.mapped_key && !desc.key_description
-    && desc.make_value && !desc.implicit_value);
+    && desc.make_value && !desc.make_implicit_value);
 }
 
 template<typename CharT>
@@ -199,7 +199,7 @@ inline bool is_raw_reqired_option(
   const co::basic_option_description<CharT> &desc)
 {
   return (desc.unpack_option && !desc.mapped_key && desc.key_description
-    && desc.make_value && !desc.implicit_value);
+    && desc.make_value && !desc.make_implicit_value);
 }
 
 template<typename CharT>
@@ -207,7 +207,7 @@ inline bool is_raw_mapped_reqired_option(
   const co::basic_option_description<CharT> &desc)
 {
   return (desc.unpack_option && !desc.mapped_key && !desc.key_description
-    && desc.make_value && !desc.implicit_value);
+    && desc.make_value && !desc.make_implicit_value);
 }
 
 /*
@@ -218,7 +218,7 @@ inline bool is_mapped_optional_option(
   const co::basic_option_description<CharT> &desc)
 {
   return (desc.unpack_option && desc.mapped_key && desc.key_description
-    && desc.make_value && desc.implicit_value);
+    && desc.make_value && desc.make_implicit_value);
 }
 
 template<typename CharT>
@@ -226,7 +226,7 @@ inline bool is_hidden_mapped_optional_option(
   const co::basic_option_description<CharT> &desc)
 {
   return (desc.unpack_option && desc.mapped_key && !desc.key_description
-    && desc.make_value && desc.implicit_value);
+    && desc.make_value && desc.make_implicit_value);
 }
 
 template<typename CharT>
@@ -234,7 +234,7 @@ inline bool is_raw_optional_option(
   const co::basic_option_description<CharT> &desc)
 {
   return (desc.unpack_option && !desc.mapped_key && desc.key_description
-    && desc.make_value && desc.implicit_value);
+    && desc.make_value && desc.make_implicit_value);
 }
 
 template<typename CharT>
@@ -242,7 +242,7 @@ inline bool is_raw_mapped_optional_option(
   const co::basic_option_description<CharT> &desc)
 {
   return (desc.unpack_option && !desc.mapped_key && !desc.key_description
-    && desc.make_value && desc.implicit_value);
+    && desc.make_value && desc.make_implicit_value);
 }
 
 template<typename CharT>
@@ -250,7 +250,7 @@ inline bool is_operand_with_key_value(
   const co::basic_option_description<CharT> &desc)
 {
   return (!desc.unpack_option && desc.mapped_key && !desc.extended_description
-    && desc.make_value && !desc.implicit_value);
+    && desc.make_value && !desc.make_implicit_value);
 }
 
 /*
@@ -261,7 +261,7 @@ inline bool is_operand_with_key(
   const co::basic_option_description<CharT> &desc)
 {
   return (!desc.unpack_option && desc.mapped_key && !desc.extended_description
-    && !desc.make_value && !desc.implicit_value);
+    && !desc.make_value && !desc.make_implicit_value);
 }
 
 
@@ -284,7 +284,7 @@ to_string(const co::basic_option_description<CharT> &desc)
     << "mapped_key: " << bool(desc.mapped_key) << "\n"
     << "key_description: " << bool(desc.key_description) << "\n"
     << "extended_description: " << bool(desc.extended_description) << "\n"
-    << "implicit_value: " << bool(desc.implicit_value) << "\n"
+    << "make_implicit_value: " << bool(desc.make_implicit_value) << "\n"
     << "implicit_value_description: "
       << bool(desc.implicit_value_description) << "\n"
     << "make_value: " << bool(desc.make_value) << "\n"

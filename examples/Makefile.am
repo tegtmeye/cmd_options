@@ -45,42 +45,42 @@ noinst_PROGRAMS=\
 	co_first \
 	co_multiple_sources
 
-impatient_SOURCES=impatient.cc
+impatient_SOURCES=$(top_srcdir)/cmd_options.h impatient.cc
 impatient_CPPFLAGS=$(additional_cppflags)
 impatient_LDFLAGS=$(additional_ldflags)
 impatient_LDADD=$(additional_libs)
 
-posix_SOURCES=posix.cc
+posix_SOURCES=$(top_srcdir)/cmd_options.h posix.cc
 posix_CPPFLAGS=$(additional_cppflags)
 posix_LDFLAGS=$(additional_ldflags)
 posix_LDADD=$(additional_libs)
 
-parsing_SOURCES=parsing.cc
+parsing_SOURCES=$(top_srcdir)/cmd_options.h parsing.cc
 parsing_CPPFLAGS=$(additional_cppflags)
 parsing_LDFLAGS=$(additional_ldflags)
 parsing_LDADD=$(additional_libs)
 
-scenario1_SOURCES=scenario1.cc
+scenario1_SOURCES=$(top_srcdir)/cmd_options.h scenario1.cc
 scenario1_CPPFLAGS=$(additional_cppflags)
 scenario1_LDFLAGS=$(additional_ldflags)
 scenario1_LDADD=$(additional_libs)
 
-scenario2_SOURCES=scenario2.cc
+scenario2_SOURCES=$(top_srcdir)/cmd_options.h scenario2.cc
 scenario2_CPPFLAGS=$(additional_cppflags)
 scenario2_LDFLAGS=$(additional_ldflags)
 scenario2_LDADD=$(additional_libs)
 
-scenario3_SOURCES=scenario3.cc
+scenario3_SOURCES=$(top_srcdir)/cmd_options.h scenario3.cc
 scenario3_CPPFLAGS=$(additional_cppflags)
 scenario3_LDFLAGS=$(additional_ldflags)
 scenario3_LDADD=$(additional_libs)
 
-co_first_SOURCES=co_first.cc
+co_first_SOURCES=$(top_srcdir)/cmd_options.h co_first.cc
 co_first_CPPFLAGS=$(additional_cppflags)
 co_first_LDFLAGS=$(additional_ldflags)
 co_first_LDADD=$(additional_libs)
 
-co_multiple_sources_SOURCES=co_multiple_sources.cc
+co_multiple_sources_SOURCES=$(top_srcdir)/cmd_options.h co_multiple_sources.cc
 co_multiple_sources_CPPFLAGS=$(additional_cppflags)
 co_multiple_sources_LDFLAGS=$(additional_ldflags)
 co_multiple_sources_LDADD=$(additional_libs)
