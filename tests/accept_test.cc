@@ -51,4 +51,62 @@ BOOST_AUTO_TEST_CASE( all_flags_test )
     }));
 }
 
+/**
+  Callback Assignment
+ */
+BOOST_AUTO_TEST_CASE( callback_assignment_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+    _LIT("--foo"),
+    _LIT("bar")
+  };
+
+  string_type arg{_LIT("*****")};
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),co::value<string_type>(&arg),
+      _LIT("case 2"))
+  };
+
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{string_type(_LIT("bar"))}}
+    })
+    && arg == _LIT("bar"));
+}
+
+/**
+  Callback function
+ */
+BOOST_AUTO_TEST_CASE( callback_function_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+    _LIT("--foo"),
+    _LIT("42")
+  };
+
+  int n = 99;
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),co::value<int>([&](int _n){n=_n+1;}),
+      _LIT("case 2"))
+  };
+
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<int>(vm,
+    variable_map_type{
+      {_LIT("foo"),{42}}
+    })
+    && n == 43);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

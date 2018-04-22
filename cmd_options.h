@@ -421,27 +421,6 @@ struct basic_option_pack {
   string_type value;
 };
 
-#if 0
-template<typename CharT>
-std::ostream & operator<<(std::ostream &out,
-  const basic_option_pack<CharT> &option_pack)
-{
-  out << "process opt:\n"
-    << "\tdid_unpack: '" << option_pack.did_unpack << "'\n"
-    << "\tvalue_provided: '" << option_pack.value_provided << "'\n"
-    << "\tprefix: '" << option_pack.prefix << "'\n"
-    << "\traw_key: '" << option_pack.raw_key << "'\n"
-    << "\tpacked_arguments: {";
-  for(auto &&arg : option_pack.packed_arguments)
-    out << "'" << arg << "' ";
-  out
-    << "}\n"
-    << "\tvalue: '" << option_pack.value << "'\n";
-
-  return out;
-}
-#endif
-
 /*
   A description for a single option
 */
@@ -585,16 +564,18 @@ struct basic_option_description {
   /*
     Non-operand option cases:
       -- strictly do not provide a value (no make_value)
-        -- option has an implicit, possibly empty, value (uses implicit_value)
+        -- option has an implicit, possibly empty, value (uses
+          make_implicit_value)
         -- no implicit value, use default constructed
 
       -- provided value is optional (make_value exists)
         -- if given, option uses provided value (calls make_value)
         -- if missing, use an implicit, possibly empty, value
-            (uses implicit_value)
+            (uses make_implicit_value)
         -- no implicit value, use default constructed
 
-      -- providing a value is mandatory (make_value exists, no implicit_value)
+      -- providing a value is mandatory (make_value exists, no
+         make_implicit_value)
         -- use the one provided (calls make_value)
 
     If set, return the implicit value of the option as a any
@@ -610,8 +591,8 @@ struct basic_option_description {
     option forbids values so the mapped value must be determined by the
     key (specifically the presence or absence of the 'no' prefix.
   */
-  std::function<
-    any(const string_type &key, const variable_map_type &vm)> implicit_value;
+  std::function<any(const string_type &key, const variable_map_type &vm)>
+    make_implicit_value;
 
   /*
     Return the human-readable description for this option's implicit
@@ -648,7 +629,7 @@ std::ostream & operator<<(std::ostream &out,
     << "\tmapped_key: " << bool(desc.mapped_key) << "\n"
     << "\tkey_description: " << bool(desc.key_description) << "\n"
     << "\textended_description: " << bool(desc.extended_description) << "\n"
-    << "\timplicit_value: " << bool(desc.implicit_value) << "\n"
+    << "\tmake_implicit_value: " << bool(desc.make_implicit_value) << "\n"
     << "\timplicit_value_description: " << bool(desc.implicit_value_description)
       << "\n"
     << "\tmake_value: " << bool(desc.make_value) << "\n"
@@ -929,8 +910,8 @@ parse_incremental_arguments(BidirectionalIterator first,
           }
           else if(current_cmdlist.empty()) {
             // no more items in the current pack, use optional if available
-            if(desc->implicit_value)
-              _vm.emplace(mapped_key,desc->implicit_value(mapped_key,_vm));
+            if(desc->make_implicit_value)
+              _vm.emplace(mapped_key,desc->make_implicit_value(mapped_key,_vm));
             else
               throw missing_argument_error(option_count,arg_count);
           }
@@ -951,8 +932,10 @@ parse_incremental_arguments(BidirectionalIterator first,
             }
 
             if(next != grp.end()) {
-              if(desc->implicit_value)
-                _vm.emplace(mapped_key,desc->implicit_value(mapped_key,_vm));
+              if(desc->make_implicit_value) {
+                _vm.emplace(mapped_key,
+                  desc->make_implicit_value(mapped_key,_vm));
+              }
               else
                 throw missing_argument_error(option_count,arg_count);
             }
@@ -1241,6 +1224,9 @@ template<typename T>
 struct value {
   typedef T value_type;
 
+  value(void) = default;
+  value(T *_val) :_callback([=](const T &val){*_val = val;}) {}
+  value(const std::function<void(const T &)> &callback) :_callback(callback) {}
 
   value<T> & implicit(const T &val) {
     _implicit = std::make_shared<T>(val);
@@ -1248,6 +1234,7 @@ struct value {
     return *this;
   }
 
+  std::function<void(const T &)> _callback;
   std::shared_ptr<value_type> _implicit;
 };
 
@@ -1723,8 +1710,12 @@ inline void add_option_value(const value<T> &val,
   typedef basic_variable_map<CharT> variable_map_type;
 
   if(val._implicit) {
-    desc.implicit_value = [=](const string_type &, const variable_map_type &)
+    desc.make_implicit_value = [=](const string_type &,
+      const variable_map_type &)
     {
+      if(val._callback)
+        val._callback(*(val._implicit));
+
       return any(*(val._implicit));
     };
     desc.implicit_value_description = [=](void) {
@@ -1734,10 +1725,14 @@ inline void add_option_value(const value<T> &val,
     };
   }
 
-  desc.make_value = [](const string_type &, const string_type &value,
+  desc.make_value = [=](const string_type &, const string_type &value,
       const variable_map_type &)
   {
-    return any(convert_value<T>::from_string(value));
+    const T &result = convert_value<T>::from_string(value);
+    if(val._callback)
+      val._callback(result);
+
+    return any(result);
   };
 }
 
@@ -1752,14 +1747,21 @@ inline void add_operand_value(const value<T> &val,
     desc.make_value = [=](const string_type &, const string_type &,
       const variable_map_type &)
     {
+      if(val._callback)
+        val._callback(*(val._implicit));
+
       return any(*(val._implicit));
     };
   }
   else {
-    desc.make_value = [](const string_type &mapped_key,
+    desc.make_value = [=](const string_type &mapped_key,
       const string_type &value, const variable_map_type &vm)
     {
-      return any(convert_value<T>::from_string(value));
+      const T &result = convert_value<T>::from_string(value);
+      if(val._callback)
+        val._callback(result);
+
+      return any(result);
     };
   }
 }
@@ -2379,7 +2381,7 @@ basic_default_formatter<CharT>::
   string_type key_col = desc.key_description();
 
   if(desc.make_value) {
-    if(desc.implicit_value && desc.implicit_value_description) {
+    if(desc.make_implicit_value && desc.implicit_value_description) {
       key_col.append({' ','['});
       key_col.append(arg_str());
       key_col.append({'=','<'});

@@ -119,6 +119,7 @@ XFAIL_TESTS=\
 
 option_extra_delim_spec_split_test_SOURCES=\
 	test_detail.h \
+	cmd_options.h \
   option_extra_delim_spec_split_test.cc
 option_extra_delim_spec_split_test_CPPFLAGS=\
   $(char_cpp_flags) $(additional_cppflags)
@@ -128,6 +129,7 @@ option_extra_delim_spec_split_test_LDADD=$(additional_libs)
 
 option_extra_delim_spec_split_test8_SOURCES=\
 	test_detail.h \
+	cmd_options.h \
   option_extra_delim_spec_split_test.cc
 option_extra_delim_spec_split_test8_CPPFLAGS=\
   $(char8_cpp_flags) $(additional_cppflags)
@@ -137,6 +139,7 @@ option_extra_delim_spec_split_test8_LDADD=$(additional_libs)
 
 option_extra_delim_spec_split_test16_SOURCES=\
 	test_detail.h \
+	cmd_options.h \
   option_extra_delim_spec_split_test.cc
 option_extra_delim_spec_split_test16_CPPFLAGS=\
   $(char16_cpp_flags) $(additional_cppflags)
@@ -146,6 +149,7 @@ option_extra_delim_spec_split_test16_LDADD=$(additional_libs)
 
 option_extra_delim_spec_split_test32_SOURCES=\
 	test_detail.h \
+	cmd_options.h \
   option_extra_delim_spec_split_test.cc
 option_extra_delim_spec_split_test32_CPPFLAGS=\
   $(char32_cpp_flags) $(additional_cppflags)
@@ -155,6 +159,7 @@ option_extra_delim_spec_split_test32_LDADD=$(additional_libs)
 
 option_extra_delim2_spec_split_test_SOURCES=\
 	test_detail.h \
+	cmd_options.h \
   option_extra_delim2_spec_split_test.cc
 option_extra_delim2_spec_split_test_CPPFLAGS=\
   $(char_cpp_flags) $(additional_cppflags)
@@ -164,6 +169,7 @@ option_extra_delim2_spec_split_test_LDADD=$(additional_libs)
 
 option_extra_delim2_spec_split_test8_SOURCES=\
 	test_detail.h \
+	cmd_options.h \
   option_extra_delim2_spec_split_test.cc
 option_extra_delim2_spec_split_test8_CPPFLAGS=\
   $(char8_cpp_flags) $(additional_cppflags)
@@ -173,6 +179,7 @@ option_extra_delim2_spec_split_test8_LDADD=$(additional_libs)
 
 option_extra_delim2_spec_split_test16_SOURCES=\
 	test_detail.h \
+	cmd_options.h \
   option_extra_delim2_spec_split_test.cc
 option_extra_delim2_spec_split_test16_CPPFLAGS=\
   $(char16_cpp_flags) $(additional_cppflags)
@@ -182,6 +189,7 @@ option_extra_delim2_spec_split_test16_LDADD=$(additional_libs)
 
 option_extra_delim2_spec_split_test32_SOURCES=\
 	test_detail.h \
+	cmd_options.h \
   option_extra_delim2_spec_split_test.cc
 option_extra_delim2_spec_split_test32_CPPFLAGS=\
   $(char32_cpp_flags) $(additional_cppflags)
@@ -191,6 +199,7 @@ option_extra_delim2_spec_split_test32_LDADD=$(additional_libs)
 
 basic_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	basic_test.cc
 basic_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 basic_test_LDFLAGS=$(additional_ldflags)
@@ -198,6 +207,7 @@ basic_test_LDADD=$(additional_libs)
 
 basic8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	basic_test.cc
 basic8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 basic8_test_LDFLAGS=$(additional_ldflags)
@@ -205,6 +215,7 @@ basic8_test_LDADD=$(additional_libs)
 
 basic16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	basic_test.cc
 basic16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 basic16_test_LDFLAGS=$(additional_ldflags)
@@ -212,6 +223,7 @@ basic16_test_LDADD=$(additional_libs)
 
 basic32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	basic_test.cc
 basic32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 basic32_test_LDFLAGS=$(additional_ldflags)
@@ -219,6 +231,7 @@ basic32_test_LDADD=$(additional_libs)
 
 wbasic_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	basic_test.cc
 wbasic_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wbasic_test_LDFLAGS=$(additional_ldflags)
@@ -226,6 +239,7 @@ wbasic_test_LDADD=$(additional_libs)
 
 parse_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	parse_test.cc
 parse_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 parse_test_LDFLAGS=$(additional_ldflags)
@@ -233,6 +247,7 @@ parse_test_LDADD=$(additional_libs)
 
 parse8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	parse_test.cc
 parse8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 parse8_test_LDFLAGS=$(additional_ldflags)
@@ -240,6 +255,7 @@ parse8_test_LDADD=$(additional_libs)
 
 parse16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	parse_test.cc
 parse16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 parse16_test_LDFLAGS=$(additional_ldflags)
@@ -247,6 +263,7 @@ parse16_test_LDADD=$(additional_libs)
 
 parse32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	parse_test.cc
 parse32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 parse32_test_LDFLAGS=$(additional_ldflags)
@@ -254,6 +271,7 @@ parse32_test_LDADD=$(additional_libs)
 
 wparse_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	parse_test.cc
 wparse_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wparse_test_LDFLAGS=$(additional_ldflags)
@@ -261,6 +279,7 @@ wparse_test_LDADD=$(additional_libs)
 
 accept_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	accept_test.cc
 accept_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 accept_test_LDFLAGS=$(additional_ldflags)
@@ -268,6 +287,7 @@ accept_test_LDADD=$(additional_libs)
 
 accept8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	accept_test.cc
 accept8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 accept8_test_LDFLAGS=$(additional_ldflags)
@@ -275,6 +295,7 @@ accept8_test_LDADD=$(additional_libs)
 
 accept16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	accept_test.cc
 accept16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 accept16_test_LDFLAGS=$(additional_ldflags)
@@ -282,6 +303,7 @@ accept16_test_LDADD=$(additional_libs)
 
 accept32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	accept_test.cc
 accept32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 accept32_test_LDFLAGS=$(additional_ldflags)
@@ -289,6 +311,7 @@ accept32_test_LDADD=$(additional_libs)
 
 waccept_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	accept_test.cc
 waccept_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 waccept_test_LDFLAGS=$(additional_ldflags)
@@ -296,6 +319,7 @@ waccept_test_LDADD=$(additional_libs)
 
 case2_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case2_test.cc
 case2_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case2_test_LDFLAGS=$(additional_ldflags)
@@ -303,6 +327,7 @@ case2_test_LDADD=$(additional_libs)
 
 case2_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case2_test.cc
 case2_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case2_8_test_LDFLAGS=$(additional_ldflags)
@@ -310,6 +335,7 @@ case2_8_test_LDADD=$(additional_libs)
 
 case2_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case2_test.cc
 case2_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case2_16_test_LDFLAGS=$(additional_ldflags)
@@ -317,6 +343,7 @@ case2_16_test_LDADD=$(additional_libs)
 
 case2_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case2_test.cc
 case2_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case2_32_test_LDFLAGS=$(additional_ldflags)
@@ -324,6 +351,7 @@ case2_32_test_LDADD=$(additional_libs)
 
 wcase2_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case2_test.cc
 wcase2_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase2_test_LDFLAGS=$(additional_ldflags)
@@ -331,6 +359,7 @@ wcase2_test_LDADD=$(additional_libs)
 
 case3_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case3_test.cc
 case3_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case3_test_LDFLAGS=$(additional_ldflags)
@@ -338,6 +367,7 @@ case3_test_LDADD=$(additional_libs)
 
 case3_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case3_test.cc
 case3_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case3_8_test_LDFLAGS=$(additional_ldflags)
@@ -345,6 +375,7 @@ case3_8_test_LDADD=$(additional_libs)
 
 case3_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case3_test.cc
 case3_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case3_16_test_LDFLAGS=$(additional_ldflags)
@@ -352,6 +383,7 @@ case3_16_test_LDADD=$(additional_libs)
 
 case3_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case3_test.cc
 case3_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case3_32_test_LDFLAGS=$(additional_ldflags)
@@ -359,6 +391,7 @@ case3_32_test_LDADD=$(additional_libs)
 
 wcase3_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case3_test.cc
 wcase3_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase3_test_LDFLAGS=$(additional_ldflags)
@@ -366,6 +399,7 @@ wcase3_test_LDADD=$(additional_libs)
 
 case4_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case4_test.cc
 case4_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case4_test_LDFLAGS=$(additional_ldflags)
@@ -373,6 +407,7 @@ case4_test_LDADD=$(additional_libs)
 
 case4_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case4_test.cc
 case4_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case4_8_test_LDFLAGS=$(additional_ldflags)
@@ -380,6 +415,7 @@ case4_8_test_LDADD=$(additional_libs)
 
 case4_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case4_test.cc
 case4_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case4_16_test_LDFLAGS=$(additional_ldflags)
@@ -387,6 +423,7 @@ case4_16_test_LDADD=$(additional_libs)
 
 case4_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case4_test.cc
 case4_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case4_32_test_LDFLAGS=$(additional_ldflags)
@@ -394,6 +431,7 @@ case4_32_test_LDADD=$(additional_libs)
 
 wcase4_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case4_test.cc
 wcase4_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase4_test_LDFLAGS=$(additional_ldflags)
@@ -401,6 +439,7 @@ wcase4_test_LDADD=$(additional_libs)
 
 case5_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case5_test.cc
 case5_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case5_test_LDFLAGS=$(additional_ldflags)
@@ -408,6 +447,7 @@ case5_test_LDADD=$(additional_libs)
 
 case5_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case5_test.cc
 case5_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case5_8_test_LDFLAGS=$(additional_ldflags)
@@ -415,6 +455,7 @@ case5_8_test_LDADD=$(additional_libs)
 
 case5_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case5_test.cc
 case5_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case5_16_test_LDFLAGS=$(additional_ldflags)
@@ -422,6 +463,7 @@ case5_16_test_LDADD=$(additional_libs)
 
 case5_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case5_test.cc
 case5_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case5_32_test_LDFLAGS=$(additional_ldflags)
@@ -429,6 +471,7 @@ case5_32_test_LDADD=$(additional_libs)
 
 wcase5_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case5_test.cc
 wcase5_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase5_test_LDFLAGS=$(additional_ldflags)
@@ -436,6 +479,7 @@ wcase5_test_LDADD=$(additional_libs)
 
 case6_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case6_test.cc
 case6_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case6_test_LDFLAGS=$(additional_ldflags)
@@ -443,6 +487,7 @@ case6_test_LDADD=$(additional_libs)
 
 case6_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case6_test.cc
 case6_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case6_8_test_LDFLAGS=$(additional_ldflags)
@@ -450,6 +495,7 @@ case6_8_test_LDADD=$(additional_libs)
 
 case6_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case6_test.cc
 case6_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case6_16_test_LDFLAGS=$(additional_ldflags)
@@ -457,6 +503,7 @@ case6_16_test_LDADD=$(additional_libs)
 
 case6_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case6_test.cc
 case6_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case6_32_test_LDFLAGS=$(additional_ldflags)
@@ -464,6 +511,7 @@ case6_32_test_LDADD=$(additional_libs)
 
 wcase6_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case6_test.cc
 wcase6_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase6_test_LDFLAGS=$(additional_ldflags)
@@ -471,6 +519,7 @@ wcase6_test_LDADD=$(additional_libs)
 
 case7_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case7_test.cc
 case7_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case7_test_LDFLAGS=$(additional_ldflags)
@@ -478,6 +527,7 @@ case7_test_LDADD=$(additional_libs)
 
 case7_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case7_test.cc
 case7_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case7_8_test_LDFLAGS=$(additional_ldflags)
@@ -485,6 +535,7 @@ case7_8_test_LDADD=$(additional_libs)
 
 case7_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case7_test.cc
 case7_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case7_16_test_LDFLAGS=$(additional_ldflags)
@@ -492,6 +543,7 @@ case7_16_test_LDADD=$(additional_libs)
 
 case7_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case7_test.cc
 case7_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case7_32_test_LDFLAGS=$(additional_ldflags)
@@ -499,6 +551,7 @@ case7_32_test_LDADD=$(additional_libs)
 
 wcase7_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case7_test.cc
 wcase7_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase7_test_LDFLAGS=$(additional_ldflags)
@@ -506,6 +559,7 @@ wcase7_test_LDADD=$(additional_libs)
 
 case8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case8_test.cc
 case8_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case8_test_LDFLAGS=$(additional_ldflags)
@@ -513,6 +567,7 @@ case8_test_LDADD=$(additional_libs)
 
 case8_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case8_test.cc
 case8_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case8_8_test_LDFLAGS=$(additional_ldflags)
@@ -520,6 +575,7 @@ case8_8_test_LDADD=$(additional_libs)
 
 case8_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case8_test.cc
 case8_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case8_16_test_LDFLAGS=$(additional_ldflags)
@@ -527,6 +583,7 @@ case8_16_test_LDADD=$(additional_libs)
 
 case8_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case8_test.cc
 case8_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case8_32_test_LDFLAGS=$(additional_ldflags)
@@ -534,6 +591,7 @@ case8_32_test_LDADD=$(additional_libs)
 
 wcase8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case8_test.cc
 wcase8_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase8_test_LDFLAGS=$(additional_ldflags)
@@ -541,6 +599,7 @@ wcase8_test_LDADD=$(additional_libs)
 
 case9_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case9_test.cc
 case9_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case9_test_LDFLAGS=$(additional_ldflags)
@@ -548,6 +607,7 @@ case9_test_LDADD=$(additional_libs)
 
 case9_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case9_test.cc
 case9_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case9_8_test_LDFLAGS=$(additional_ldflags)
@@ -555,6 +615,7 @@ case9_8_test_LDADD=$(additional_libs)
 
 case9_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case9_test.cc
 case9_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case9_16_test_LDFLAGS=$(additional_ldflags)
@@ -562,6 +623,7 @@ case9_16_test_LDADD=$(additional_libs)
 
 case9_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case9_test.cc
 case9_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case9_32_test_LDFLAGS=$(additional_ldflags)
@@ -569,6 +631,7 @@ case9_32_test_LDADD=$(additional_libs)
 
 wcase9_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case9_test.cc
 wcase9_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase9_test_LDFLAGS=$(additional_ldflags)
@@ -576,6 +639,7 @@ wcase9_test_LDADD=$(additional_libs)
 
 case10_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case10_test.cc
 case10_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case10_test_LDFLAGS=$(additional_ldflags)
@@ -583,6 +647,7 @@ case10_test_LDADD=$(additional_libs)
 
 case10_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case10_test.cc
 case10_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case10_8_test_LDFLAGS=$(additional_ldflags)
@@ -590,6 +655,7 @@ case10_8_test_LDADD=$(additional_libs)
 
 case10_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case10_test.cc
 case10_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case10_16_test_LDFLAGS=$(additional_ldflags)
@@ -597,6 +663,7 @@ case10_16_test_LDADD=$(additional_libs)
 
 case10_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case10_test.cc
 case10_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case10_32_test_LDFLAGS=$(additional_ldflags)
@@ -604,6 +671,7 @@ case10_32_test_LDADD=$(additional_libs)
 
 wcase10_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case10_test.cc
 wcase10_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase10_test_LDFLAGS=$(additional_ldflags)
@@ -611,6 +679,7 @@ wcase10_test_LDADD=$(additional_libs)
 
 case11_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case11_test.cc
 case11_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case11_test_LDFLAGS=$(additional_ldflags)
@@ -618,6 +687,7 @@ case11_test_LDADD=$(additional_libs)
 
 case11_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case11_test.cc
 case11_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case11_8_test_LDFLAGS=$(additional_ldflags)
@@ -625,6 +695,7 @@ case11_8_test_LDADD=$(additional_libs)
 
 case11_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case11_test.cc
 case11_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case11_16_test_LDFLAGS=$(additional_ldflags)
@@ -632,6 +703,7 @@ case11_16_test_LDADD=$(additional_libs)
 
 case11_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case11_test.cc
 case11_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case11_32_test_LDFLAGS=$(additional_ldflags)
@@ -639,6 +711,7 @@ case11_32_test_LDADD=$(additional_libs)
 
 wcase11_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case11_test.cc
 wcase11_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase11_test_LDFLAGS=$(additional_ldflags)
@@ -646,6 +719,7 @@ wcase11_test_LDADD=$(additional_libs)
 
 case12_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case12_test.cc
 case12_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case12_test_LDFLAGS=$(additional_ldflags)
@@ -653,6 +727,7 @@ case12_test_LDADD=$(additional_libs)
 
 case12_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case12_test.cc
 case12_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case12_8_test_LDFLAGS=$(additional_ldflags)
@@ -660,6 +735,7 @@ case12_8_test_LDADD=$(additional_libs)
 
 case12_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case12_test.cc
 case12_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case12_16_test_LDFLAGS=$(additional_ldflags)
@@ -667,6 +743,7 @@ case12_16_test_LDADD=$(additional_libs)
 
 case12_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case12_test.cc
 case12_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case12_32_test_LDFLAGS=$(additional_ldflags)
@@ -674,6 +751,7 @@ case12_32_test_LDADD=$(additional_libs)
 
 wcase12_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case12_test.cc
 wcase12_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase12_test_LDFLAGS=$(additional_ldflags)
@@ -681,6 +759,7 @@ wcase12_test_LDADD=$(additional_libs)
 
 case13_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case13_test.cc
 case13_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case13_test_LDFLAGS=$(additional_ldflags)
@@ -688,6 +767,7 @@ case13_test_LDADD=$(additional_libs)
 
 case13_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case13_test.cc
 case13_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case13_8_test_LDFLAGS=$(additional_ldflags)
@@ -695,6 +775,7 @@ case13_8_test_LDADD=$(additional_libs)
 
 case13_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case13_test.cc
 case13_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case13_16_test_LDFLAGS=$(additional_ldflags)
@@ -702,6 +783,7 @@ case13_16_test_LDADD=$(additional_libs)
 
 case13_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case13_test.cc
 case13_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case13_32_test_LDFLAGS=$(additional_ldflags)
@@ -709,6 +791,7 @@ case13_32_test_LDADD=$(additional_libs)
 
 wcase13_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case13_test.cc
 wcase13_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase13_test_LDFLAGS=$(additional_ldflags)
@@ -716,6 +799,7 @@ wcase13_test_LDADD=$(additional_libs)
 
 case14_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case14_test.cc
 case14_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case14_test_LDFLAGS=$(additional_ldflags)
@@ -723,6 +807,7 @@ case14_test_LDADD=$(additional_libs)
 
 case14_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case14_test.cc
 case14_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case14_8_test_LDFLAGS=$(additional_ldflags)
@@ -730,6 +815,7 @@ case14_8_test_LDADD=$(additional_libs)
 
 case14_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case14_test.cc
 case14_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case14_16_test_LDFLAGS=$(additional_ldflags)
@@ -737,6 +823,7 @@ case14_16_test_LDADD=$(additional_libs)
 
 case14_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case14_test.cc
 case14_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case14_32_test_LDFLAGS=$(additional_ldflags)
@@ -744,6 +831,7 @@ case14_32_test_LDADD=$(additional_libs)
 
 wcase14_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case14_test.cc
 wcase14_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase14_test_LDFLAGS=$(additional_ldflags)
@@ -751,6 +839,7 @@ wcase14_test_LDADD=$(additional_libs)
 
 case15_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case15_test.cc
 case15_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 case15_test_LDFLAGS=$(additional_ldflags)
@@ -758,6 +847,7 @@ case15_test_LDADD=$(additional_libs)
 
 case15_8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case15_test.cc
 case15_8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 case15_8_test_LDFLAGS=$(additional_ldflags)
@@ -765,6 +855,7 @@ case15_8_test_LDADD=$(additional_libs)
 
 case15_16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case15_test.cc
 case15_16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 case15_16_test_LDFLAGS=$(additional_ldflags)
@@ -772,6 +863,7 @@ case15_16_test_LDADD=$(additional_libs)
 
 case15_32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case15_test.cc
 case15_32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 case15_32_test_LDFLAGS=$(additional_ldflags)
@@ -779,6 +871,7 @@ case15_32_test_LDADD=$(additional_libs)
 
 wcase15_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	case15_test.cc
 wcase15_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wcase15_test_LDFLAGS=$(additional_ldflags)
@@ -786,6 +879,7 @@ wcase15_test_LDADD=$(additional_libs)
 
 constraints_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	constraints_test.cc
 constraints_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 constraints_test_LDFLAGS=$(additional_ldflags)
@@ -793,6 +887,7 @@ constraints_test_LDADD=$(additional_libs)
 
 constraints8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	constraints_test.cc
 constraints8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 constraints8_test_LDFLAGS=$(additional_ldflags)
@@ -800,6 +895,7 @@ constraints8_test_LDADD=$(additional_libs)
 
 constraints16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	constraints_test.cc
 constraints16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 constraints16_test_LDFLAGS=$(additional_ldflags)
@@ -807,6 +903,7 @@ constraints16_test_LDADD=$(additional_libs)
 
 constraints32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	constraints_test.cc
 constraints32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 constraints32_test_LDFLAGS=$(additional_ldflags)
@@ -814,6 +911,7 @@ constraints32_test_LDADD=$(additional_libs)
 
 wconstraints_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	constraints_test.cc
 wconstraints_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wconstraints_test_LDFLAGS=$(additional_ldflags)
@@ -821,6 +919,7 @@ wconstraints_test_LDADD=$(additional_libs)
 
 value_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	value_test.cc
 value_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 value_test_LDFLAGS=$(additional_ldflags)
@@ -828,6 +927,7 @@ value_test_LDADD=$(additional_libs)
 
 value8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	value_test.cc
 value8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 value8_test_LDFLAGS=$(additional_ldflags)
@@ -835,6 +935,7 @@ value8_test_LDADD=$(additional_libs)
 
 value16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	value_test.cc
 value16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 value16_test_LDFLAGS=$(additional_ldflags)
@@ -842,6 +943,7 @@ value16_test_LDADD=$(additional_libs)
 
 value32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	value_test.cc
 value32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 value32_test_LDFLAGS=$(additional_ldflags)
@@ -849,6 +951,7 @@ value32_test_LDADD=$(additional_libs)
 
 wvalue_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	value_test.cc
 wvalue_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wvalue_test_LDFLAGS=$(additional_ldflags)
@@ -856,6 +959,7 @@ wvalue_test_LDADD=$(additional_libs)
 
 format_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	format_test.cc
 format_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
 format_test_LDFLAGS=$(additional_ldflags)
@@ -863,6 +967,7 @@ format_test_LDADD=$(additional_libs)
 
 format8_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	format_test.cc
 format8_test_CPPFLAGS=$(char8_cpp_flags) $(additional_cppflags)
 format8_test_LDFLAGS=$(additional_ldflags)
@@ -870,6 +975,7 @@ format8_test_LDADD=$(additional_libs)
 
 format16_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	format_test.cc
 format16_test_CPPFLAGS=$(char16_cpp_flags) $(additional_cppflags)
 format16_test_LDFLAGS=$(additional_ldflags)
@@ -877,6 +983,7 @@ format16_test_LDADD=$(additional_libs)
 
 format32_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	format_test.cc
 format32_test_CPPFLAGS=$(char32_cpp_flags) $(additional_cppflags)
 format32_test_LDFLAGS=$(additional_ldflags)
@@ -884,6 +991,7 @@ format32_test_LDADD=$(additional_libs)
 
 wformat_test_SOURCES=master_suite.cc \
 	test_detail.h \
+	cmd_options.h \
 	format_test.cc
 wformat_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wformat_test_LDFLAGS=$(additional_ldflags)
