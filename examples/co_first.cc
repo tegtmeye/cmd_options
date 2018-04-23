@@ -35,7 +35,8 @@ int main (int argc, char *argv[])
 
   try {
     co::options_group grp{
-      co::make_option("help","produce help message"),
+      co::make_option("help","produce help message",
+          co::constrain().occurrences(0,1)),
       co::make_option("compression",co::value<double>(),
         "set compression level",co::constrain().occurrences(0,1))
     };
