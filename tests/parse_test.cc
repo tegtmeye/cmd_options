@@ -136,6 +136,116 @@ option_description_type throw_operand{
 
 
 /*
+  Check for parsing of empty arguments, empty options
+ */
+BOOST_AUTO_TEST_CASE( option_empty_args_empty_opts_test )
+{
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+  };
+
+  options = options_group_type{
+  };
+
+  variable_map_type vm =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+}
+
+/*
+  Check for repeated parsing of empty arguments, empty options
+ */
+BOOST_AUTO_TEST_CASE( option_repeated_empty_args_empty_opts_test )
+{
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+  };
+
+  options = options_group_type{
+  };
+
+  variable_map_type vm =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  variable_map_type vm2 =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options,vm);
+}
+
+/*
+  Check for parsing of empty arguments, nonempty options
+ */
+BOOST_AUTO_TEST_CASE( option_empty_args_nonempty_opts_test )
+{
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+  };
+
+  options = options_group_type{
+    check_pos_arg(co::make_option(_LIT("foo1"),_LIT("case 2")),0,0),
+    check_pos_arg(co::make_option(_LIT("foo2"),_LIT("case 2")),1,1),
+    check_pos_arg(co::make_option(_LIT("foo3"),_LIT("case 2")),2,2),
+  };
+
+  variable_map_type vm =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+}
+
+/*
+  Check for repeated parsing of empty arguments, empty options
+ */
+BOOST_AUTO_TEST_CASE( option_repeated_empty_args_nonempty_opts_test )
+{
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+  };
+
+  options = options_group_type{
+    check_pos_arg(co::make_option(_LIT("foo1"),_LIT("case 2")),0,0),
+    check_pos_arg(co::make_option(_LIT("foo2"),_LIT("case 2")),1,1),
+    check_pos_arg(co::make_option(_LIT("foo3"),_LIT("case 2")),2,2),
+  };
+
+  variable_map_type vm =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  variable_map_type vm2 =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options,vm);
+}
+
+/*
+  Check for simple parsing of dynamic type
+ */
+BOOST_AUTO_TEST_CASE( option_simple_repeated_dynamic_test )
+{
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+    _LIT("--foo"),
+    _LIT("bar"),
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("foo"),co::value<std::string>(),
+      _LIT("case 2"))
+  };
+
+  variable_map_type vm =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  std::vector<std::string> argv2;
+  variable_map_type vm2 =
+    co::parse_arguments(argv2.begin(),argv2.end(),options,vm);
+}
+
+/*
   Check for proper option and argument numbering
  */
 BOOST_AUTO_TEST_CASE( option_numbering_test )
