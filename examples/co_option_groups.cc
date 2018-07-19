@@ -26,7 +26,8 @@
  */
 
 /*
-  Equivalent behavior to boost option_groups.cpp
+  Equivalent behavior to boost option_groups.cpp See program_option example
+  documentation for behavior
 */
 
 #include "cmd_options.h"
@@ -71,9 +72,9 @@ int main (int argc, char *argv[])
       return 0;
     }
 
-    auto &&prange = vm.equal_range("help-module");
-    if(prange.first != prange.second) {
-      const std::string &s = co::any_cast<std::string>((prange.first)->second);
+    auto &&mod_help = vm.lower_bound("help-module");
+    if(mod_help != vm.end()) {
+      const std::string &s = co::any_cast<std::string>(mod_help->second);
       if(s == "gui") {
         std::cout << "GUI options:\n" << co::to_string(gui);
       }
@@ -88,10 +89,10 @@ int main (int argc, char *argv[])
       return 0;
     }
 
-    auto &&trange = vm.equal_range("num-threads");
-    if(trange.first != trange.second) {
+    auto &&nthreads = vm.lower_bound("num-threads");
+    if(nthreads != vm.end()) {
       std::cout << "The 'num-threads' options was set to "
-        << co::any_cast<int>((trange.first)->second) << "\n";
+        << co::any_cast<int>(nthreads->second) << "\n";
       return 0;
     }
 
