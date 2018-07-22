@@ -7,7 +7,7 @@
 #include <iostream>
 
 /**
-  case 3, strictly no value
+  case 3, Hidden, strictly no value
  */
 
 BOOST_AUTO_TEST_SUITE( case3_test_suite )

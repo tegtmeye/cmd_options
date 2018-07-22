@@ -44,7 +44,8 @@ noinst_PROGRAMS=\
 	scenario3 \
 	co_first \
 	co_option_groups \
-	co_multiple_sources
+	co_multiple_sources \
+	co_options_description
 
 impatient_SOURCES=$(top_srcdir)/cmd_options.h impatient.cc
 impatient_CPPFLAGS=$(additional_cppflags)
@@ -90,3 +91,8 @@ co_multiple_sources_SOURCES=$(top_srcdir)/cmd_options.h co_multiple_sources.cc
 co_multiple_sources_CPPFLAGS=$(additional_cppflags)
 co_multiple_sources_LDFLAGS=$(additional_ldflags)
 co_multiple_sources_LDADD=$(additional_libs)
+
+co_options_description_SOURCES=$(top_srcdir)/cmd_options.h co_options_description.cc
+co_options_description_CPPFLAGS=$(additional_cppflags)
+co_options_description_LDFLAGS=$(additional_ldflags)
+co_options_description_LDADD=$(additional_libs)

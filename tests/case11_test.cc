@@ -7,7 +7,7 @@
 #include <iostream>
 
 /**
-  case 11, Raw keys with strictly required value
+  case 11, Hidden, optional value
  */
 
 BOOST_AUTO_TEST_SUITE( case11_test_suite )
@@ -89,16 +89,35 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
   variable_map_type vm;
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
-    _LIT("-ffloopy"),
-    _LIT("-b"),
-    _LIT("bloopy")
+    _LIT("-ffloopy")
   };
 
   options = options_group_type{
     co::make_option(_LIT("foo,f"),
       co::value<string_type>().implicit(_LIT("floo"))),
-    co::make_option(_LIT("bar,b"),
-      co::value<string_type>().implicit(_LIT("blar")))
+  };
+
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{string_type(_LIT("floopy"))}}
+    }));
+}
+
+BOOST_AUTO_TEST_CASE( all_POSIX_key_value_w_operand_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("-ffloopy"),
+    _LIT("bloppy")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),
+      co::value<string_type>().implicit(_LIT("floo"))),
+    co::make_operand(_LIT("operand_key"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -106,7 +125,35 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
       {_LIT("foo"),{string_type(_LIT("floopy"))}},
-      {_LIT("bar"),{string_type(_LIT("bloopy"))}}
+      {_LIT("operand_key"),{string_type(_LIT("bloppy"))}}
+    }));
+}
+
+BOOST_AUTO_TEST_CASE( all_POSIX_key_value_w_nonimplicit_operand_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("-ffloopy"),
+    _LIT("-b"),
+    _LIT("bloppy")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),
+      co::value<string_type>().implicit(_LIT("floo"))),
+    co::make_option(_LIT("bar,b"),
+      co::value<string_type>().implicit(_LIT("blar"))),
+    co::make_operand(_LIT("operand_key"),co::value<string_type>())
+  };
+
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{string_type(_LIT("floopy"))}},
+      {_LIT("bar"),{string_type(_LIT("blar"))}},
+      {_LIT("operand_key"),{string_type(_LIT("bloppy"))}}
     }));
 }
 
@@ -118,16 +165,35 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
   variable_map_type vm;
   options_group_type options;
   std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo=floopy")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),
+      co::value<string_type>().implicit(_LIT("floo")))
+  };
+
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{string_type(_LIT("floopy"))}}
+    }));
+}
+
+BOOST_AUTO_TEST_CASE( all_GNU_key_value_w_operand_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
     _LIT("--foo=floopy"),
-    _LIT("--bar"),
-    _LIT("bloopy")
+    _LIT("bloppy")
   };
 
   options = options_group_type{
     co::make_option(_LIT("foo,f"),
       co::value<string_type>().implicit(_LIT("floo"))),
-    co::make_option(_LIT("bar,b"),
-      co::value<string_type>().implicit(_LIT("blar")))
+    co::make_operand(_LIT("operand_key"),co::value<string_type>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -135,7 +201,35 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
       {_LIT("foo"),{string_type(_LIT("floopy"))}},
-      {_LIT("bar"),{string_type(_LIT("bloopy"))}}
+      {_LIT("operand_key"),{string_type(_LIT("bloppy"))}}
+    }));
+}
+
+BOOST_AUTO_TEST_CASE( all_GNU_key_value_w_nonimplicit_operand_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo=floopy"),
+    _LIT("--bar"),
+    _LIT("bloppy")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),
+      co::value<string_type>().implicit(_LIT("floo"))),
+    co::make_option(_LIT("bar,b"),
+      co::value<string_type>().implicit(_LIT("blar"))),
+    co::make_operand(_LIT("operand_key"),co::value<string_type>())
+  };
+
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{string_type(_LIT("floopy"))}},
+      {_LIT("bar"),{string_type(_LIT("blar"))}},
+      {_LIT("operand_key"),{string_type(_LIT("bloppy"))}}
     }));
 }
 

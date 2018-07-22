@@ -908,12 +908,12 @@ parse_incremental_arguments(BidirectionalIterator first,
             _vm.emplace(mapped_key,
               desc->make_value(mapped_key,option_pack.value,_vm));
           }
+          else if(desc->make_implicit_value) {
+            _vm.emplace(mapped_key,desc->make_implicit_value(mapped_key,_vm));
+          }
           else if(current_cmdlist.empty()) {
-            // no more items in the current pack, use optional if available
-            if(desc->make_implicit_value)
-              _vm.emplace(mapped_key,desc->make_implicit_value(mapped_key,_vm));
-            else
-              throw missing_argument_error(option_count,arg_count);
+            // no more items in the current pack
+            throw missing_argument_error(option_count,arg_count);
           }
           else {
             // try to use the next argument on the command list. If any
@@ -932,12 +932,7 @@ parse_incremental_arguments(BidirectionalIterator first,
             }
 
             if(next != grp.end()) {
-              if(desc->make_implicit_value) {
-                _vm.emplace(mapped_key,
-                  desc->make_implicit_value(mapped_key,_vm));
-              }
-              else
-                throw missing_argument_error(option_count,arg_count);
+              throw missing_argument_error(option_count,arg_count);
             }
             else {
               _vm.emplace(mapped_key,

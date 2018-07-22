@@ -7,7 +7,7 @@
 #include <iostream>
 
 /**
-  case 9, Raw keys with strictly required value
+  case 9, Hidden, raw keys with strictly required value
  */
 
 BOOST_AUTO_TEST_SUITE( case9_test_suite )

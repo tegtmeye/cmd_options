@@ -68,15 +68,16 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
     _LIT("operand2"),
     _LIT("operand3"),
     _LIT("--bar"),
-    _LIT("bar_arg"),
     _LIT("operand4"),
     _LIT("--bar=43"),
     _LIT("operand5"),
   };
 
   options = options_group_type{
-    co::make_option(_LIT(""),
-      co::value<string_type>().implicit(_LIT("floo")),_LIT("case 17")),
+    co::make_option(_LIT("foo,f"),
+      co::value<string_type>(),_LIT("case 14")),
+    co::make_option(_LIT("bar,b"),
+      co::value<string_type>().implicit(_LIT("blar")),_LIT("case 14")),
     co::make_operand(_LIT("key"),co::value<string_type>())
   };
 
@@ -91,9 +92,9 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
       {_LIT("key"),{string_type(_LIT("operand3"))}},
       {_LIT("key"),{string_type(_LIT("operand4"))}},
       {_LIT("key"),{string_type(_LIT("operand5"))}},
-      {_LIT("f"),{string_type(_LIT("f_arg"))}},
-      {_LIT("f"),{string_type(_LIT("42"))}},
-      {_LIT("bar"),{string_type(_LIT("bar_arg"))}},
+      {_LIT("foo"),{string_type(_LIT("f_arg"))}},
+      {_LIT("foo"),{string_type(_LIT("42"))}},
+      {_LIT("bar"),{string_type(_LIT("blar"))}},
       {_LIT("bar"),{string_type(_LIT("43"))}}
     }));
 }

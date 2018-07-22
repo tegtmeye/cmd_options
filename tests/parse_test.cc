@@ -233,14 +233,14 @@ BOOST_AUTO_TEST_CASE( option_simple_repeated_dynamic_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("foo"),co::value<std::string>(),
+    co::make_option(_LIT("foo"),co::value<string_type>(),
       _LIT("case 2"))
   };
 
   variable_map_type vm =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-  std::vector<std::string> argv2;
+  std::vector<string_type> argv2;
   variable_map_type vm2 =
     co::parse_arguments(argv2.begin(),argv2.end(),options,vm);
 }
