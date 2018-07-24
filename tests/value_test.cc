@@ -90,6 +90,47 @@ struct userdef_convert_struct {
   string_type _str;
 };
 
+
+/*
+  These 4 functions should never be chosen by the compiler, the EZ
+  interface should pick up the specialized
+  'co::convert_value<userdef_convert_struct>' structure instead of
+  choosing these.
+*/
+template<typename CharT>
+inline typename std::enable_if<std::is_same<CharT,char>::value,
+  std::basic_ostream<CharT> &>::type
+operator<<(std::basic_ostream<CharT> &out, const userdef_convert_struct &ts)
+{
+  throw 1;
+}
+
+template<typename CharT>
+inline typename std::enable_if<std::is_same<CharT,wchar_t>::value,
+  std::basic_ostream<CharT> &>::type
+operator<<(std::basic_ostream<CharT> &out, const userdef_convert_struct &ts)
+{
+  throw 1;
+}
+
+template<typename CharT>
+inline typename std::enable_if<std::is_same<CharT,char>::value,
+  std::basic_istream<CharT> &>::type
+operator>>(std::basic_istream<CharT> &in, userdef_convert_struct &rhs)
+{
+  throw 1;
+}
+
+template<typename CharT>
+inline typename std::enable_if<std::is_same<CharT,wchar_t>::value,
+  std::basic_istream<CharT> &>::type
+operator>>(std::basic_istream<CharT> &in, userdef_convert_struct &rhs)
+{
+  throw 1;
+}
+
+
+
 template<>
 struct co::convert_value<userdef_convert_struct> {
   static userdef_convert_struct from_string(const string_type &str)
@@ -143,20 +184,31 @@ BOOST_AUTO_TEST_CASE( bool_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("11"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("11"));
+            }
+        );
+        return true;
+      }
   );
 
   std::vector<const detail::check_char_t *> argv3{
     _LIT("--bool=foobar"),
   };
 
+
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv3.data(),
     argv3.data()+argv3.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("foobar"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("foobar"));
+            }
+        );
+        return true;
+      }
   );
 
   std::vector<const detail::check_char_t *> argv4{
@@ -165,11 +217,17 @@ BOOST_AUTO_TEST_CASE( bool_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv4.data(),
     argv4.data()+argv4.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("truefoo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("truefoo"));
+            }
+        );
+        return true;
+      }
   );
 }
+
 
 BOOST_AUTO_TEST_CASE( CharT_value_test )
 {
@@ -200,9 +258,14 @@ BOOST_AUTO_TEST_CASE( CharT_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("aa"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("aa"));
+            }
+        );
+        return true;
+      }
   );
 }
 
@@ -239,23 +302,38 @@ BOOST_AUTO_TEST_CASE( short_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("foo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("foo"));
+            }
+        );
+        return true;
+      }
   );
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv3.data(),
     argv3.data()+argv3.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("3.14"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("3.14"));
+            }
+        );
+        return true;
+      }
   );
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv4.data(),
     argv4.data()+argv4.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("11 foo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("11 foo"));
+            }
+        );
+        return true;
+      }
   );
 }
 
@@ -284,9 +362,14 @@ BOOST_AUTO_TEST_CASE( ushort_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("foo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("foo"));
+            }
+        );
+        return true;
+      }
   );
 }
 
@@ -315,9 +398,14 @@ BOOST_AUTO_TEST_CASE( int_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("foo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("foo"));
+            }
+        );
+        return true;
+      }
   );
 }
 
@@ -346,9 +434,14 @@ BOOST_AUTO_TEST_CASE( uint_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("foo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("foo"));
+            }
+        );
+        return true;
+      }
   );
 }
 
@@ -377,9 +470,14 @@ BOOST_AUTO_TEST_CASE( long_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("foo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("foo"));
+            }
+        );
+        return true;
+      }
   );
 }
 
@@ -408,9 +506,14 @@ BOOST_AUTO_TEST_CASE( ulong_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("foo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("foo"));
+            }
+        );
+        return true;
+      }
   );
 }
 
@@ -439,9 +542,14 @@ BOOST_AUTO_TEST_CASE( longlong_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("foo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("foo"));
+            }
+        );
+        return true;
+      }
   );
 }
 
@@ -472,9 +580,14 @@ BOOST_AUTO_TEST_CASE( ulonglong_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("foo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("foo"));
+            }
+        );
+        return true;
+      }
   );
 }
 
@@ -504,9 +617,14 @@ BOOST_AUTO_TEST_CASE( float_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("foo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("foo"));
+            }
+        );
+        return true;
+      }
   );
 }
 
@@ -536,9 +654,14 @@ BOOST_AUTO_TEST_CASE( double_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("foo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("foo"));
+            }
+        );
+        return true;
+      }
   );
 }
 
@@ -569,9 +692,14 @@ BOOST_AUTO_TEST_CASE( long_double_value_test )
 
   BOOST_CHECK_EXCEPTION(co::parse_arguments(argv2.data(),
     argv2.data()+argv2.size(),options),
-      std::invalid_argument, [](const std::invalid_argument &ex) {
-          return (ex.what() == std::string("foo"));
-        }
+      co::invalid_argument_error, [](const co::invalid_argument_error &ex) {
+        BOOST_CHECK_EXCEPTION(std::rethrow_if_nested(ex),
+          std::invalid_argument, [](const std::invalid_argument &e) {
+              return (e.what() == std::string("foo"));
+            }
+        );
+        return true;
+      }
   );
 }
 

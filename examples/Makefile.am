@@ -45,7 +45,8 @@ noinst_PROGRAMS=\
 	co_first \
 	co_option_groups \
 	co_multiple_sources \
-	co_options_description
+	co_options_description \
+	co_regex
 
 impatient_SOURCES=$(top_srcdir)/cmd_options.h impatient.cc
 impatient_CPPFLAGS=$(additional_cppflags)
@@ -96,3 +97,8 @@ co_options_description_SOURCES=$(top_srcdir)/cmd_options.h co_options_descriptio
 co_options_description_CPPFLAGS=$(additional_cppflags)
 co_options_description_LDFLAGS=$(additional_ldflags)
 co_options_description_LDADD=$(additional_libs)
+
+co_regex_SOURCES=$(top_srcdir)/cmd_options.h co_regex.cc
+co_regex_CPPFLAGS=$(additional_cppflags)
+co_regex_LDFLAGS=$(additional_ldflags)
+co_regex_LDADD=$(additional_libs)

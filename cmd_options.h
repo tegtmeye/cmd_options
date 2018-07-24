@@ -34,6 +34,7 @@
 
 #include <map>
 #include <tuple>
+#include <array>
 #include <utility>
 #include <vector>
 #include <string>
@@ -43,6 +44,7 @@
 #include <functional>
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 
 namespace cmd_options {
 
@@ -140,6 +142,12 @@ class unexpected_argument_error : public parse_error {
   public:
     unexpected_argument_error(std::size_t posn, std::size_t argn)
         :parse_error("unexpected_argument_error",posn,argn) {}
+};
+
+class invalid_argument_error : public parse_error {
+  public:
+    invalid_argument_error(std::size_t posn, std::size_t argn)
+        :parse_error("invalid_argument_error",posn,argn) {}
 };
 
 class unexpected_operand_error : public parse_error {
@@ -555,11 +563,26 @@ struct basic_option_description {
     value. For example, if only a certain number of options with the
     same key are valid or if certain combinations of options are
     mutually-exclusive.
+
+    Throw an appropriate exception for invalid values
+    (co::invalid_argument_error with the appropriate nested exception is
+    preferred). It is important to understand that exceptions should
+    only be thrown for cases where the option is valid but the value of
+    the option is not. That is, it shouldn't be used to handle mutual
+    exclusivity or other cases where the option itself is improper. A
+    good example of where to throw an exception would be an option
+    '--foo' with a numeric argument. For example '--foo 5'. Suppose that
+    you would also like to support the ability to spell out the number:
+    '--foo five'. The 'make_value' function needs to parse the string
+    'five' and return the integer '5' in a co::any. If the given string
+    doesn't correspond to a number, '--foo bar' that is, 'bar' is not a
+    number, then it is reasonable for make_value to throw an
+    'co::invalid_argument_error' exception.
   */
 
   std::function<
-    any(const string_type &mapped_key, const string_type &value,
-      const variable_map_type &vm)> make_value;
+    any(const string_type &mapped_key, std::size_t posn, std::size_t argn,
+      const string_type &value, const variable_map_type &vm)> make_value;
 
   /*
     Non-operand option cases:
@@ -906,7 +929,8 @@ parse_incremental_arguments(BidirectionalIterator first,
           if(option_pack.value_provided) {
             // handle the provided value
             _vm.emplace(mapped_key,
-              desc->make_value(mapped_key,option_pack.value,_vm));
+              desc->make_value(mapped_key,option_count,arg_count,
+                option_pack.value,_vm));
           }
           else if(desc->make_implicit_value) {
             _vm.emplace(mapped_key,desc->make_implicit_value(mapped_key,_vm));
@@ -936,7 +960,8 @@ parse_incremental_arguments(BidirectionalIterator first,
             }
             else {
               _vm.emplace(mapped_key,
-                desc->make_value(mapped_key,current_cmdlist.back(),_vm));
+                desc->make_value(mapped_key,option_count,arg_count,
+                  current_cmdlist.back(),_vm));
                 current_cmdlist.pop_back();
             }
           }
@@ -981,7 +1006,8 @@ parse_incremental_arguments(BidirectionalIterator first,
           // handle this operand
           if(desc->make_value) {
             _vm.emplace(operand_key.second,
-              desc->make_value(operand_key.second,arg,_vm));
+              desc->make_value(operand_key.second,operand_count,arg_count,
+                arg,_vm));
           }
           else
             _vm.emplace(operand_key.second,any());
@@ -1720,14 +1746,22 @@ inline void add_option_value(const value<T> &val,
     };
   }
 
-  desc.make_value = [=](const string_type &, const string_type &value,
-      const variable_map_type &)
+  desc.make_value = [=](const string_type &, std::size_t posn, std::size_t argn,
+    const string_type &value, const variable_map_type &)
   {
-    const T &result = convert_value<T>::from_string(value);
-    if(val._callback)
-      val._callback(result);
+    try {
+      const T &result = convert_value<T>::from_string(value);
 
-    return any(result);
+      if(val._callback)
+        val._callback(result);
+
+      return any(result);
+    }
+    catch (...) {
+      std::throw_with_nested(invalid_argument_error{posn,argn});
+    }
+
+    return any(); // should never get here, used to avoid compiler warnings
   };
 }
 
@@ -1739,8 +1773,8 @@ inline void add_operand_value(const value<T> &val,
   typedef basic_variable_map<CharT> variable_map_type;
 
   if(val._implicit) {
-    desc.make_value = [=](const string_type &, const string_type &,
-      const variable_map_type &)
+    desc.make_value = [=](const string_type &, std::size_t, std::size_t,
+    const string_type &, const variable_map_type &)
     {
       if(val._callback)
         val._callback(*(val._implicit));
@@ -1749,8 +1783,8 @@ inline void add_operand_value(const value<T> &val,
     };
   }
   else {
-    desc.make_value = [=](const string_type &mapped_key,
-      const string_type &value, const variable_map_type &vm)
+    desc.make_value = [=](const string_type &mapped_key, std::size_t,
+      std::size_t, const string_type &value, const variable_map_type &vm)
     {
       const T &result = convert_value<T>::from_string(value);
       if(val._callback)
