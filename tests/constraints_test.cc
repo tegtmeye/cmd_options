@@ -628,6 +628,35 @@ BOOST_AUTO_TEST_CASE( operand_position_0_given_1 )
 }
 
 /**
+  option (empty) mutual exclusion
+*/
+BOOST_AUTO_TEST_CASE( option_empty_mutual_exclusion_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--bar")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("bar,b"),_LIT("case 2"),
+      co::constrain().occurrences(0,1)),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_exclusive(
+        {_LIT("bar"),_LIT("baz"),_LIT("foobar")})),
+  };
+
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("bar"),{}}
+    }));
+}
+
+/**
   option (non) mutual exclusion
 */
 BOOST_AUTO_TEST_CASE( option_non_mutual_exclusion_test )
@@ -680,6 +709,31 @@ BOOST_AUTO_TEST_CASE( option_mutual_exclusion_test )
           co::detail::asUTF8(string_type(_LIT("bar"))));
     }
   );
+}
+
+/**
+  option (empty) mutual inclusion
+*/
+BOOST_AUTO_TEST_CASE( option_empty_mutual_inclusion_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_inclusive(
+        {_LIT("bar")})),
+  };
+
+  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+    }));
 }
 
 /**

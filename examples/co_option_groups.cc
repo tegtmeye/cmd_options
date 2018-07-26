@@ -72,7 +72,7 @@ int main (int argc, char *argv[])
       return 0;
     }
 
-    auto &&mod_help = vm.lower_bound("help-module");
+    auto &&mod_help = vm.find("help-module");
     if(mod_help != vm.end()) {
       const std::string &s = co::any_cast<std::string>(mod_help->second);
       if(s == "gui") {
@@ -89,7 +89,7 @@ int main (int argc, char *argv[])
       return 0;
     }
 
-    auto &&nthreads = vm.lower_bound("num-threads");
+    auto &&nthreads = vm.find("num-threads");
     if(nthreads != vm.end()) {
       std::cout << "The 'num-threads' options was set to "
         << co::any_cast<int>(nthreads->second) << "\n";

@@ -28,49 +28,53 @@
 #include "cmd_options.h"
 
 #include <iostream>
-#include <regex>
 
-
-/* Define a completely non-sensical class. */
-struct magic_number {
-  int n;
-};
-
-inline std::istream & operator>>(std::istream &in, magic_number &rhs)
-{
-  static std::regex r("\\d\\d\\d-(\\d\\d\\d)");
-
-  std::istreambuf_iterator<char> first(in);
-  std::istreambuf_iterator<char> last;
-  std::string s(first,last);
-
-  std::smatch match;
-  if(!std::regex_match(s,match,r))
-    throw std::invalid_argument(s);
-  else {
-    rhs = magic_number{std::stoi(match[1])};
-  }
-
-  return in;
-}
-
-inline std::ostream & operator<<(std::ostream &out, const magic_number &rhs)
-{
-  return (out << rhs.n);
-}
 
 int main (int argc, char *argv[])
 {
   namespace co = cmd_options;
 
   try {
+    std::string depends = "deps_file";
+    std::string sources = "src_file";
+    std::string root = ".";
+
     co::options_group desc{
       co::make_option("help","produce help message",
           co::constrain().occurrences(0,1)),
-      co::make_option("version,v", "print the version number",
+      co::make_option("output,o", co::value<std::string>(),
+        "pathname for output",
+        co::constrain().occurrences(0,1).
+          mutually_exclusive({"two","body","mainpackage"})),
+      co::make_option("macrofile,m", co::value<std::string>(),
+        "full pathname of macro.h",co::constrain().occurrences(0,1)),
+      co::make_option("two,t", co::value<bool>(),
+        "preprocess both header and body",
+        co::constrain().occurrences(0,1).
+          mutually_exclusive({"mainpackage","body"})),
+      co::make_option("body,b", co::value<bool>(),
+        "preprocess body in the header context",
+        co::constrain().occurrences(0,1).
+          mutually_exclusive({"mainpackage"})),
+      co::make_option("libmakfile,l", co::value<std::string>(),
+        "write include makefile for library",
+        co::constrain().occurrences(0,1).
+          mutually_exclusive({"mainpackage"})),
+      co::make_option("mainpackage,p", co::value<std::string>(),
+        "output dependency information",
         co::constrain().occurrences(0,1)),
-      co::make_option("magic,m",co::value<magic_number>(),
-        "magic value (in NNN-NNN format)",co::constrain().occurrences(0,1))
+      co::make_option("depends,d", co::value<std::string>(&depends),
+        "write dependencies to <pathname>",
+        co::constrain().occurrences(0,1).
+          mutually_inclusive({"mainpackage"})),
+      co::make_option("sources,s", co::value<std::string>(&sources),
+        "write source package list to <pathname>",
+        co::constrain().occurrences(0,1).
+          mutually_inclusive({"mainpackage"})),
+      co::make_option("root,r", co::value<std::string>(&root),
+        "treat <dirname> as project root directory",
+        co::constrain().occurrences(0,1).
+          mutually_inclusive({"mainpackage"})),
     };
 
     co::variable_map vm = co::parse_arguments(argv+1,argv+argc,desc);
@@ -80,16 +84,12 @@ int main (int argc, char *argv[])
       return 0;
     }
 
-    if(vm.count("version")) {
-      std::cout << "Version 1.\n";
-      return 0;
-    }
-
-    auto &&comp = vm.find("magic");
-    if(comp != vm.end()) {
-      std::cout << "The magic is \""
-                << co::any_cast<magic_number>(comp->second).n << "\"\n";
-    }
+    std::cout << "two = ";
+    auto &&res = vm.find("two");
+    if(res != vm.end())
+      std::cout << co::any_cast<bool>(res->second) << "\n";
+    else
+      std::cout << "0\n";
   }
   catch(std::exception &ex) {
     std::cerr << "error: " << ex.what() << "\n";

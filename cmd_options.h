@@ -1836,16 +1836,18 @@ void add_option_constraints(const basic_constraint<CharT> &cnts,
         occurrances);
     }
 
-    for(auto &exclusive_key : cnts._mutually_exclusive) {
-      if(vm.count(exclusive_key) != 0)
-        throw mutually_exclusive_error(detail::asUTF8(mapped_key),
-          detail::asUTF8(exclusive_key));
-    }
+    if(occurrances) {
+      for(auto &exclusive_key : cnts._mutually_exclusive) {
+        if(vm.count(exclusive_key) != 0)
+          throw mutually_exclusive_error(detail::asUTF8(mapped_key),
+            detail::asUTF8(exclusive_key));
+      }
 
-    for(auto &inclusive_key : cnts._mutually_inclusive) {
-      if(vm.count(inclusive_key) == 0)
-        throw mutually_inclusive_error(detail::asUTF8(mapped_key),
-          detail::asUTF8(inclusive_key));
+      for(auto &inclusive_key : cnts._mutually_inclusive) {
+        if(vm.count(inclusive_key) == 0)
+          throw mutually_inclusive_error(detail::asUTF8(mapped_key),
+            detail::asUTF8(inclusive_key));
+      }
     }
   };
 }
@@ -1865,16 +1867,18 @@ void add_operand_constraints(const basic_constraint<CharT> &cnts,
           occurrances);
     }
 
-    for(auto &exclusive_key : cnts._mutually_exclusive) {
-      if(vm.count(exclusive_key) != 0)
-        throw mutually_exclusive_error(detail::asUTF8(mapped_key),
-          detail::asUTF8(exclusive_key));
-    }
+    if(occurrances) {
+      for(auto &exclusive_key : cnts._mutually_exclusive) {
+        if(vm.count(exclusive_key) != 0)
+          throw mutually_exclusive_error(detail::asUTF8(mapped_key),
+            detail::asUTF8(exclusive_key));
+      }
 
-    for(auto &inclusive_key : cnts._mutually_inclusive) {
-      if(vm.count(inclusive_key) == 0)
-        throw mutually_inclusive_error(detail::asUTF8(mapped_key),
-          detail::asUTF8(inclusive_key));
+      for(auto &inclusive_key : cnts._mutually_inclusive) {
+        if(vm.count(inclusive_key) == 0)
+          throw mutually_inclusive_error(detail::asUTF8(mapped_key),
+            detail::asUTF8(inclusive_key));
+      }
     }
   };
 }

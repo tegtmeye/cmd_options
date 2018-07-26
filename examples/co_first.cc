@@ -48,7 +48,7 @@ int main (int argc, char *argv[])
       return 0;
     }
 
-    auto &&comp = vm.lower_bound("compression");
+    auto &&comp = vm.find("compression");
     if(comp != vm.end()) {
       std::cout << "Compression level was set to "
                 << co::any_cast<double>(comp->second) << ".\n";
