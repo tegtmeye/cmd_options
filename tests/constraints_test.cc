@@ -640,7 +640,7 @@ BOOST_AUTO_TEST_CASE( option_empty_mutual_exclusion_test )
 
   options = options_group_type{
     co::make_option(_LIT("bar,b"),_LIT("case 2"),
-      co::constrain().occurrences(0,1)),
+      co::basic_constraint<detail::check_char_t>().occurrences(0,1)),
     co::make_option(_LIT("foo,f"),_LIT("case 2"),
       co::basic_constraint<detail::check_char_t>().mutually_exclusive(
         {_LIT("bar"),_LIT("baz"),_LIT("foobar")})),
