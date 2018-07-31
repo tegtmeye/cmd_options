@@ -429,6 +429,11 @@ struct basic_option_pack {
   string_type value;
 };
 
+typedef basic_option_pack<char> option_pack;
+typedef basic_option_pack<wchar_t> woption_pack;
+typedef basic_option_pack<char16_t> option_pack16;
+typedef basic_option_pack<char32_t> option_pack32;
+
 /*
   A description for a single option
 */
