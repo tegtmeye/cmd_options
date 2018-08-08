@@ -58,7 +58,7 @@ co::option_pack unpack_f(const std::string &s)
       return co::option_pack{true,true,"-",s.substr(2),{},"true"};
   }
 
-  return co::option_pack{false};
+  return co::unpack_gnu<true,char>(s);
 }
 
 int main (int argc, char *argv[])
