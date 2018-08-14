@@ -647,7 +647,7 @@ struct basic_option_description {
 template<typename CharT>
 using basic_options_group = std::vector<basic_option_description<CharT> >;
 
-
+/*
 template<typename CharT>
 std::ostream & operator<<(std::ostream &out,
   const basic_option_description<CharT> &desc)
@@ -665,7 +665,7 @@ std::ostream & operator<<(std::ostream &out,
 
   return out;
 }
-
+*/
 
 
 
@@ -926,7 +926,10 @@ parse_incremental_arguments(BidirectionalIterator first,
             throw unexpected_argument_error(option_count,arg_count);
 
           // handle the flag only
-          _vm.emplace(mapped_key,any());
+          if(desc->make_implicit_value)
+            _vm.emplace(mapped_key,desc->make_implicit_value(mapped_key,_vm));
+          else
+            _vm.emplace(mapped_key,any());
         }
         else {
           // required or optional value
