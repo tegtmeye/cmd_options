@@ -228,6 +228,21 @@ class mutually_inclusive_error : public constraint_error {
     std::runtime_error _inclusive_mapped_key;
 };
 
+/*
+  Used for parsing errors during formatting
+*/
+class formatter_error : public std::logic_error {
+  public:
+    formatter_error(const std::string &what, std::size_t posn)
+      :std::logic_error(what), _position(posn) {}
+
+    std::size_t position(void) const {
+      return _position;
+    }
+
+  private:
+    std::size_t _position;
+};
 
 namespace detail {
 /*
@@ -588,6 +603,14 @@ struct basic_option_description {
   std::function<
     any(const string_type &mapped_key, std::size_t posn, std::size_t argn,
       const string_type &value, const variable_map_type &vm)> make_value;
+
+  /*
+    Return the human-readable description for this option's value. This
+    description is not used for parsing but rather automatic help
+    messages. For example, suppose the option --foo expects an integer
+    argument type. A reasonable return value would be 'integer'.
+  */
+  std::function<string_type(void)> value_description;
 
   /*
     Non-operand option cases:
@@ -1249,25 +1272,43 @@ typedef basic_constraint<wchar_t> wconstrain;
 
 
 
-template<typename T>
-struct value {
+template<typename T, typename CharT>
+struct basic_value {
   typedef T value_type;
 
-  value(void) = default;
-  value(T *_val) :_callback([=](const T &val){*_val = val;}) {}
-  value(const std::function<void(const T &)> &callback) :_callback(callback) {}
+  basic_value(void) = default;
+  basic_value(T *_val) :_callback([=](const T &val){*_val = val;}) {}
+  basic_value(const std::function<void(const T &)> &callback)
+    :_callback(callback) {}
 
-  value<T> & implicit(const T &val) {
+  basic_value<T,CharT> & implicit(const T &val) {
     _implicit = std::make_shared<T>(val);
+
+    return *this;
+  }
+
+  basic_value<T,CharT> & description(const std::basic_string<CharT> &str) {
+    _description = str;
 
     return *this;
   }
 
   std::function<void(const T &)> _callback;
   std::shared_ptr<value_type> _implicit;
+  std::basic_string<CharT> _description{'a','r','g'};
 };
 
+template<typename T>
+using value = basic_value<T,char>;
 
+template<typename T>
+using wvalue = basic_value<T,wchar_t>;
+
+template<typename T>
+using value16 = basic_value<T,char16_t>;
+
+template<typename T>
+using value32 = basic_value<T,char32_t>;
 
 /*
   Intermediary conversion class to handle conversion to and from
@@ -1561,21 +1602,6 @@ struct code_point_traits<wchar_t> {
 };
 
 
-#if 0
-template<typename CharT>
-inline std::pair<std::basic_string<CharT>,std::basic_string<CharT> >
-split(const std::basic_string<CharT> &str, CharT delim)
-{
-  typedef std::basic_string<CharT> string_type;
-
-  typename string_type::size_type loc = str.find(delim);
-  if(loc == string_type::npos)
-    return std::make_pair(str,string_type());
-
-  return std::make_pair(str.substr(0,loc),str.substr(loc+1));
-}
-#endif
-
 template<typename CharT>
 inline bool is_portable(CharT c)
 {
@@ -1644,12 +1670,18 @@ split(const std::basic_string<CharT> &str, CharT delim)
 */
 template<typename CharT>
 std::basic_string<CharT>
-add_option_spec(const std::basic_string<CharT> &opt_spec,
-  CharT delim, basic_option_description<CharT> &desc, bool hidden)
+add_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
+  basic_option_description<CharT> &desc, bool hidden)
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_variable_map<CharT> variable_map_type;
 
+  // %?V{=<%V>%?I{[%I]}{}}{}
+
+  static const string_type arg_suffix{'%','?','V','{',' ','<','%','V','>','%',
+    '?','I','{',' ','[','%','I',']','}','{','}','}','{','}'};
+
+  // todo, fix me
   if(opt_spec.empty()) {
     if(!hidden) {
       desc.key_description = [=](void) {
@@ -1691,7 +1723,7 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
     if(!hidden) {
       desc.key_description = [=](void) {
         return string_type{'-','-'} + long_opt + delim
-          + string_type{'-'} + short_opt;
+          + string_type{'-'} + short_opt + arg_suffix;
       };
     }
   }
@@ -1707,7 +1739,7 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
 
     if(!hidden) {
       desc.key_description = [=](void) {
-        return string_type{'-','-'} + long_opt;
+        return string_type{'-','-'} + long_opt + arg_suffix;
       };
     }
   }
@@ -1723,7 +1755,7 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
 
     if(!hidden) {
       desc.key_description = [=](void) {
-        return string_type{'-'} + short_opt;
+        return string_type{'-'} + short_opt + arg_suffix;
       };
     }
   }
@@ -1732,11 +1764,17 @@ add_option_spec(const std::basic_string<CharT> &opt_spec,
 }
 
 template<typename T, typename CharT>
-inline void add_option_value(const value<T> &val,
+inline void add_option_value(const basic_value<T,CharT> &val,
   basic_option_description<CharT> &desc)
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_variable_map<CharT> variable_map_type;
+
+  if(!val._description.empty()) {
+    desc.value_description = [=](void) -> string_type {
+      return val._description;
+    };
+  }
 
   if(val._implicit) {
     desc.make_implicit_value = [=](const string_type &,
@@ -1755,10 +1793,10 @@ inline void add_option_value(const value<T> &val,
   }
 
   desc.make_value = [=](const string_type &, std::size_t posn, std::size_t argn,
-    const string_type &value, const variable_map_type &)
+    const string_type &in_val, const variable_map_type &)
   {
     try {
-      const T &result = convert_value<T>::from_string(value);
+      const T &result = convert_value<T>::from_string(in_val);
 
       if(val._callback)
         val._callback(result);
@@ -1774,7 +1812,7 @@ inline void add_option_value(const value<T> &val,
 }
 
 template<typename T, typename CharT>
-inline void add_operand_value(const value<T> &val,
+inline void add_operand_value(const basic_value<T,CharT> &val,
   basic_option_description<CharT> &desc)
 {
   typedef std::basic_string<CharT> string_type;
@@ -1792,9 +1830,9 @@ inline void add_operand_value(const value<T> &val,
   }
   else {
     desc.make_value = [=](const string_type &mapped_key, std::size_t,
-      std::size_t, const string_type &value, const variable_map_type &vm)
+      std::size_t, const string_type &in_val, const variable_map_type &vm)
     {
-      const T &result = convert_value<T>::from_string(value);
+      const T &result = convert_value<T>::from_string(in_val);
       if(val._callback)
         val._callback(result);
 
@@ -1996,7 +2034,8 @@ make_option(const CharT *opt_spec,
 template<typename CharT, typename T>
 inline basic_option_description<CharT>
 make_option(const std::basic_string<CharT> &opt_spec,
-  const value<T> &val, const std::basic_string<CharT> &extended_desc,
+  const basic_value<T,CharT> &val,
+  const std::basic_string<CharT> &extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
   CharT delim = CharT{','})
 {
@@ -2018,7 +2057,7 @@ make_option(const std::basic_string<CharT> &opt_spec,
 template<typename CharT, typename T>
 inline basic_option_description<CharT>
 make_option(const CharT *opt_spec,
-  const value<T> &val, const CharT *extended_desc,
+  const basic_value<T,CharT> &val, const CharT *extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
   CharT delim = CharT{','})
 {
@@ -2029,7 +2068,7 @@ make_option(const CharT *opt_spec,
 template<typename CharT, typename T>
 inline basic_option_description<CharT>
 make_option(const std::basic_string<CharT> &opt_spec,
-  const value<T> &val, const CharT *extended_desc,
+  const basic_value<T,CharT> &val, const CharT *extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
   CharT delim = CharT{','})
 {
@@ -2039,8 +2078,8 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
 template<typename CharT, typename T>
 inline basic_option_description<CharT>
-make_option(const CharT *opt_spec,
-  const value<T> &val, const std::basic_string<CharT> &extended_desc,
+make_option(const CharT *opt_spec, const basic_value<T,CharT> &val,
+  const std::basic_string<CharT> &extended_desc,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
   CharT delim = CharT{','})
 {
@@ -2054,7 +2093,7 @@ make_option(const CharT *opt_spec,
 template<typename CharT, typename T>
 inline basic_option_description<CharT>
 make_option(const std::basic_string<CharT> &opt_spec,
-  const value<T> &val,
+  const basic_value<T,CharT> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
   CharT delim = CharT{','})
 {
@@ -2073,7 +2112,7 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
 template<typename CharT, typename T>
 inline basic_option_description<CharT>
-make_option(const CharT *opt_spec, const value<T> &val,
+make_option(const CharT *opt_spec, const basic_value<T,CharT> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>(),
   CharT delim = CharT{','})
 {
@@ -2106,7 +2145,7 @@ make_option(const CharT *opt_spec, const value<T> &val,
 template<typename CharT, typename T>
 inline basic_option_description<CharT>
 make_operand(const std::basic_string<CharT> &mapped_key,
-  const value<T> &val,
+  const basic_value<T,CharT> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
   basic_option_description<CharT> desc;
@@ -2122,7 +2161,7 @@ make_operand(const std::basic_string<CharT> &mapped_key,
 
 template<typename CharT, typename T>
 inline basic_option_description<CharT>
-make_operand(const CharT *mapped_key, const value<T> &val,
+make_operand(const CharT *mapped_key, const basic_value<T,CharT> &val,
   const basic_constraint<CharT> &cnts = basic_constraint<CharT>())
 {
   return make_operand(std::basic_string<CharT>(mapped_key),val,cnts);
@@ -2258,6 +2297,256 @@ wrap(const std::basic_string<CharT> &text, std::size_t max_width)
   return wrapped;
 }
 
+/*
+  Simple substitution parser
+
+  The EBNF is:
+    STRING: REP_STR
+          : REP_STR string
+          : string REP_STR string
+          : string REP_STR
+          : string
+          : empty
+
+    REP_STR: % OPT_SUBS
+             % SUBS
+
+    OPT_SUBS: % ? SUBS { true_STRING } { false_STRING }
+
+    SUBS: one of 'K', 'V', 'I', 'E'
+
+  Where:
+    - string is any sequence of characters within the range represented
+    by the character size.
+
+    - empty means the empty string
+
+    - 'K' = substitute the value of option_description::key_description
+
+    - 'V' = substitute the value of option_description::value_description
+
+    - 'I' = substitute the value of
+            option_description::implicit_value_description
+
+    - 'E' = substitute the value of extended_description::extended_description
+
+    OPT_SUBS evaluates the presence of the given SUBS and if it exists,
+    OPT_SUBS is replaces with true_STRING otherwise it is replaced with
+    false_STRING.
+
+  Substitution continues until no more take place. Direct or transitive
+  recursion is not allowed. That is, each of the following is a error:
+
+    - if A includes a substitution with B and B includes a substitution with A
+
+    - if A incudes a substitution with B and B includes a substitution
+    with C and C includes a substitution with A
+
+  Examples, given:
+    - key_description is: '--foo%?V{<=%V>%I{[%I]}{}}{}'
+    - value_description is: 'arg'
+    - implicit value_description is: '42'
+    - extended_description is: 'The default value of this option is %I'
+
+  Formatting would result in:
+
+    --foo=<arg>[42]         The default value of this option is 42
+
+  Discussion:
+
+  The purpose of the substitutions is to accomodate other languages
+  while easily reformatting the output.
+
+  do_expand parses up to last or '}' expanding along the way
+*/
+template<typename CharT>
+std::pair<typename std::basic_string<CharT>::const_iterator,
+  std::basic_string<CharT> >
+do_expand(typename std::basic_string<CharT>::const_iterator first,
+  typename std::basic_string<CharT>::const_iterator cur,
+  typename std::basic_string<CharT>::const_iterator last,
+  const std::function<std::basic_string<CharT>(void)> &key_desc,
+  const std::function<std::basic_string<CharT>(void)> &value_desc,
+  const std::function<std::basic_string<CharT>(void)> &imp_value_desc,
+  const std::function<std::basic_string<CharT>(void)> &ext_desc,
+  std::vector<CharT> &stack)
+{
+  typedef std::basic_string<CharT> string_type;
+
+  string_type result;
+
+  while(cur != last) {
+    // find first occurrence of non-escaped '%' checking for valid
+    // escape sequences and incorrect brackets along the way
+    while(cur != last && *cur != '%') {
+      if(*cur == '\\') {
+        ++cur;
+
+        if(cur == last ||
+          (*cur != '{' && *cur != '}' && *cur != '\\' && *cur != '%'))
+        {
+          throw formatter_error("invalid formatter escape sequence",
+            std::distance(first,cur));
+        }
+      }
+      else if(*cur == '{') {
+        throw formatter_error(
+          "formatter clause brackets can only be used with %?",
+          std::distance(first,cur));
+      }
+      else if(*cur == '}')
+        return {cur,std::move(result)};
+
+      result.push_back(*cur++);
+    }
+
+    if(cur == last)
+      return {cur,std::move(result)};
+
+    // cur == '%', if ++cur is end, then invalid replacement seq
+    if(++cur == last) {
+      throw formatter_error(
+        "unexpected end during formatter substitution",
+        std::distance(first,cur));
+    }
+
+//     std::cerr << "Expanding: '%" << *cur << "'\n";
+    if(*cur == '?') {
+      if(++cur == last ||
+        (*cur != 'K' && *cur != 'V' && *cur != 'I' && *cur != 'E'))
+      {
+        throw formatter_error(
+          "invalid formatter substitution (one of K,V,I,E)",
+          std::distance(first,cur));
+      }
+
+      bool exists =
+        (*cur == 'K' && key_desc) ||
+        (*cur == 'V' && value_desc) ||
+        (*cur == 'I' && imp_value_desc) ||
+        (*cur == 'E' && ext_desc);
+
+      if(++cur == last || *cur != '{') {
+        throw formatter_error(
+          "%? expansions must be followed by '{' true_expansion '}{'"
+            " false_expansion '}'",
+          std::distance(first,cur));
+      }
+
+
+      string_type true_clause;
+      std::tie(cur,true_clause) = do_expand(first,++cur,last,key_desc,
+        value_desc,imp_value_desc,ext_desc,stack);
+
+      if(cur == last || *(++cur) != '{') {
+        throw formatter_error(
+          "%? expansions must be followed by '{' true_expansion '}{'"
+            " false_expansion '}'",
+          std::distance(first,cur));
+      }
+
+      string_type false_clause;
+      std::tie(cur,false_clause) = do_expand(first,++cur,last,key_desc,
+        value_desc,imp_value_desc,ext_desc,stack);
+
+      if(cur == last) {
+        throw formatter_error(
+          "unexpected end during formatter substitution",
+          std::distance(first,cur));
+      }
+
+      if(exists)
+        result.append(true_clause);
+      else
+        result.append(false_clause);
+
+      ++cur;
+//       std::cerr << "Done Expanding: '%" << *cur << "'\n";
+
+    }
+    else {
+      if(*cur != 'K' && *cur != 'V' && *cur != 'I' && *cur != 'E') {
+        throw formatter_error(
+          "invalid formatter substitution (one of K,V,I,E)",
+          std::distance(first,cur));
+      }
+
+      if(std::find(stack.begin(),stack.end(),*cur) != stack.end()) {
+        throw formatter_error(
+          "recursive formatter_expansion",
+          std::distance(first,cur));
+      }
+
+      stack.push_back(*cur);
+
+      string_type str;
+      if(*cur == 'K' && key_desc)
+        str = key_desc();
+      else if(*cur == 'V' && value_desc)
+        str = value_desc();
+      else if(*cur == 'I' && imp_value_desc)
+        str = imp_value_desc();
+      else if(*cur == 'E' && ext_desc)
+        str = ext_desc();
+
+      string_type subs_str;
+      try {
+        typename string_type::const_iterator subs_end;
+
+        std::tie(subs_end,subs_str) =
+          do_expand(str.begin(),str.begin(),str.end(),key_desc,
+            value_desc,imp_value_desc,ext_desc,stack);
+
+        if(subs_end != str.end()) {
+          throw formatter_error(
+            "formatter clause brackets can only be used with %?",
+            std::distance(str.cbegin(),subs_end));
+        }
+      }
+      catch (...) {
+        std::throw_with_nested(formatter_error("expansion failed",
+          std::distance(first,cur)));
+      }
+
+
+      result.append(subs_str);
+      stack.pop_back();
+
+//       std::cerr << "Done Expanding: '%" << *cur << "'\n";
+      ++cur;
+    }
+
+  }
+
+  return {cur,result};
+}
+
+/*
+  Top-level expansion function
+
+  See do_expand for grammar
+
+  any errors are thrown as formatter_error exceptions
+*/
+template<typename CharT>
+inline std::basic_string<CharT>
+expand(const std::basic_string<CharT> &in,
+  const basic_option_description<CharT> &desc)
+{
+  std::vector<CharT> stack;
+  auto &&result = do_expand(in.begin(),in.begin(),in.end(),desc.key_description,
+    desc.value_description,desc.implicit_value_description,
+    desc.extended_description,stack);
+
+  if(result.first != in.end()) {
+    throw formatter_error(
+      "formatter clause brackets can only be used with %?",
+      std::distance(in.begin(),result.first));
+  }
+
+  return result.second;
+}
+
 }
 
 /*
@@ -2281,20 +2570,13 @@ class basic_option_formatter {
 
     virtual ~basic_option_formatter(void) {}
 
-    string_type typeset_option(const description_type &desc) const {
-      return do_typeset_option(desc);
+    virtual string_type typeset_option(const description_type &desc) const = 0;
+
+    virtual compare_type compare(void) const {
+      return compare_type();
     }
-
-    compare_type compare(void) const {
-      return do_compare();
-    }
-
-  protected:
-    virtual string_type
-      do_typeset_option(const description_type &desc) const = 0;
-
-    virtual compare_type do_compare(void) const = 0;
 };
+
 
 /*
   Default option formatter
@@ -2315,42 +2597,39 @@ class basic_option_formatter {
   Sorts the option_descriptions by key_description() if both are
   present. If only rhs.key_description is present, returns true,
   otherwise returns false.
-
-  key_description is one of the following forms (if each is present):
-  --long_name,-short_name _arg_
-  --long_name,-short_name [=_arg_<implicit>]
-
-  Where _arg_ is the argument string provided in the constructor
-  (default CharT "arg"). To use a different value, provide it in the
-  constructor according to type CharT
 */
 template<typename CharT>
 class basic_default_formatter : public basic_option_formatter<CharT> {
   public:
-    basic_default_formatter(void) :_arg{'a','r','g'} {}
-    template<typename ForwardIterator>
-    basic_default_formatter(ForwardIterator first, ForwardIterator last)
-      :_arg(first,last) {}
-    basic_default_formatter(const CharT *arg) :_arg(arg) {}
-
-  protected:
     using typename basic_option_formatter<CharT>::string_type;
     using typename basic_option_formatter<CharT>::description_type;
     using typename basic_option_formatter<CharT>::compare_type;
 
-    string_type do_typeset_option(const description_type &desc) const;
+    string_type typeset_option(const description_type &desc) const;
 
-    compare_type do_compare(void) const {
-      return [](const description_type &lhs, const description_type &rhs)
-        {
-          if(!rhs.key_description)
-            return true;
+    void sort_entries(bool val) {
+      _should_sort = val;
+    }
 
-          if(!lhs.key_description)
-            return false;
+    bool sort_entries(void) const {
+      return _should_sort;
+    }
 
-          return lhs.key_description() < rhs.key_description();
-        };
+    compare_type compare(void) const {
+      if(_should_sort) {
+        return [](const description_type &lhs, const description_type &rhs)
+          {
+            if(!rhs.key_description)
+              return true;
+
+            if(!lhs.key_description)
+              return false;
+
+            return lhs.key_description() < rhs.key_description();
+          };
+      }
+
+      return compare_type();
     }
 
     virtual std::size_t key_column_width(void) const {
@@ -2365,22 +2644,21 @@ class basic_default_formatter : public basic_option_formatter<CharT> {
       return 72;
     }
 
-    string_type arg_str(void) const {
-      return _arg;
+    virtual string_type wrap(const string_type &str,
+      std::size_t width) const
+    {
+      typedef detail::code_point_traits<CharT> cpoint_traits;
+      typedef std::basic_string<typename cpoint_traits::code_point>
+            cpstring_type;
+
+      cpstring_type cpextended_desc = cpoint_traits::convert_from(str);
+      cpstring_type wrapped_text = detail::wrap(cpextended_desc,width);
+
+      return cpoint_traits::convert_to(wrapped_text);
     }
 
   private:
-    string_type _arg;
-};
-
-struct u32string_identity_cvt {
-  const std::u32string & to_bytes(const std::u32string &str) const {
-    return str;
-  }
-
-  const std::u32string & from_bytes(const std::u32string &str) const {
-    return str;
-  }
+    bool _should_sort = false;
 };
 
 /*
@@ -2409,31 +2687,12 @@ struct u32string_identity_cvt {
 template<typename CharT>
 typename basic_default_formatter<CharT>::string_type
 basic_default_formatter<CharT>::
-  do_typeset_option(const description_type &desc) const
+  typeset_option(const description_type &desc) const
 {
-  typedef detail::code_point_traits<CharT> cpoint_traits;
-  typedef typename cpoint_traits::code_point code_point;
-  typedef std::basic_string<typename cpoint_traits::code_point>
-        cpstring_type;
-
   if(!desc.key_description)
     return string_type();
 
-  string_type key_col = desc.key_description();
-
-  if(desc.make_value) {
-    if(desc.make_implicit_value && desc.implicit_value_description) {
-      key_col.append({' ','['});
-      key_col.append(arg_str());
-      key_col.append({'=','<'});
-      key_col.append(desc.implicit_value_description());
-      key_col.append({'>',']'});
-    }
-    else {
-      key_col.push_back(' ');
-      key_col.append(arg_str());
-    }
-  }
+  string_type key_col = detail::expand(desc.key_description(),desc);
 
   if(key_col.size() > key_column_width()) {
     key_col.push_back('\n');
@@ -2445,26 +2704,21 @@ basic_default_formatter<CharT>::
   }
 
   std::size_t indent = key_column_width()+column_pad();
-  string_type extended_col;
+  string_type wrapped_desc;
   if(desc.extended_description) {
-    cpstring_type cpextended_desc =
-      cpoint_traits::convert_from(desc.extended_description());
+    string_type ext_desc_col =
+      detail::expand(desc.extended_description(),desc);
 
-    cpstring_type wrapped_text = detail::wrap(cpextended_desc,
-      max_width()-indent);
+    wrapped_desc = wrap(ext_desc_col,max_width()-indent);
 
-    cpextended_desc.clear();
-    for(auto c : wrapped_text) {
-      cpextended_desc += c;
-      if(c == code_point('\n'))
-        cpextended_desc.append(indent,code_point(' '));
+    typename string_type::size_type pos = wrapped_desc.find('\n');
+    while(pos != string_type::npos) {
+      wrapped_desc.insert(++pos,indent,static_cast<CharT>(' '));
+      pos = wrapped_desc.find('\n',pos+indent);
     }
-
-    extended_col = cpoint_traits::convert_to(cpextended_desc);
-
   }
 
-  key_col.append(extended_col);
+  key_col.append(wrapped_desc);
 
   return key_col;
 }
@@ -2485,7 +2739,7 @@ to_string(const std::vector<basic_option_description<CharT> > &grp,
 
   std::size_t extent = 0;
   for(auto &desc : grp) {
-    // hidden means not long or short key descriptions
+    // hidden means no long or short key descriptions
     if((desc.key_description)) {
       output_grp.emplace_back(std::make_pair(&desc,fmt.typeset_option(desc)));
       extent = std::max(extent,output_grp.back().second.size());

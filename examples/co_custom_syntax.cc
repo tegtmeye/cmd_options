@@ -69,10 +69,19 @@ int main (int argc, char *argv[])
         "just an option", co::constrain().occurrences(0,1));
     foo_desc.unpack_option = unpack_f;
 
+    co::option_description bar_desc =
+      co::make_option("bar", co::value<std::string>(),
+        "just an option", co::constrain().occurrences(0,1));
+    bar_desc.unpack_option = unpack_f;
+    bar_desc.key_description = [](void) -> std::string {
+        return "-fno-bar";
+      };
+
     co::options_group desc{
       co::make_option("help","produce help message",
           co::constrain().occurrences(0,1)),
-      foo_desc
+      foo_desc,
+      bar_desc
     };
 
     co::variable_map vm = co::parse_arguments(argv+1,argv+argc,desc);

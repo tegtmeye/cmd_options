@@ -59,6 +59,20 @@ namespace detail {
 #define _MAKE_LITERAL(lit,str) _CAT_LITERAL(lit,str)
 #define _LIT(string) _MAKE_LITERAL(LITERAL_PREFIX,string)
 
+template<typename CharT>
+inline std::function<std::basic_string<CharT>(void)>
+_lit_fn(const CharT *str)
+{
+  std::basic_string<CharT> val(str);
+
+  return [=](void)->std::basic_string<CharT> {
+    return val;
+  };
+}
+
+#define _LIT_FN(string) \
+(detail::_lit_fn(_MAKE_LITERAL(LITERAL_PREFIX,string)))
+
 
 typedef CMD_OPT_TEST_CHART check_char_t;
 

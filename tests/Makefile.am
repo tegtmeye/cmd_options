@@ -81,6 +81,7 @@ check_PROGRAMS=\
 	constraints_test constraints8_test constraints16_test \
 		constraints32_test wconstraints_test \
 	value_test value8_test value16_test value32_test wvalue_test \
+	substitution_test \
 	format_test format8_test format16_test format32_test wformat_test
 
 TESTS=\
@@ -108,6 +109,7 @@ TESTS=\
 	constraints_test constraints8_test constraints16_test \
 		constraints32_test wconstraints_test \
 	value_test value8_test value16_test value32_test wvalue_test \
+	substitution_test \
 	format_test format8_test format16_test format32_test wformat_test
 
 XFAIL_TESTS=\
@@ -853,6 +855,13 @@ wvalue_test_SOURCES=master_suite.cc \
 wvalue_test_CPPFLAGS=$(wchar_cpp_flags) $(additional_cppflags)
 wvalue_test_LDFLAGS=$(additional_ldflags)
 wvalue_test_LDADD=$(additional_libs)
+
+substitution_test_SOURCES=master_suite.cc \
+	$(top_srcdir)/cmd_options.h test_detail.h \
+	substitution_test.cc
+substitution_test_CPPFLAGS=$(char_cpp_flags) $(additional_cppflags)
+substitution_test_LDFLAGS=$(additional_ldflags)
+substitution_test_LDADD=$(additional_libs)
 
 format_test_SOURCES=master_suite.cc \
 	$(top_srcdir)/cmd_options.h test_detail.h \
