@@ -39,12 +39,13 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("foo,f"),co::value<string_type>())
+    co::make_option(_LIT("foo,f"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -68,12 +69,13 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("foo,f"),co::value<string_type>())
+    co::make_option(_LIT("foo,f"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -96,7 +98,8 @@ BOOST_AUTO_TEST_CASE( all_invalid_POSIX_key_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("foo,f"),co::value<string_type>())
+    co::make_option(_LIT("foo,f"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   BOOST_REQUIRE_THROW(
@@ -116,7 +119,8 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test1 )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("foo,f"),co::value<string_type>())
+    co::make_option(_LIT("foo,f"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   BOOST_REQUIRE_THROW(
@@ -137,7 +141,8 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test2 )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("foo,f"),co::value<string_type>())
+    co::make_option(_LIT("foo,f"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   BOOST_REQUIRE_THROW(
@@ -184,7 +189,7 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -214,7 +219,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_test )
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -250,7 +255,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -358,7 +363,7 @@ BOOST_AUTO_TEST_CASE( multi_packed_flags_test )
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{

@@ -37,9 +37,11 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_test )
 
   options = options_group_type{
     co::make_option(_LIT(",f"),
-      co::value<string_type>().implicit(_LIT("floo"))),
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("floo"))),
     co::make_option(_LIT(",b"),
-      co::value<string_type>().implicit(_LIT("blar")))
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("blar")))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -65,14 +67,16 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_test )
 
   options = options_group_type{
     co::make_option(_LIT("foo,f"),
-      co::value<string_type>().implicit(_LIT("floo"))),
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("floo"))),
     co::make_option(_LIT("bar,b"),
-      co::value<string_type>().implicit(_LIT("blar")))
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("blar")))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -94,7 +98,8 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
 
   options = options_group_type{
     co::make_option(_LIT("foo,f"),
-      co::value<string_type>().implicit(_LIT("floo"))),
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("floo"))),
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -116,8 +121,10 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_w_operand_test )
 
   options = options_group_type{
     co::make_option(_LIT("foo,f"),
-      co::value<string_type>().implicit(_LIT("floo"))),
-    co::make_operand(_LIT("operand_key"),co::value<string_type>())
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("floo"))),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -141,10 +148,13 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_w_nonimplicit_operand_test )
 
   options = options_group_type{
     co::make_option(_LIT("foo,f"),
-      co::value<string_type>().implicit(_LIT("floo"))),
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("floo"))),
     co::make_option(_LIT("bar,b"),
-      co::value<string_type>().implicit(_LIT("blar"))),
-    co::make_operand(_LIT("operand_key"),co::value<string_type>())
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("blar"))),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -170,7 +180,8 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
 
   options = options_group_type{
     co::make_option(_LIT("foo,f"),
-      co::value<string_type>().implicit(_LIT("floo")))
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("floo")))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -192,8 +203,10 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_w_operand_test )
 
   options = options_group_type{
     co::make_option(_LIT("foo,f"),
-      co::value<string_type>().implicit(_LIT("floo"))),
-    co::make_operand(_LIT("operand_key"),co::value<string_type>())
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("floo"))),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -217,10 +230,13 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_w_nonimplicit_operand_test )
 
   options = options_group_type{
     co::make_option(_LIT("foo,f"),
-      co::value<string_type>().implicit(_LIT("floo"))),
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("floo"))),
     co::make_option(_LIT("bar,b"),
-      co::value<string_type>().implicit(_LIT("blar"))),
-    co::make_operand(_LIT("operand_key"),co::value<string_type>())
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("blar"))),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);

@@ -2666,8 +2666,8 @@ class basic_default_formatter : public basic_option_formatter<CharT> {
   entries by long names (mapped_keys) and typsets the option description
   into two columns. The first is the summary of the option in one of the
   following forms:
-    --foo,f arg
-    --foo,f [arg=<implicit>]
+    --foo,f <arg>
+    --foo,f <arg>=[implicit]
 
   The second column containing the option description starts of the same
   line as the option summary if it fits or on the next line if it does

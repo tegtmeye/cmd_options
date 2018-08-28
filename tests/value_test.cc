@@ -163,12 +163,11 @@ BOOST_AUTO_TEST_CASE( bool_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("bool"),co::value<bool>(),_LIT("case 6")),
+    co::make_option(_LIT("bool"),co::basic_value<bool,detail::check_char_t>(),
+      _LIT("case 6")),
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
-
-//   stream_select::cerr << detail::to_string(vm,co::value<bool>());
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("bool"),static_cast<bool>(1)),
@@ -238,14 +237,12 @@ BOOST_AUTO_TEST_CASE( CharT_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("CharT"),co::value<detail::check_char_t>(),
+    co::make_option(_LIT("CharT"),
+      co::basic_value<detail::check_char_t,detail::check_char_t>(),
       _LIT("case 6")),
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
-
-//   stream_select::cerr
-//     << detail::to_string(vm,co::value<detail::check_char_t>());
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("CharT"),static_cast<detail::check_char_t>('a'))
@@ -290,7 +287,8 @@ BOOST_AUTO_TEST_CASE( short_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("short"),co::value<short>(),_LIT("case 6")),
+    co::make_option(_LIT("short"),
+      co::basic_value<short,detail::check_char_t>(),_LIT("case 6")),
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -350,7 +348,8 @@ BOOST_AUTO_TEST_CASE( ushort_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("ushort"),co::value<unsigned short>(),_LIT("case 6")),
+    co::make_option(_LIT("ushort"),
+      co::basic_value<unsigned short,detail::check_char_t>(),_LIT("case 6")),
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -386,7 +385,8 @@ BOOST_AUTO_TEST_CASE( int_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("int"),co::value<int>(),_LIT("case 6")),
+    co::make_option(_LIT("int"),
+      co::basic_value<int,detail::check_char_t>(),_LIT("case 6")),
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -422,7 +422,8 @@ BOOST_AUTO_TEST_CASE( uint_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("uint"),co::value<unsigned int>(),_LIT("case 6")),
+    co::make_option(_LIT("uint"),
+      co::basic_value<unsigned int,detail::check_char_t>(),_LIT("case 6")),
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -458,7 +459,8 @@ BOOST_AUTO_TEST_CASE( long_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("long"),co::value<long>(),_LIT("case 6")),
+    co::make_option(_LIT("long"),
+      co::basic_value<long,detail::check_char_t>(),_LIT("case 6")),
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -494,7 +496,8 @@ BOOST_AUTO_TEST_CASE( ulong_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("ulong"),co::value<unsigned long>(),_LIT("case 6")),
+    co::make_option(_LIT("ulong"),
+      co::basic_value<unsigned long,detail::check_char_t>(),_LIT("case 6")),
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -530,7 +533,8 @@ BOOST_AUTO_TEST_CASE( longlong_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("longlong"),co::value<long long>(),_LIT("case 6")),
+    co::make_option(_LIT("longlong"),
+      co::basic_value<long long,detail::check_char_t>(),_LIT("case 6")),
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -566,7 +570,8 @@ BOOST_AUTO_TEST_CASE( ulonglong_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("ulonglong"),co::value<unsigned long long>(),
+    co::make_option(_LIT("ulonglong"),
+      co::basic_value<unsigned long long,detail::check_char_t>(),
       _LIT("case 6")),
   };
 
@@ -604,7 +609,8 @@ BOOST_AUTO_TEST_CASE( float_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("float"),co::value<float>(),_LIT("case 6")),
+    co::make_option(_LIT("float"),
+      co::basic_value<float,detail::check_char_t>(),_LIT("case 6")),
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -641,7 +647,8 @@ BOOST_AUTO_TEST_CASE( double_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("double"),co::value<double>(),_LIT("case 6")),
+    co::make_option(_LIT("double"),
+      co::basic_value<double,detail::check_char_t>(),_LIT("case 6")),
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -678,7 +685,8 @@ BOOST_AUTO_TEST_CASE( long_double_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("longdouble"),co::value<long double>(),
+    co::make_option(_LIT("longdouble"),
+      co::basic_value<long double,detail::check_char_t>(),
       _LIT("case 6"))
   };
 
@@ -726,20 +734,32 @@ BOOST_AUTO_TEST_CASE( fundamental_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("CharT"),co::value<detail::check_char_t>(),
+    co::make_option(_LIT("CharT"),
+      co::basic_value<detail::check_char_t,detail::check_char_t>(),
       _LIT("case 6")),
-    co::make_option(_LIT("short"),co::value<short>(),_LIT("case 6")),
-    co::make_option(_LIT("ushort"),co::value<unsigned short>(),_LIT("case 6")),
-    co::make_option(_LIT("int"),co::value<int>(),_LIT("case 6")),
-    co::make_option(_LIT("uint"),co::value<unsigned int>(),_LIT("case 6")),
-    co::make_option(_LIT("long"),co::value<long>(),_LIT("case 6")),
-    co::make_option(_LIT("ulong"),co::value<unsigned long>(),_LIT("case 6")),
-    co::make_option(_LIT("longlong"),co::value<long long>(),_LIT("case 6")),
-    co::make_option(_LIT("ulonglong"),co::value<unsigned long long>(),
+    co::make_option(_LIT("short"),
+      co::basic_value<short,detail::check_char_t>(),_LIT("case 6")),
+    co::make_option(_LIT("ushort"),
+      co::basic_value<unsigned short,detail::check_char_t>(),_LIT("case 6")),
+    co::make_option(_LIT("int"),
+      co::basic_value<int,detail::check_char_t>(),_LIT("case 6")),
+    co::make_option(_LIT("uint"),
+      co::basic_value<unsigned int,detail::check_char_t>(),_LIT("case 6")),
+    co::make_option(_LIT("long"),
+      co::basic_value<long,detail::check_char_t>(),_LIT("case 6")),
+    co::make_option(_LIT("ulong"),
+      co::basic_value<unsigned long,detail::check_char_t>(),_LIT("case 6")),
+    co::make_option(_LIT("longlong"),
+      co::basic_value<long long,detail::check_char_t>(),_LIT("case 6")),
+    co::make_option(_LIT("ulonglong"),
+      co::basic_value<unsigned long long,detail::check_char_t>(),
       _LIT("case 6")),
-    co::make_option(_LIT("float"),co::value<float>(),_LIT("case 6")),
-    co::make_option(_LIT("double"),co::value<double>(),_LIT("case 6")),
-    co::make_option(_LIT("longdouble"),co::value<long double>(),
+    co::make_option(_LIT("float"),
+      co::basic_value<float,detail::check_char_t>(),_LIT("case 6")),
+    co::make_option(_LIT("double"),
+      co::basic_value<double,detail::check_char_t>(),_LIT("case 6")),
+    co::make_option(_LIT("longdouble"),
+      co::basic_value<long double,detail::check_char_t>(),
       _LIT("case 6"))
   };
 
@@ -775,7 +795,8 @@ BOOST_AUTO_TEST_CASE( string_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("string"),co::value<string_type>(),
+    co::make_option(_LIT("string"),
+      co::basic_value<string_type,detail::check_char_t>(),
       _LIT("case 6"))
   };
 
@@ -797,7 +818,8 @@ BOOST_AUTO_TEST_CASE( userdef_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("userdef"),co::value<userdef_struct>(),
+    co::make_option(_LIT("userdef"),
+      co::basic_value<userdef_struct,detail::check_char_t>(),
       _LIT("case 6"))
   };
 
@@ -819,7 +841,8 @@ BOOST_AUTO_TEST_CASE( userdef_convert_value_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("userdef"),co::value<userdef_convert_struct>(),
+    co::make_option(_LIT("userdef"),
+      co::basic_value<userdef_convert_struct,detail::check_char_t>(),
       _LIT("case 6"))
   };
 

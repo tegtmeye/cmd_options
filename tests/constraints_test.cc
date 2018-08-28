@@ -207,7 +207,8 @@ BOOST_AUTO_TEST_CASE( operand_no_restrictions_given_0_test )
 
   options = options_group_type{
     co::make_option(_LIT("foo,f"),_LIT("case 2")),
-    co::make_operand(_LIT("case 14"),co::value<string_type>())
+    co::make_operand(_LIT("case 14"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -230,7 +231,8 @@ BOOST_AUTO_TEST_CASE( operand_no_restrictions_given_1_test )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("operand_key"),co::value<string_type>())
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -253,7 +255,7 @@ BOOST_AUTO_TEST_CASE( operand_strict_0_given_0_test )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+    co::make_operand(_LIT("case 14"),co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().occurrences(0)),
     co::make_option(_LIT("bar,b"),_LIT("case 2"))
   };
@@ -278,7 +280,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_0_given_1_test )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("operand_key"),co::value<string_type>(),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().occurrences(0))
   };
 
@@ -301,7 +304,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_0_test )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("operand_key"),co::value<string_type>(),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
@@ -325,7 +329,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_1_test )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("operand_key"),co::value<string_type>(),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
@@ -350,7 +355,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_2_test )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("operand_key"),co::value<string_type>(),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
@@ -375,7 +381,8 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_0_test )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+    co::make_operand(_LIT("case 14"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().occurrences(0,1)),
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
@@ -403,7 +410,8 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_1_test )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("operand_key"),co::value<string_type>(),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().occurrences(0,1)),
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
@@ -433,7 +441,8 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_2_test )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("operand_key"),co::value<string_type>(),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().occurrences(0,1)),
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
@@ -467,14 +476,15 @@ BOOST_AUTO_TEST_CASE( operand_unconstrained_argument )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("operand_key"),co::value<string_type>(),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().at_argument(-1)),
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -499,7 +509,8 @@ BOOST_AUTO_TEST_CASE( operand_argument_0_given_0 )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("operand_key"),co::value<string_type>(),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().at_argument(0)),
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
@@ -526,7 +537,8 @@ BOOST_AUTO_TEST_CASE( operand_argument_0_given_1 )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+    co::make_operand(_LIT("case 14"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().at_argument(0)),
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
@@ -555,14 +567,15 @@ BOOST_AUTO_TEST_CASE( operand_unconstrained_position )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("operand_key"),co::value<string_type>(),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().at_position(-1)),
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -587,7 +600,8 @@ BOOST_AUTO_TEST_CASE( operand_position_0_given_0 )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("operand_key"),co::value<string_type>(),
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().at_position(0)),
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
@@ -615,7 +629,8 @@ BOOST_AUTO_TEST_CASE( operand_position_0_given_1 )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("case 14"),co::value<string_type>(),
+    co::make_operand(_LIT("case 14"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().at_position(0)),
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
@@ -648,7 +663,7 @@ BOOST_AUTO_TEST_CASE( option_empty_mutual_exclusion_test )
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -675,7 +690,7 @@ BOOST_AUTO_TEST_CASE( option_non_mutual_exclusion_test )
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -729,7 +744,7 @@ BOOST_AUTO_TEST_CASE( option_empty_mutual_inclusion_test )
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -757,7 +772,7 @@ BOOST_AUTO_TEST_CASE( option_non_mutual_inclusion_test )
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{

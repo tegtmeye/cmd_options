@@ -66,12 +66,13 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
 
   options = options_group_type{
     co::make_option(_LIT("foo,f")),
-    co::make_operand(_LIT("operand_key"),co::value<string_type>())
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -105,7 +106,7 @@ BOOST_AUTO_TEST_CASE( packed_flags_test )
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -140,12 +141,13 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
     co::make_option(_LIT(",b")),
     co::make_option(_LIT(",c")),
     co::make_option(_LIT(",d")),
-    co::make_operand(_LIT("operand_key"),co::value<string_type>())
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -177,7 +179,7 @@ BOOST_AUTO_TEST_CASE( flags_packed_arg_test )
     co::make_option(_LIT("foo,f"))
   };
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE_THROW(
     (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
@@ -298,7 +300,7 @@ BOOST_AUTO_TEST_CASE( multi_packed_flags_test )
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{

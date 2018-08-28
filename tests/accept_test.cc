@@ -67,7 +67,8 @@ BOOST_AUTO_TEST_CASE( callback_assignment_test )
 
   string_type arg{_LIT("*****")};
   options = options_group_type{
-    co::make_option(_LIT("foo,f"),co::value<string_type>(&arg),
+    co::make_option(_LIT("foo,f"),
+      co::basic_value<string_type,detail::check_char_t>(&arg),
       _LIT("case 2"))
   };
 
@@ -96,7 +97,8 @@ BOOST_AUTO_TEST_CASE( callback_function_test )
 
   int n = 99;
   options = options_group_type{
-    co::make_option(_LIT("foo,f"),co::value<int>([&](int _n){n=_n+1;}),
+    co::make_option(_LIT("foo,f"),
+      co::basic_value<int,detail::check_char_t>([&](int _n){n=_n+1;}),
       _LIT("case 2"))
   };
 

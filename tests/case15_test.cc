@@ -75,15 +75,17 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
 
   options = options_group_type{
     co::make_option(_LIT("foo,f"),
-      co::value<string_type>(),_LIT("case 15")),
+      co::basic_value<string_type,detail::check_char_t>(),_LIT("case 15")),
     co::make_option(_LIT("bar,b"),
-      co::value<string_type>().implicit(_LIT("blar")),_LIT("case 15")),
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("blar")),
+      _LIT("case 15")),
     co::make_operand(_LIT("operand_key"))
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{

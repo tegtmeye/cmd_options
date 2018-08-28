@@ -233,7 +233,8 @@ BOOST_AUTO_TEST_CASE( option_simple_repeated_dynamic_test )
   };
 
   options = options_group_type{
-    co::make_option(_LIT("foo"),co::value<string_type>(),
+    co::make_option(_LIT("foo"),
+      co::basic_value<string_type,detail::check_char_t>(),
       _LIT("case 2"))
   };
 
@@ -382,7 +383,7 @@ BOOST_AUTO_TEST_CASE( parse_nested_option_test )
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -422,7 +423,7 @@ BOOST_AUTO_TEST_CASE( parse_nested_operand_test )
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::value<string_type>());
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{

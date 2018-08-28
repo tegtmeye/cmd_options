@@ -32,9 +32,10 @@ BOOST_AUTO_TEST_CASE( all_flags_test )
 
   options_group_type options = options_group_type{
     co::make_option(_LIT("a-really-long-option-name,b"),
-      co::value<string_type>().implicit(_LIT("implicit")),detail::BMP_celebs),
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(_LIT("implicit")),detail::BMP_celebs),
 //     co::make_option(_LIT("foo,f"),
-//       co::value<string_type>(),detail::ipsum_par)
+//       co::basic_value<string_type,detail::check_char_t>(),detail::ipsum_par)
   };
 
   stream_select::cout.imbue(std::locale());

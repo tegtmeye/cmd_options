@@ -66,7 +66,8 @@ BOOST_AUTO_TEST_CASE( all_flags_cease_test )
 
   options = options_group_type{
     co::make_option(_LIT(""),_LIT("case 4")),
-    co::make_operand(_LIT("operand_key"),co::value<string_type>())
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
@@ -132,7 +133,8 @@ BOOST_AUTO_TEST_CASE( packed_flags_cease_test )
 
   options = options_group_type{
     co::make_option(_LIT(""),_LIT("case 4")),
-    co::make_operand(_LIT("operand_key"),co::value<string_type>())
+    co::make_operand(_LIT("operand_key"),
+      co::basic_value<string_type,detail::check_char_t>())
   };
 
   vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);

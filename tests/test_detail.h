@@ -309,7 +309,7 @@ to_string(const co::basic_option_description<CharT> &desc)
 
 template<typename CharT, typename T>
 inline std::string to_string(const co::basic_variable_map<CharT> &vm,
-  const co::value<T> &)
+  const co::basic_value<T,CharT> &)
 {
   std::stringstream out;
 
