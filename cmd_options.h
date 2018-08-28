@@ -2632,16 +2632,36 @@ class basic_default_formatter : public basic_option_formatter<CharT> {
       return compare_type();
     }
 
+    virtual void key_column_indent(std::size_t n) {
+      _key_indent = n;
+    }
+
+    virtual std::size_t key_column_indent(void) const {
+      return _key_indent;
+    }
+
+    virtual void key_column_width(std::size_t n) {
+      _key_col_width = n;
+    }
+
     virtual std::size_t key_column_width(void) const {
-      return 24;
+      return _key_col_width;
+    }
+
+    virtual void column_pad(std::size_t n) {
+      _col_pad = n;
     }
 
     virtual std::size_t column_pad(void) const {
-      return 2;
+      return _col_pad;
+    }
+
+    virtual void max_width(std::size_t n) {
+      _max_width = n;
     }
 
     virtual std::size_t max_width(void) const {
-      return 72;
+      return _max_width;
     }
 
     virtual string_type wrap(const string_type &str,
@@ -2659,6 +2679,10 @@ class basic_default_formatter : public basic_option_formatter<CharT> {
 
   private:
     bool _should_sort = false;
+    std::size_t _key_indent = 2;
+    std::size_t _key_col_width = 24;
+    std::size_t _col_pad = 2;
+    std::size_t _max_width = 72;
 };
 
 /*
@@ -2692,11 +2716,13 @@ basic_default_formatter<CharT>::
   if(!desc.key_description)
     return string_type();
 
-  string_type key_col = detail::expand(desc.key_description(),desc);
+  string_type key_col =
+    string_type(key_column_indent(),static_cast<CharT>(' ')) +
+    detail::expand(desc.key_description(),desc);
 
   if(key_col.size() > key_column_width()) {
     key_col.push_back('\n');
-    key_col.append(key_column_width()+column_pad(),' ');
+    key_col.append(key_column_width()+column_pad(),static_cast<CharT>(' '));
   }
   else {
     std::size_t per_pad = key_column_width()+column_pad()-key_col.size();
@@ -2711,10 +2737,11 @@ basic_default_formatter<CharT>::
 
     wrapped_desc = wrap(ext_desc_col,max_width()-indent);
 
-    typename string_type::size_type pos = wrapped_desc.find('\n');
+    typename string_type::size_type pos =
+      wrapped_desc.find(static_cast<CharT>('\n'));
     while(pos != string_type::npos) {
       wrapped_desc.insert(++pos,indent,static_cast<CharT>(' '));
-      pos = wrapped_desc.find('\n',pos+indent);
+      pos = wrapped_desc.find(static_cast<CharT>('\n'),pos+indent);
     }
   }
 
