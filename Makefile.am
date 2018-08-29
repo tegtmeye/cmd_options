@@ -34,7 +34,10 @@ if EXAMPLES
   MAYBE_EXAMPLES=examples
 endif
 
-SUBDIRS=tests $(MAYBE_EXAMPLES)
+SUBDIRS=\
+	tests \
+	cmd_options \
+	$(MAYBE_EXAMPLES)
 
 EXTRA_DIST=\
   COPYING \

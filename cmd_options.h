@@ -1601,6 +1601,8 @@ struct code_point_traits<wchar_t> {
   }
 };
 
+}
+
 
 template<typename CharT>
 inline bool is_portable(CharT c)
@@ -1676,10 +1678,10 @@ add_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
   typedef std::basic_string<CharT> string_type;
   typedef basic_variable_map<CharT> variable_map_type;
 
-  // %?V{=<%V>%?I{[%I]}{}}{}
+  // %?V{ <%V%?I{=%I}{}>}{}
 
-  static const string_type arg_suffix{'%','?','V','{',' ','<','%','V','>','%',
-    '?','I','{',' ','[','%','I',']','}','{','}','}','{','}'};
+  static const string_type arg_suffix{'%','?','V','{',' ','<','%','V','%',
+    '?','I','{','=','%','I','}','{','}','>','}','{','}'};
 
   // todo, fix me
   if(opt_spec.empty()) {
@@ -1695,7 +1697,7 @@ add_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
   string_type long_opt;
   string_type short_opt;
   string_type mapped_key;
-  std::tie(long_opt,short_opt,mapped_key) = detail::split(opt_spec,delim);
+  std::tie(long_opt,short_opt,mapped_key) = split(opt_spec,delim);
 
   assert(!(long_opt.empty() && short_opt.empty()));
   assert(short_opt.size() < 2);
@@ -1931,8 +1933,6 @@ void add_operand_constraints(const basic_constraint<CharT> &cnts,
 
 
 
-}
-
 
 
 
@@ -1956,11 +1956,11 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
   basic_option_description<CharT> desc{unpack_gnu<true,CharT>};
 
-  string_type mapped_key = detail::add_option_spec(opt_spec,delim,desc,false);
+  string_type mapped_key = add_option_spec(opt_spec,delim,desc,false);
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  detail::add_option_constraints(cnts,desc,mapped_key);
+  add_option_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -2011,9 +2011,9 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
   basic_option_description<CharT> desc{unpack_gnu<true,CharT>};
 
-  string_type mapped_key = detail::add_option_spec(opt_spec,delim,desc,true);
+  string_type mapped_key = add_option_spec(opt_spec,delim,desc,true);
 
-  detail::add_option_constraints(cnts,desc,mapped_key);
+  add_option_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -2043,13 +2043,13 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
   basic_option_description<CharT> desc{unpack_gnu<false,CharT>};
 
-  string_type mapped_key = detail::add_option_spec(opt_spec,delim,desc,false);
+  string_type mapped_key = add_option_spec(opt_spec,delim,desc,false);
 
-  detail::add_option_value(val,desc);
+  add_option_value(val,desc);
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  detail::add_option_constraints(cnts,desc,mapped_key);
+  add_option_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -2101,11 +2101,11 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
   basic_option_description<CharT> desc{unpack_gnu<false,CharT>};
 
-  string_type mapped_key = detail::add_option_spec(opt_spec,delim,desc,true);
+  string_type mapped_key = add_option_spec(opt_spec,delim,desc,true);
 
-  detail::add_option_value(val,desc);
+  add_option_value(val,desc);
 
-  detail::add_option_constraints(cnts,desc,mapped_key);
+  add_option_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -2150,11 +2150,11 @@ make_operand(const std::basic_string<CharT> &mapped_key,
 {
   basic_option_description<CharT> desc;
 
-  detail::add_operand_value(val,desc);
+  add_operand_value(val,desc);
 
-  detail::add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
+  add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
 
-  detail::add_operand_constraints(cnts,mapped_key,desc);
+  add_operand_constraints(cnts,mapped_key,desc);
 
   return desc;
 }
@@ -2178,9 +2178,9 @@ make_operand(const std::basic_string<CharT> &mapped_key,
 {
   basic_option_description<CharT> desc;
 
-  detail::add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
+  add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
 
-  detail::add_operand_constraints(cnts,mapped_key,desc);
+  add_operand_constraints(cnts,mapped_key,desc);
 
   return desc;
 }

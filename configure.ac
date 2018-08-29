@@ -64,6 +64,7 @@ AX_CXX_COMPILE_STDCXX([11],[noext],[mandatory])
 
 AC_CONFIG_FILES( \
 		 cmd_options.pc \
+		 cmd_options/Makefile \
 		 tests/Makefile \
 		 examples/Makefile \
 		 Makefile)

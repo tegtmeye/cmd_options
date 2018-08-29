@@ -6,7 +6,7 @@ namespace co = cmd_options;
 
 int main(void)
 {
-  co::detail::split<detail::check_char_t>(
+  co::split<detail::check_char_t>(
     _LIT(",,,,"),detail::check_char_t(','));
 
   return 0;
