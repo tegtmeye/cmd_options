@@ -326,110 +326,151 @@ fromUTF8(const std::string &str)
 template<typename CharT>
 using basic_variable_map = std::multimap<std::basic_string<CharT>,any>;
 
+typedef std::multimap<std::basic_string<char>,any> variable_map;
+typedef std::multimap<std::basic_string<wchar_t>,any> wvariable_map;
+typedef std::multimap<std::basic_string<char16_t>,any> variable_map16;
+typedef std::multimap<std::basic_string<char32_t>,any> variable_map32;
+
 /*
-  Structure describing an unpacked argument.
+  Structure describing an unpacked argument returned from an unpack
+  function. Its important to understand that this structure is intended
+  to represent a the result of unpacking an argument, not the argument's
+  semantic value. That is to say, the function that returns an object of
+  this type should not determine if the _value_ of the option is valid,
+  for example whether `--foo` is a valid option for this application,
+  but rather whether or not the character sequence `--foo` is valid
+  option syntax and can be decomposed into an option, packed options,
+  and a value if so specified. The reason for an intermediate return
+  value here is a byproduct of the many different ways that an option
+  argument can be packed together. Having a single function that unpacks
+  an option without actually determining if the option has a valid value
+  for the current application removes the complexities of determining
+  syntax validity from the code that determines its value validity.
 
-  bool did_unpack;
-  bool value_provided;
-  string_type prefix;
-  string_type raw_key;
-  std::vector<string_type> packed_arguments;
-  string_type value;
+  The elements represent the following
 
-  The elements represent:
-    - \c did_unpack A boolean value indicating that the structure
-    contains the result of unpacking the given argument into its
-    constitute properties.
+  - `did_unpack`
 
-    - \c value_provided A boolean value indicating that the argument
-      contained a packed value. This is necessary because it is possible
-      to explicitly provide an empty value
+    A boolean value indicating that the structure contains the result of
+    unpacking the given argument into its constitute properties. Reasons
+    that this value would be set to false include an
+    `option_description` that does not use this option syntax. For
+    example, if an `option_description` has the `unpack_GNU` unpacking
+    function set for a `--foo` option but the `-fno-bar` string was
+    parsed.
 
-    - \c prefix A string specifying the option prefix, ie '-' or '--'
+  - `value_provided`
 
-    - \c raw_key A string containing the raw key.
+    A boolean value indicating that the option string contained a packed
+    value. This is necessary because it is possible to explicitly
+    provide an empty value. Examples of packed values include GNU long
+    option syntax such as `--foo=bar`. Do not set `value_provided` to
+    true if the option expects a later argument--only if it is provided
+    as part of the given string.
 
-    - \c packed_arguments A vector of strings containing any remaining
-    packed arguments if present. If the arguments require a prefix, they
-    must be prepended to each argument otherwise it will be considered an
-    operand argument. For example, if you wish to allow "-abcd" to be
-    equivalent to "-a -b --cat=dog -d", then the raw key is "a" and the
-    packed options are: {"-b","--cat=dog","d"}. An appropriate unpack
-    method could add packed arguments for other reasons. For example, if
-    "-b" always implies a hidden (deprecated) "--bar_old", then raw_key
-    is "b" and include "--bar_old" to the packed arguments;
+  - `prefix`
 
-    - \c value A string containing the value if present.
+    A string specifying the option prefix, ie '-' or '--' [deprecated]
+
+  - `raw_key`
+
+    A string containing the raw option key parsed in the option. This is
+    not the same as the mapped key stored in the `variable_map`.
+    Determining that is handled by `option_description.mapped_key`. For
+    example, if the `unpack_GNU` unpacking function is set and `--foo`
+    is provided, the `raw_key` is `foo`.
+
+  - `packed_arguments`
+
+    A vector of strings containing any remaining packed arguments if
+    present. If the arguments require a prefix, they must be prepended
+    to each argument otherwise it will be considered an operand
+    argument. For example, if you wish to allow `-abcd` to be equivalent
+    to `-a -b --cat=dog -d`, then the raw key is `a` and the packed
+    options are: `{"-b","--cat=dog","-d"}`. An appropriate unpack method
+    could add packed arguments for other reasons. For example, if `-b`
+    always implies a hidden (deprecated)`--bar_old`, then `raw_key` is
+    `b` and include `--bar_old` in the packed arguments;
+
+  - `value`
+
+    A string containing the value if present. For example, if the
+    `unpack_GNU` unpacking function is set and `--foo=bar` is provided,
+    the `value` is `bar`.
 
 
+  For example: here are some known ways that option arguments can be
+  represented:
 
-  This structure is intended to represent an unpacked argument, not it's
-  semantic value and is a byproduct of the many different ways that an
-  option argument can be packed together. For example: here are some
-  known ways that option arguments can be represented:
+  1) --foo bar    = long option, key=foo, value=bar
+                  : prefix = "--"
+                  : raw_key = "foo"
+                  : packed_arguments = ""
+                  : value = ""
+                  : value_provided = false.
 
-      1) --foo bar    = long option, key=foo, value=bar
-                      : prefix = "--"
-                      : raw_key = "foo"
-                      : packed_arguments = ""
-                      : value = ""
-                      : value_provided = false.
+  2) --foo=bar    = long option, key=foo, value=bar
+                  : prefix = "--"
+                  : raw_key = "foo"
+                  : packed_arguments = ""
+                  : value = "bar"
+                  : value_provided = true
 
-      2) --foo=bar    = long option, key=foo, value=bar
-                      : prefix = "--"
-                      : raw_key = "foo"
-                      : packed_arguments = ""
-                      : value = "bar"
-                      : value_provided = true
+  3) -foo bar     = long option, key=foo, value=bar
+                  : prefix = "-"
+                  : raw_key = "foo"
+                  : packed_arguments = ""
+                  : value = ""
+                  : value_provided = false
 
-      3) -foo bar     = long option, key=foo, value=bar
-                      : prefix = "-"
-                      : raw_key = "foo"
-                      : packed_arguments = ""
-                      : value = ""
-                      : value_provided = false
+  2) -foo=bar     = long option, key=foo, value=bar
+                  : prefix = "-"
+                  : raw_key = "foo"
+                  : packed_arguments = ""
+                  : value = "bar"
+                  : value_provided = true
 
-      2) -foo=bar     = long option, key=foo, value=bar
-                      : prefix = "-"
-                      : raw_key = "foo"
-                      : packed_arguments = ""
-                      : value = "bar"
-                      : value_provided = true
+  5) -f bar       = short option, key=f, value=bar
+                  : prefix = "-"
+                  : raw_key = "f"
+                  : packed_arguments = ""
+                  : value = ""
+                  : value_provided = false
 
-      5) -f bar       = short option, key=f, value=bar
-                      : prefix = "-"
-                      : raw_key = "f"
-                      : packed_arguments = ""
-                      : value = ""
-                      : value_provided = false
+  6) -fBar        = short option, key=f, value=Bar
+                  : prefix = "-"
+                  : raw_key = "f"
+                  : packed_arguments = ""
+                  : value = "Bar"
+                  : value_provided = true
 
-      6) -fBar        = short option, key=f, value=Bar
-                      : prefix = "-"
-                      : raw_key = "f"
-                      : packed_arguments = ""
-                      : value = "Bar"
-                      : value_provided = true
+  7) -fbar        = 4 short options with keys: 'f', 'b', 'a', and 'r'
+                  : prefix = "-"
+                  : raw_key = "f"
+                  : packed_arguments = {"-b","-a","-r"}
+                  : value = ""
+                  : value_provided = false
 
-      7) -fbar        = 4 short options with keys: 'f', 'b', 'a', and 'r'
-                      : prefix = "-"
-                      : raw_key = "f"
-                      : packed_arguments = {"-b","-a","-r"}
-                      : value = ""
-                      : value_provided = false
+  8) -fbar        = long flag, key=bar, value=true
+                  : prefix = "-"
+                  : raw_key = "bar"
+                  : packed_arguments = ""
+                  : value = "true"
+                  : value_provided = true
 
-      8) -nobar       = long flag, key=bar, value=false
-                      : prefix = "-"
-                      : raw_key = "bar"
-                      : packed_arguments = ""
-                      : value = "false"
-                      : value_provided = true
+  8) -fno-bar     = long flag, key=bar, value=false
+                  : prefix = "-"
+                  : raw_key = "bar"
+                  : packed_arguments = ""
+                  : value = "false"
+                  : value_provided = true
 
-      9) -Wl,<args>   = long flag, key=Wl, value=<args>
-                      : prefix = "-"
-                      : raw_key = "Wl"
-                      : packed_arguments = ""
-                      : value = "<args>"
-                      : value_provided = true
+  9) -Wl,<args>   = long flag, key=Wl, value=<args>
+                  : prefix = "-"
+                  : raw_key = "Wl"
+                  : packed_arguments = ""
+                  : value = "<args>"
+                  : value_provided = true
 */
 template<typename CharT>
 struct basic_option_pack {
@@ -450,7 +491,14 @@ typedef basic_option_pack<char16_t> option_pack16;
 typedef basic_option_pack<char32_t> option_pack32;
 
 /*
-  A description for a single option
+  This structure is the fundamental description of how an option or
+  operand should be parsed by `parse_arguments`. A sequence of
+  `option_description` structures are provided to `parse_arguments` and
+  each one is evaluated in-order until a suitable `option_description`
+  is found that can handle the input string. The presence or absence of
+  appropriately set fields determines how the argument string is parsed.
+  A default constructed `option_description` or one with no fields set
+  is ignored by `parse_arguments` completely.
 */
 template<typename CharT>
 struct basic_option_description {
@@ -460,144 +508,213 @@ struct basic_option_description {
   typedef basic_option_pack<CharT>  option_pack;
 
   /*
-    Unpack the raw option pack. If \c unpack_option is not provided,
-    then this description is assumed to describe an operand argument.
+    Unpack the raw option pack and return an object of `basic_option_pack`.
+    If `unpack_option` is not provided, then this description is assumed to
+    describe an operand argument.
+
+    The `option` argument is raw argument string received by `parse_arguments`.
 
     If the option cannot be unpacked by this description, then return
-    false in the \c did_unpack field (or an empty option_pack).
+    false in the `did_unpack` field (or an empty option_pack). See
+    `basic_option_pack` for information on the return type.
 
-    This function is intended to essentially parse the option
-    into its constitute properties but it can also be used to inject
-    hidden options that can be useful. For example, if --foo is given
-    implies --bar, even if --bar was not provided, then the unpacked
-    option for "foo" can return "bar" in the \c packed_arguments field.
+    This function is intended to essentially parse the option into its
+    constitute properties. Its important to understand that the function set
+    in this field should unpack or determine if the argument has a valid
+    syntax for this option, not validate its semantic value. That is to say,
+    this function should not determine if the _value_ of the option is
+    valid. For example whether `--foo` is a valid option for this
+    application, but rather whether or not `--foo` is a valid option syntax
+    and can be decomposed into an option, packed options, and a value if so
+    specified. The reason for an intermediate return value here is a
+    byproduct of the many different ways that an option argument can be
+    packed together. Having a single function that unpacks an option without
+    actually determining if the option has a valid value for the current
+    application removes the complexities of determining syntax validity from
+    the code that determines its value validity.
+
+    Beyond determining the validity of the option syntax, this function
+    can also be used to inject hidden options that can be useful. For
+    example, if `--foo` is given implies `--bar`, even if `--bar` was
+    not provided, then the unpacked option for `foo` can return `bar` in
+    the `packed_arguments` field.
 
     A note on operand values... If the options group _only_ contains
-    operands--or descriptions that do not have the \c unpack_option
-    set--then any argument is considered a operand---even if looks
-    like an option. For example, if there are no option_descriptions
-    with \c unpack_option set, then '--foo', which looks like a option
+    operands--or descriptions that do not have the `unpack_option`
+    set--then every argument is considered an operand---even if looks
+    like an option. For example, if there are no `option_descriptions`
+    with `unpack_option` set, then `--foo`, which looks like a option
     flag, is considered a operand. This may not be what was intended.
     Reasonable machinery in this case is to include a 'dummy' option
-    that has \c unpack_option set and where \c mapped_key throws a \c
-    unknown_option_error indicating the unknown option.
+    that has `unpack_option` set and where `mapped_key` throws an
+    `unknown_option_error` indicating the unknown option. The EZ
+    Interface includes such a 'dummy' option `make_options_error`.
   */
   std::function<option_pack(const string_type &option)> unpack_option;
 
   /*
-    If this description can handle the given argument, return true
-    and the key that will be used in the variable map to represent this
+    If this description can handle the given argument, return true and
+    the key that will be used in the variable map to represent this
     option or operand depending on the presence or absence of
-    \c unpack_option.
+    `unpack_option`. That is, this `option_description` should process
+    the _semantic value_ of the given raw key. If it does not, then
+    return `false` as the first value. For example, suppose this option
+    description handles `--foo` options and the string `--foo` was
+    parsed. The `unpack_GNU` unpack function would return `foo` as the
+    raw string. If you would like to access this option in the
+    `variable_map` using the key `my_foo_key`, return
+    `{true,"my_foo_key"}`. Likewise, if the string `--bar` was parsed
+    and this `option_description` only handles `--foo` options, then
+    return `{false,{}}`.
 
-    If unpack_option is set and can successfully unpack the argument,
-    then the argument is an option and \c mapped_key should return the
-    mapped key for the given raw key (without any prefix) as provided by
-    the \c option_pack.
+    - The `raw_key` argument is the `option_pack.raw_key` string
+    returned by `unpack_option`.
 
-    If unpack_option is not set, then the argument is an operand and
-    mapped_key should return the appropriate mapped key for the default
-    raw key \c default_operand_key (or simply return \c default_operand_key).
+    - The `posn` argument is the nth option or operand parsed so far by
+    `parse_arguments`.
 
-    If \c mapped_key is not set then this description will be marked to
-    handle the argument and \c raw_key will be used for the key in the
-    variable map. This means that this description will match all
-    options is \c unpack_option is set (ie accept all unknown options
-    able to be unpacked by \c unpack_option) and will match all operands
-    if \c unpack_option is not set (ie accept an indefinite list of
-    operands).
+    - The `argn` argument is the nth argument parsed so far by
+    `parse_arguments`.
+
+    - The `vm` argument is the current state of the `variable_map` based
+    on the previous n-1 arguments parsed so far by `parse_arguments`.
+
+    - The return value is a pair where `first` indicates whether or not
+    this `option_description` can accept this argument. The `second`
+    field is a string representing the key to be used in the
+    `variable_map`.
+
+
+    If `unpack_option` is set and can successfully unpack the argument,
+    then the argument is an option otherwise the argument is considered
+    an operand. See `unpack_option`.
 
     Regardless of whether or not the argument is an option or an
-    operand, the implementation of \c mapped_key can selectively choose
-    to handle or not to handle the argument based on the option's or
-    operand's position in the argument list. \c posn is the ith option
-    or operand in the argument list and \c argn is the current argument
-    number. A common use case is for some utility:
+    operand, the implementation of `mapped_key_fn` can selectively
+    choose to handle or not to handle the argument. For example, if this
+    `option_description` represents the `--foo` option, it should return
+    `true` if the argument's `raw_key` equals `foo` and return false for
+    everything else. It can additionally discriminate based on the
+    option's or operand's position in the argument list. A common use
+    case is for some utility:
 
-      foo infile outfile
+      > foo infile outfile
 
-    Where \c infile is always first and \outfile is always second.
+    Where `infile` is always first and `outfile` is always second.
   */
   std::function<std::pair<bool,string_type>(
     const string_type &raw_key, std::size_t posn, std::size_t argn,
     const variable_map_type &vm)> mapped_key;
 
   /*
-    Return the human-readable description for this option. This does not
-    necessarily need to be the result provided in \c mapped_key
-    (although it often does). The value is not used for options parsing
-    but typically used in the help message. For example, supposed this
-    option is given by --foo, return "--foo". This value can be any
-    meaningful string based on the need. For example, suppose for some
-    nonstandard syntax the key --foo1bar --foo2bar is possible, a
-    reasonable response from this function could be: "foo[integer]bar".
-    Another example is in the case of long and short options. Typically
-    the short option is hidden and the long option is fully specified
-    with a description containing the associated short option. That is:
-    --foo, -f.
+    Return the human-readable description for this option. The value is
+    not used for options parsing but intended to be used with [help
+    formatting](EZ-Interface-Help-Formatting).
 
-    If \c key_description is not set, then the option is considered to
-    be hidden.
+    * The return value is an appropriately formatted string
+
+    This does not necessarily need to be the result provided in
+    `mapped_key` but can be any meaningful string based on the need. For
+    example, suppose for some nonstandard syntax the key `--foo1bar
+    --foo2bar` is possible, a reasonable response from this function
+    could be: `foo[integer]bar`. Another example is in the case of long
+    and short options. Typically the short option is hidden and the long
+    option is fully specified with a description containing the
+    associated short option. That is: `--foo, -f`.
+
+    In the EZ Interface, the default formatter considers the description
+    hidden if the `key_description` field is not set. Likewise,
+    `set_default_option_spec` sets a function that returns a string with
+    identifiers that participate in substitution of values handled by
+    the default formatter namely `%?V{ <%V%?I{=%I}{}>}{}`.
   */
   std::function<string_type(void)> key_description;
 
   /*
-    Return a human-readable concise description of this option's
-    functionality.
+    Return the human-readable extended description for this option. The
+    value is not used for options parsing but intended to be used with help
+    formatting.
+
+    * The return value is an appropriately formatted string
+
+    This can be any meaningful string based on the need.
+
+    In the EZ Interface, the default formatter provides simple
+    substitution and wrapping of this result string.
   */
   std::function<string_type(void)> extended_description;
 
   /*
-    Operand option case:
-      -- interpret the option value (make_value is set)
-      -- use default constructed value (make_value is not set)
+    If set return the semantic value of the argument as an `any` object as
+    determined by the contents of the other parameter.
 
-    If set, return the value of the argument as a any as
-    determined by the contents of the second parameter. If not set, the
-    option explicitly forbids option values. I.e. --foo=bar or --foo bar
-    will return an error unless the 'bar' is a valid operand in the
-    later case.
+    If the description represents an option, then the parser requires an
+    argument string either through a packed option string or through an
+    argument to be parsed next. If not set, the parser interprets the
+    option as explicitly forbiding option values. I.e. `--foo=bar` or
+    `--foo bar` will return an error unless the `bar` is a valid operand
+    in the later case.
 
-    The function's first parameter is the string given as the option's
-    mapped_key exactly as provided by the \c map_long_key and/or \c
-    map_short_key function. This can be useful for checking the state of
-    the vm and throwing an error if too many instances of a certain
-    option has been given or if certain combinations of options are
-    mutually-exclusive or inclusive.
+    If set and the description is an operand, then convert the operand
+    to a semantic value. If not set, then the parser will store a
+    default-constructed `any` object in the `variable_map`.
 
-    If the argument was an operand, then the first parameter is the
-    result of \c implicit_key if set or a default-constructed
-    string_type if not set.
+    - The `mapped_key` argument is the value returned by
+    `option_pack.mapped_key`. This can be useful for checking the state
+    of the `variable_map` and throwing an errors or if the semantic
+    value depends on the current state of the `variable_map`.
 
-    The function's second parameter is the string given as the options
-    value. It is possible for this value to be empty in the case where
-    the given option is explicitly set to be empty. For example, the
-    value of --foo "" is explicitly given (not missing) to be the empty
-    string. The \c make_value function must be prepared to handle this
-    case. This does not happen in the case of compound arguments. For
-    example, the values in  -f"" and --foo="" are considered missing.
+    - The `posn` argument is the nth option or operand parsed so far by
+    `parse_arguments`.
 
-    The provided variable map may be used to selectively set the value
-    based on the current state of the argument parsing or examine the
-    current contents of the map to ensure validity before returning the
-    value. For example, if only a certain number of options with the
-    same key are valid or if certain combinations of options are
-    mutually-exclusive.
+    - The `argn` argument is the nth argument parsed so far by
+    `parse_arguments`.
 
-    Throw an appropriate exception for invalid values
-    (co::invalid_argument_error with the appropriate nested exception is
-    preferred). It is important to understand that exceptions should
-    only be thrown for cases where the option is valid but the value of
-    the option is not. That is, it shouldn't be used to handle mutual
-    exclusivity or other cases where the option itself is improper. A
-    good example of where to throw an exception would be an option
-    '--foo' with a numeric argument. For example '--foo 5'. Suppose that
-    you would also like to support the ability to spell out the number:
-    '--foo five'. The 'make_value' function needs to parse the string
-    'five' and return the integer '5' in a co::any. If the given string
-    doesn't correspond to a number, '--foo bar' that is, 'bar' is not a
-    number, then it is reasonable for make_value to throw an
-    'co::invalid_argument_error' exception.
+    - The `value` argument is the raw argument string provided either by
+    the packed value or the subsequent parsed argument. This function
+    should interpret this value and return the semantic meaning in an
+    `any` object. N.B., it is possible this string may be empty as it is
+    possible to explicitly provide an empty string argument.
+
+    - The `vm` argument is the current state of the `variable_map` based
+    on the previous n-1 arguments parsed so far by `parse_arguments`.
+
+    - The return value is an `any` object representing the interpreted
+    value of `value` to be stored in the `variable_map` under the key
+    `mapped_key`.
+
+    If conversion of the `value` string to an `any` obejct fails, thow
+    the appropriate exception indicating the failure. It an
+    application-specific exception is desired, it is suggested that
+    `invalid_argument_error` be thrown with a nested
+    application-specific exception but it is not required. ie
+
+      any my_make_value_fn(const string_type &mapped_key, std::size_t posn,
+        std::size_t argn, const string_type &value, const variable_map_type &vm)
+      {
+        try {
+          // try to convert val
+
+          return any(result);
+        }
+        catch (...) {
+          std::throw_with_nested(invalid_argument_error{posn,argn});
+        }
+      }
+
+    Likewise, although there are no restrictions on what the
+    `make_value` function performs, it is recommended that exceptions
+    should only be thrown for cases where the option is valid but the
+    value of the option is not. That is, it shouldn't be used to handle
+    mutual exclusivity or other cases where the option itself is
+    improper. A good example of where to throw an exception would be an
+    option `--foo` with a numeric argument. For example `--foo 5`.
+    Suppose that you would also like to support the ability to spell out
+    the number: `--foo five`. The `make_value` function needs to parse
+    the string `five` and return the integer `5` in a `any` object. If
+    the given string doesn't correspond to a number, for example `--foo
+    bar` as `bar` is not a number, then it is reasonable for
+    `make_value` to throw an `co::invalid_argument_error` exception.
   */
 
   std::function<
@@ -605,91 +722,91 @@ struct basic_option_description {
       const string_type &value, const variable_map_type &vm)> make_value;
 
   /*
-    Return the human-readable description for this option's value. This
-    description is not used for parsing but rather automatic help
-    messages. For example, suppose the option --foo expects an integer
-    argument type. A reasonable return value would be 'integer'.
+    Return the human-readable description for this option's value. The
+    value is not used for options parsing but intended to be used with
+    help formatting. For example, suppose the option `--foo` expects an
+    integer argument type. A reasonable return value could be `integer`.
+
+    * The return value is an appropriately formatted string
+
+    This can be any meaningful string based on the need.
+
+    In the EZ Interface, the default formatter provides simple
+    substitution and wrapping of this result string.
   */
   std::function<string_type(void)> value_description;
 
   /*
-    Non-operand option cases:
-      -- strictly do not provide a value (no make_value)
-        -- option has an implicit, possibly empty, value (uses
-          make_implicit_value)
-        -- no implicit value, use default constructed
+    If set return the implicit semantic value as an `any` object for the
+    given `mapped_key` to be stored in the given `variable_map`. When
+    parsing, setting the `make_implicit_value` field indicates that an
+    option-argument is optional. If it is not set, the an option argument is
+    explicitly forbidden.
 
-      -- provided value is optional (make_value exists)
-        -- if given, option uses provided value (calls make_value)
-        -- if missing, use an implicit, possibly empty, value
-            (uses make_implicit_value)
-        -- no implicit value, use default constructed
+    For example suppose the `--foo` option accepts optional arguments.
+    If `--foo arg` was given, the `arg` argument is converted to its
+    semantic value using `make_value`. If an argument was not provided,
+    then `make_implicit_value` is called and the result is stored in the
+    `variable_map`. Likewise, if the `--bar` option does not permit
+    arguments, do not set `make_implicit_value`.
 
-      -- providing a value is mandatory (make_value exists, no
-         make_implicit_value)
-        -- use the one provided (calls make_value)
 
-    If set, return the implicit value of the option as a any
-    object. This value is used whenever the option either explicitly
-    forbids a value or it is optional and one is not provided. If not
-    set, the value defaults to \c string_type().
+    - The `mapped_key` argument is the value returned by
+    `option_pack.mapped_key`. This can be useful for checking the state
+    of the `variable_map` and throwing an errors or if the semantic
+    value depends on the current state of the `variable_map`.
 
-    The function's first parameter is the string given as the option's
-    key exactly as provided to the option without the long- or
-    short_option_flag prefix. This is useful to deal with nonstandard
-    syntaxes. For example, given -frtti vs -fno-rtti, the
-    variable_map_type key could be 'rtti' with a boolean value. The
-    option forbids values so the mapped value must be determined by the
-    key (specifically the presence or absence of the 'no' prefix.
+    - The `vm` argument is the current state of the `variable_map` based on
+    the previous n-1 arguments parsed so far by `parse_arguments`.
+
+    - The return value is an `any` object representing the desired implicit
+    valueto be stored in the `variable_map` under the key `mapped_key`.
   */
-  std::function<any(const string_type &key, const variable_map_type &vm)>
-    make_implicit_value;
+  std::function<any(const string_type &mapped_key,
+    const variable_map_type &vm)> make_implicit_value;
 
   /*
     Return the human-readable description for this option's implicit
-    value. This description is not used for parsing but rather automatic
-    help messages. For example, suppose the option --foo has an implicit
-    value of '5' if another value was not provided. A reasonable return
-    value from this function would be "5".
+    value. The value is not used for options parsing but intended to be
+    used with help formatting. For example, suppose the option `--foo`
+    has a default value of `5`. A reasonable return value could be `5`.
+
+    * The return value is an appropriately formatted string
+
+    This can be any meaningful string based on the need.
+
+    In the EZ Interface, the default formatter provides simple
+    substitution and wrapping of this result string.
   */
   std::function<string_type(void)> implicit_value_description;
 
   /*
     If set, this function is called for each option_description by the
-    parse_* functions after all options are parsed. A typical use of
-    this function is to inspect the state of the variable_map_type
+    `parse_arguments` function after all options are parsed. This
+    function is ignored by `parse_incremental_arguments`. A typical use
+    of this function is to inspect the state of the `variable_map`
     argument for option-specific inconsistencies or illegal
     combinations. For example, if a minimum number of options are
     expected, the variable_map_type can be queried to see if it has been
-    satisfied and throw an error if not.
+    satisfied and throw an error if not. There is no restriction on what
+    this function can or cannot do.
   */
   std::function<void(const variable_map_type &vm)> finalize;
 
 };
 
+typedef basic_option_description<char> option_description;
+typedef basic_option_description<wchar_t> woption_description;
+typedef basic_option_description<char16_t> option_description16;
+typedef basic_option_description<char32_t> option_description32;
+
 template<typename CharT>
 using basic_options_group = std::vector<basic_option_description<CharT> >;
 
-/*
-template<typename CharT>
-std::ostream & operator<<(std::ostream &out,
-  const basic_option_description<CharT> &desc)
-{
-  out << "option_description:\n"
-    << "\tunpack_option: " << bool(desc.unpack_option) << "\n"
-    << "\tmapped_key: " << bool(desc.mapped_key) << "\n"
-    << "\tkey_description: " << bool(desc.key_description) << "\n"
-    << "\textended_description: " << bool(desc.extended_description) << "\n"
-    << "\tmake_implicit_value: " << bool(desc.make_implicit_value) << "\n"
-    << "\timplicit_value_description: " << bool(desc.implicit_value_description)
-      << "\n"
-    << "\tmake_value: " << bool(desc.make_value) << "\n"
-    << "\tfinalize: " << bool(desc.finalize) << "\n";
-
-  return out;
-}
-*/
-
+typedef std::vector<basic_option_description<char> > options_group;
+typedef std::vector<basic_option_description<wchar_t> > woptions_group;
+typedef std::vector<basic_option_description<char16_t> > options_group16;
+typedef std::vector<basic_option_description<char32_t> > options_group32;
 
 
 /*
@@ -1164,13 +1281,6 @@ parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
 
 
 
-typedef basic_option_description<char> option_description;
-typedef std::vector<basic_option_description<char> > options_group;
-typedef std::multimap<std::basic_string<char>,any> variable_map;
-
-typedef basic_option_description<wchar_t> woption_description;
-typedef std::vector<basic_option_description<wchar_t> > woptions_group;
-typedef std::multimap<std::basic_string<wchar_t>,any> wvariable_map;
 
 
 
@@ -1199,72 +1309,97 @@ typedef std::multimap<std::basic_string<wchar_t>,any> wvariable_map;
 
 */
 template<typename CharT>
-struct basic_constraint {
-  typedef std::basic_string<CharT> string_type;
+class basic_constraint {
+  public:
+    typedef std::basic_string<CharT> string_type;
 
-  /*
-    Constrain the number of occurrences to exactly \c n
-  */
-  basic_constraint<CharT> & occurrences(std::size_t n)
-  {
-    _min = _max = n;
-    return *this;
-  }
+    int at_position(void) const {
+      return _position;
+    }
 
-  /*
-    Constrain the number of occurrences to between \c n and \c m
+    /*
+      Negative indicates no constraint
+    */
+    basic_constraint<CharT> &
+    at_position(int n)
+    {
+      _position = n;
+      return *this;
+    }
 
-    assert \c must be smaller than \m
-  */
-  basic_constraint<CharT> & occurrences(std::size_t n, std::size_t m)
-  {
-    _min = n;
-    _max = m;
-    assert(_min <= _max);
-    return *this;
-  }
+    int at_argument(void) const {
+      return _argument;
+    }
 
-  basic_constraint<CharT> &
-  mutually_exclusive(const std::vector<string_type> &mapped_key_vec)
-  {
-    _mutually_exclusive = mapped_key_vec;
-    return *this;
-  }
+    /*
+      Negative indicates no constraint
+    */
+    basic_constraint<CharT> &
+    at_argument(int n)
+    {
+      _argument = n;
+      return *this;
+    }
 
-  basic_constraint<CharT> &
-  mutually_inclusive(const std::vector<string_type> &mapped_key_vec)
-  {
-    _mutually_inclusive = mapped_key_vec;
-    return *this;
-  }
+    std::size_t min_occurrence(void) const {
+      return _min;
+    }
 
-  /*
-    Negative indicates no constraint
-  */
-  basic_constraint<CharT> &
-  at_position(int n)
-  {
-    _position = n;
-    return *this;
-  }
+    std::size_t max_occurrence(void) const {
+      return _max;
+    }
 
-  /*
-    Negative indicates no constraint
-  */
-  basic_constraint<CharT> &
-  at_argument(int n)
-  {
-    _argument = n;
-    return *this;
-  }
+    /*
+      Constrain the number of occurrences to exactly \c n
+    */
+    basic_constraint<CharT> & occurrences(std::size_t n) {
+      _min = _max = n;
+      return *this;
+    }
 
-  int _position = -1;
-  int _argument = -1;
+    /*
+      Constrain the number of occurrences to between \c n and \c m
 
-  std::size_t _min = 0;
-  std::size_t _max = std::numeric_limits<std::size_t>::max();
-  std::vector<string_type> _mutually_exclusive;
-  std::vector<string_type> _mutually_inclusive;
+      assert \c must be smaller than \m
+    */
+    basic_constraint<CharT> & occurrences(std::size_t n, std::size_t m)
+    {
+      _min = n;
+      _max = m;
+      assert(_min <= _max);
+      return *this;
+    }
+
+    const std::vector<string_type> & mutually_exclusive(void) const {
+      return _mutually_exclusive;
+    }
+
+    basic_constraint<CharT> &
+    mutually_exclusive(const std::vector<string_type> &mapped_key_vec)
+    {
+      _mutually_exclusive = mapped_key_vec;
+      return *this;
+    }
+
+    const std::vector<string_type> & mutually_inclusive(void) const {
+      return _mutually_inclusive;
+    }
+
+    basic_constraint<CharT> &
+    mutually_inclusive(const std::vector<string_type> &mapped_key_vec)
+    {
+      _mutually_inclusive = mapped_key_vec;
+      return *this;
+    }
+
+  private:
+    int _position = -1;
+    int _argument = -1;
+
+    std::size_t _min = 0;
+    std::size_t _max = std::numeric_limits<std::size_t>::max();
+    std::vector<string_type> _mutually_exclusive;
+    std::vector<string_type> _mutually_inclusive;
 };
 
 typedef basic_constraint<char> constrain;
@@ -1273,29 +1408,43 @@ typedef basic_constraint<wchar_t> wconstrain;
 
 
 template<typename T, typename CharT>
-struct basic_value {
-  typedef T value_type;
+class basic_value {
+  public:
+    typedef T value_type;
 
-  basic_value(void) = default;
-  basic_value(T *_val) :_callback([=](const T &val){*_val = val;}) {}
-  basic_value(const std::function<void(const T &)> &callback)
-    :_callback(callback) {}
+    basic_value(void) = default;
+    basic_value(T *_val) :_callback([=](const T &val){*_val = val;}) {}
+    basic_value(const std::function<void(const T &)> &callback)
+      :_callback(callback) {}
 
-  basic_value<T,CharT> & implicit(const T &val) {
-    _implicit = std::make_shared<T>(val);
+    const std::function<void(const T &)> & callback(void) const {
+      return _callback;
+    }
 
-    return *this;
-  }
+    std::shared_ptr<value_type> implicit(void) const {
+      return _implicit;
+    }
 
-  basic_value<T,CharT> & description(const std::basic_string<CharT> &str) {
-    _description = str;
+    const basic_value<T,CharT> & implicit(const T &val) {
+      _implicit = std::make_shared<T>(val);
 
-    return *this;
-  }
+      return *this;
+    }
 
-  std::function<void(const T &)> _callback;
-  std::shared_ptr<value_type> _implicit;
-  std::basic_string<CharT> _description{'a','r','g'};
+    const std::basic_string<CharT> description(void) const {
+      return _description;
+    }
+
+    basic_value<T,CharT> & description(const std::basic_string<CharT> &str) {
+      _description = str;
+
+      return *this;
+    }
+
+  private:
+    std::function<void(const T &)> _callback;
+    std::shared_ptr<value_type> _implicit;
+    std::basic_string<CharT> _description{'a','r','g'};
 };
 
 template<typename T>
@@ -1633,7 +1782,7 @@ inline bool is_portable(CharT c)
 */
 template<typename CharT>
 inline std::array<std::basic_string<CharT>,3>
-split(const std::basic_string<CharT> &str, CharT delim)
+split_opt_spec(const std::basic_string<CharT> &str, CharT delim)
 {
   typedef std::basic_string<CharT> string_type;
 
@@ -1670,9 +1819,9 @@ split(const std::basic_string<CharT> &str, CharT delim)
 
   Return the mapped_key used for contraint violation exceptions only
 */
-template<typename CharT>
+template<bool uses_packed_flags, typename CharT>
 std::basic_string<CharT>
-add_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
+set_default_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
   basic_option_description<CharT> &desc, bool hidden)
 {
   typedef std::basic_string<CharT> string_type;
@@ -1683,23 +1832,11 @@ add_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
   static const string_type arg_suffix{'%','?','V','{',' ','<','%','V','%',
     '?','I','{','=','%','I','}','{','}','>','}','{','}'};
 
-  // todo, fix me
-  if(opt_spec.empty()) {
-    if(!hidden) {
-      desc.key_description = [=](void) {
-        return string_type{'-','-','*'} + delim + string_type{'-','*'};
-      };
-    }
-
-    return string_type{'*'};
-  }
-
   string_type long_opt;
   string_type short_opt;
   string_type mapped_key;
-  std::tie(long_opt,short_opt,mapped_key) = split(opt_spec,delim);
+  std::tie(long_opt,short_opt,mapped_key) = split_opt_spec(opt_spec,delim);
 
-  assert(!(long_opt.empty() && short_opt.empty()));
   assert(short_opt.size() < 2);
   // long and short_opt must be from the portable character set
   assert(std::all_of(long_opt.begin(),long_opt.end(),is_portable<CharT>));
@@ -1713,6 +1850,7 @@ add_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
   }
 
   if(!long_opt.empty() && !short_opt.empty()) {
+    desc.unpack_option = unpack_gnu<uses_packed_flags,CharT>;
     desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
       const variable_map_type &)
       {
@@ -1730,6 +1868,7 @@ add_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
     }
   }
   else if(!long_opt.empty()) {
+    desc.unpack_option = unpack_gnu<uses_packed_flags,CharT>;
     desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
       const variable_map_type &)
       {
@@ -1745,7 +1884,8 @@ add_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
       };
     }
   }
-  else {
+  else if(!short_opt.empty()){
+    desc.unpack_option = unpack_posix<uses_packed_flags,CharT>;
     desc.mapped_key = [=](const string_type &_opt, std::size_t, std::size_t,
       const variable_map_type &)
       {
@@ -1761,35 +1901,44 @@ add_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
       };
     }
   }
+  else {
+    desc.unpack_option = unpack_gnu<uses_packed_flags,CharT>;
+    if(!hidden) {
+      desc.key_description = [=](void) {
+        return string_type{'-','-','*'} + delim + string_type{'-','*'} +
+          arg_suffix;
+      };
+    }
+  }
 
   return mapped_key;
 }
 
 template<typename T, typename CharT>
-inline void add_option_value(const basic_value<T,CharT> &val,
+inline void set_default_option_value(const basic_value<T,CharT> &val,
   basic_option_description<CharT> &desc)
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_variable_map<CharT> variable_map_type;
 
-  if(!val._description.empty()) {
+  if(!val.description().empty()) {
     desc.value_description = [=](void) -> string_type {
-      return val._description;
+      return val.description();
     };
   }
 
-  if(val._implicit) {
+  if(val.implicit()) {
     desc.make_implicit_value = [=](const string_type &,
       const variable_map_type &)
     {
-      if(val._callback)
-        val._callback(*(val._implicit));
+      if(val.callback())
+        val.callback()(*(val.implicit()));
 
-      return any(*(val._implicit));
+      return any(*(val.implicit()));
     };
     desc.implicit_value_description = [=](void) {
       string_type str;
-      convert_value<T>::to_string(str,*(val._implicit));
+      convert_value<T>::to_string(str,*(val.implicit()));
       return str;
     };
   }
@@ -1800,8 +1949,8 @@ inline void add_option_value(const basic_value<T,CharT> &val,
     try {
       const T &result = convert_value<T>::from_string(in_val);
 
-      if(val._callback)
-        val._callback(result);
+      if(val.callback())
+        val.callback()(result);
 
       return any(result);
     }
@@ -1814,38 +1963,46 @@ inline void add_option_value(const basic_value<T,CharT> &val,
 }
 
 template<typename T, typename CharT>
-inline void add_operand_value(const basic_value<T,CharT> &val,
+inline void set_default_operand_value(const basic_value<T,CharT> &val,
   basic_option_description<CharT> &desc)
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_variable_map<CharT> variable_map_type;
 
-  if(val._implicit) {
+  if(val.implicit()) {
     desc.make_value = [=](const string_type &, std::size_t, std::size_t,
     const string_type &, const variable_map_type &)
     {
-      if(val._callback)
-        val._callback(*(val._implicit));
+      if(val.callback())
+        val.callback()(*(val.implicit()));
 
-      return any(*(val._implicit));
+      return any(*(val.implicit()));
     };
   }
   else {
-    desc.make_value = [=](const string_type &mapped_key, std::size_t,
-      std::size_t, const string_type &in_val, const variable_map_type &vm)
+    desc.make_value = [=](const string_type &, std::size_t posn,
+      std::size_t argn, const string_type &in_val, const variable_map_type &)
     {
-      const T &result = convert_value<T>::from_string(in_val);
-      if(val._callback)
-        val._callback(result);
+      try {
+        const T &result = convert_value<T>::from_string(in_val);
 
-      return any(result);
+        if(val.callback())
+          val.callback()(result);
+
+        return any(result);
+      }
+      catch (...) {
+        std::throw_with_nested(invalid_argument_error{posn,argn});
+      }
+
+      return any(); // should never get here, used to avoid compiler warnings
     };
   }
 }
 
 template<typename CharT>
-inline void add_operand_key(const std::basic_string<CharT> &key, int posn,
-  int argn, basic_option_description<CharT> &desc)
+inline void set_default_operand_key(const std::basic_string<CharT> &key,
+  int posn, int argn, basic_option_description<CharT> &desc)
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_variable_map<CharT> variable_map_type;
@@ -1872,26 +2029,27 @@ inline void add_operand_key(const std::basic_string<CharT> &key, int posn,
   Used for constraints on options.
 */
 template<typename CharT>
-void add_option_constraints(const basic_constraint<CharT> &cnts,
+void set_default_constraints(const basic_constraint<CharT> &cnts,
   basic_option_description<CharT> &desc,
   const std::basic_string<CharT> &mapped_key)
 {
   desc.finalize = [=](const basic_variable_map<CharT> &vm) {
-
     std::size_t occurrances = vm.count(mapped_key);
-    if(occurrances > cnts._max || occurrances < cnts._min) {
-      throw occurrence_error(detail::asUTF8(mapped_key),cnts._min,cnts._max,
-        occurrances);
+    if(occurrances > cnts.max_occurrence() ||
+      occurrances < cnts.min_occurrence())
+    {
+      throw occurrence_error(detail::asUTF8(mapped_key),cnts.min_occurrence(),
+        cnts.max_occurrence(),occurrances);
     }
 
     if(occurrances) {
-      for(auto &exclusive_key : cnts._mutually_exclusive) {
+      for(auto &exclusive_key : cnts.mutually_exclusive()) {
         if(vm.count(exclusive_key) != 0)
           throw mutually_exclusive_error(detail::asUTF8(mapped_key),
             detail::asUTF8(exclusive_key));
       }
 
-      for(auto &inclusive_key : cnts._mutually_inclusive) {
+      for(auto &inclusive_key : cnts.mutually_inclusive()) {
         if(vm.count(inclusive_key) == 0)
           throw mutually_inclusive_error(detail::asUTF8(mapped_key),
             detail::asUTF8(inclusive_key));
@@ -1899,40 +2057,6 @@ void add_option_constraints(const basic_constraint<CharT> &cnts,
     }
   };
 }
-
-/*
-  Used for constraints on operands.
-*/
-template<typename CharT>
-void add_operand_constraints(const basic_constraint<CharT> &cnts,
-  const std::basic_string<CharT> &mapped_key,
-  basic_option_description<CharT> &desc)
-{
-  desc.finalize = [=](const basic_variable_map<CharT> &vm) {
-    std::size_t occurrances = vm.count(mapped_key);
-    if(occurrances < cnts._min || occurrances > cnts._max) {
-        throw occurrence_error(detail::asUTF8(mapped_key),cnts._min,cnts._max,
-          occurrances);
-    }
-
-    if(occurrances) {
-      for(auto &exclusive_key : cnts._mutually_exclusive) {
-        if(vm.count(exclusive_key) != 0)
-          throw mutually_exclusive_error(detail::asUTF8(mapped_key),
-            detail::asUTF8(exclusive_key));
-      }
-
-      for(auto &inclusive_key : cnts._mutually_inclusive) {
-        if(vm.count(inclusive_key) == 0)
-          throw mutually_inclusive_error(detail::asUTF8(mapped_key),
-            detail::asUTF8(inclusive_key));
-      }
-    }
-  };
-}
-
-
-
 
 
 
@@ -1954,13 +2078,14 @@ make_option(const std::basic_string<CharT> &opt_spec,
 {
   typedef std::basic_string<CharT> string_type;
 
-  basic_option_description<CharT> desc{unpack_gnu<true,CharT>};
+  basic_option_description<CharT> desc;
 
-  string_type mapped_key = add_option_spec(opt_spec,delim,desc,false);
+  string_type mapped_key =
+    set_default_option_spec<true>(opt_spec,delim,desc,false);
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  add_option_constraints(cnts,desc,mapped_key);
+  set_default_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -2009,11 +2134,12 @@ make_option(const std::basic_string<CharT> &opt_spec,
 {
   typedef std::basic_string<CharT> string_type;
 
-  basic_option_description<CharT> desc{unpack_gnu<true,CharT>};
+  basic_option_description<CharT> desc;
 
-  string_type mapped_key = add_option_spec(opt_spec,delim,desc,true);
+  string_type mapped_key =
+    set_default_option_spec<true>(opt_spec,delim,desc,true);
 
-  add_option_constraints(cnts,desc,mapped_key);
+  set_default_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -2041,15 +2167,16 @@ make_option(const std::basic_string<CharT> &opt_spec,
 {
   typedef std::basic_string<CharT> string_type;
 
-  basic_option_description<CharT> desc{unpack_gnu<false,CharT>};
+  basic_option_description<CharT> desc;
 
-  string_type mapped_key = add_option_spec(opt_spec,delim,desc,false);
+  string_type mapped_key =
+    set_default_option_spec<false>(opt_spec,delim,desc,false);
 
-  add_option_value(val,desc);
+  set_default_option_value(val,desc);
 
   desc.extended_description = [=](void) { return extended_desc; };
 
-  add_option_constraints(cnts,desc,mapped_key);
+  set_default_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -2099,13 +2226,14 @@ make_option(const std::basic_string<CharT> &opt_spec,
 {
   typedef std::basic_string<CharT> string_type;
 
-  basic_option_description<CharT> desc{unpack_gnu<false,CharT>};
+  basic_option_description<CharT> desc;
 
-  string_type mapped_key = add_option_spec(opt_spec,delim,desc,true);
+  string_type mapped_key =
+    set_default_option_spec<false>(opt_spec,delim,desc,true);
 
-  add_option_value(val,desc);
+  set_default_option_value(val,desc);
 
-  add_option_constraints(cnts,desc,mapped_key);
+  set_default_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -2150,11 +2278,12 @@ make_operand(const std::basic_string<CharT> &mapped_key,
 {
   basic_option_description<CharT> desc;
 
-  add_operand_value(val,desc);
+  set_default_operand_value(val,desc);
 
-  add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
+  set_default_operand_key(mapped_key,cnts.at_position(),cnts.at_argument(),
+    desc);
 
-  add_operand_constraints(cnts,mapped_key,desc);
+  set_default_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -2178,9 +2307,10 @@ make_operand(const std::basic_string<CharT> &mapped_key,
 {
   basic_option_description<CharT> desc;
 
-  add_operand_key(mapped_key,cnts._position,cnts._argument,desc);
+  set_default_operand_key(mapped_key,cnts.at_position(),cnts.at_argument(),
+    desc);
 
-  add_operand_constraints(cnts,mapped_key,desc);
+  set_default_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
@@ -2552,7 +2682,7 @@ expand(const std::basic_string<CharT> &in,
 /*
   Format an option description into a basic_string<CharT>
 
-  \c typeset_option Calls do_typeset_option(desc). Return a string
+  \c typeset_description Calls do_typeset_option(desc). Return a string
   containing the fully formatted option or the empty string if the
   option should be hidden.
 
@@ -2560,7 +2690,7 @@ expand(const std::basic_string<CharT> &in,
   compare_type to indicate sorting should not be performed
 */
 template<typename CharT>
-class basic_option_formatter {
+class basic_description_formatter {
   public:
     typedef std::basic_string<CharT> string_type;
     typedef basic_option_description<CharT> description_type;
@@ -2568,9 +2698,10 @@ class basic_option_formatter {
     typedef std::function<bool(const description_type &,
       const description_type &)> compare_type;
 
-    virtual ~basic_option_formatter(void) {}
+    virtual ~basic_description_formatter(void) {}
 
-    virtual string_type typeset_option(const description_type &desc) const = 0;
+    virtual string_type
+      typeset_description(const description_type &desc) const = 0;
 
     virtual compare_type compare(void) const {
       return compare_type();
@@ -2599,13 +2730,13 @@ class basic_option_formatter {
   otherwise returns false.
 */
 template<typename CharT>
-class basic_default_formatter : public basic_option_formatter<CharT> {
+class basic_default_formatter : public basic_description_formatter<CharT> {
   public:
-    using typename basic_option_formatter<CharT>::string_type;
-    using typename basic_option_formatter<CharT>::description_type;
-    using typename basic_option_formatter<CharT>::compare_type;
+    using typename basic_description_formatter<CharT>::string_type;
+    using typename basic_description_formatter<CharT>::description_type;
+    using typename basic_description_formatter<CharT>::compare_type;
 
-    string_type typeset_option(const description_type &desc) const;
+    string_type typeset_description(const description_type &desc) const;
 
     void sort_entries(bool val) {
       _should_sort = val;
@@ -2711,7 +2842,7 @@ class basic_default_formatter : public basic_option_formatter<CharT> {
 template<typename CharT>
 typename basic_default_formatter<CharT>::string_type
 basic_default_formatter<CharT>::
-  typeset_option(const description_type &desc) const
+  typeset_description(const description_type &desc) const
 {
   if(!desc.key_description)
     return string_type();
@@ -2753,7 +2884,8 @@ basic_default_formatter<CharT>::
 template<typename CharT>
 std::basic_string<CharT>
 to_string(const std::vector<basic_option_description<CharT> > &grp,
-  const basic_option_formatter<CharT> &fmt = basic_default_formatter<CharT>())
+  const basic_description_formatter<CharT> &fmt =
+    basic_default_formatter<CharT>())
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_option_description<CharT> description_type;
@@ -2768,7 +2900,8 @@ to_string(const std::vector<basic_option_description<CharT> > &grp,
   for(auto &desc : grp) {
     // hidden means no long or short key descriptions
     if((desc.key_description)) {
-      output_grp.emplace_back(std::make_pair(&desc,fmt.typeset_option(desc)));
+      output_grp.emplace_back(
+        std::make_pair(&desc,fmt.typeset_description(desc)));
       extent = std::max(extent,output_grp.back().second.size());
     }
   }
@@ -2798,5 +2931,3 @@ to_string(const std::vector<basic_option_description<CharT> > &grp,
 
 
 #endif
-
-

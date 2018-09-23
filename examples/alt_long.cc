@@ -56,8 +56,7 @@ int main (int argc, char *argv[])
     co::variable_map vm = co::parse_arguments(argv+1,argv+argc,desc);
 
     if(vm.count("help")) {
-      std::cout << co::to_string(desc)
-        << "\nIn addition -ffoo and -fno-foo syntax are recognized.\n";
+      std::cout << co::to_string(desc) << "\n";
       return 0;
     }
 

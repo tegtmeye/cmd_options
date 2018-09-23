@@ -87,7 +87,7 @@ unpack_f(const std::basic_string<CharT> &s)
 }
 
 template<typename T, typename CharT>
-co::option_description
+co::basic_option_description<CharT>
 make_f_flag(const std::basic_string<CharT> &opt_spec,
   const std::basic_string<CharT> &ext_desc, bool negative_form = false,
   const co::basic_constraint<CharT> &cnts = co::basic_constraint<CharT>())
@@ -101,7 +101,7 @@ make_f_flag(const std::basic_string<CharT> &opt_spec,
 
   assert(std::all_of(long_opt.begin(),long_opt.end(),co::is_portable<CharT>));
 
-  co::option_description desc;
+  co::basic_option_description<CharT> desc;
 
   desc.unpack_option = unpack_f<CharT>;
 
@@ -126,14 +126,14 @@ make_f_flag(const std::basic_string<CharT> &opt_spec,
   }
 
   desc.extended_description = [=](void) { return ext_desc; };
-  co::add_option_value(co::basic_value<T,CharT>(),desc);
-  co::add_option_constraints(cnts,desc,mapped_key);
+  co::set_default_option_value(co::basic_value<T,CharT>(),desc);
+  co::set_default_constraints(cnts,desc,mapped_key);
 
   return desc;
 }
 
 template<typename T, typename CharT>
-co::option_description
+co::basic_option_description<CharT>
 make_f_flag(const std::basic_string<CharT> &opt_spec,
   const std::basic_string<CharT> &ext_desc,
   const co::basic_constraint<CharT> &cnts = co::basic_constraint<CharT>())
@@ -142,7 +142,7 @@ make_f_flag(const std::basic_string<CharT> &opt_spec,
 }
 
 template<typename T, typename CharT>
-inline co::option_description
+inline co::basic_option_description<CharT>
 make_f_flag(const CharT *opt_spec, const CharT *ext_desc,
   bool negative_form = false,
   const co::basic_constraint<CharT> &cnts = co::basic_constraint<CharT>())
@@ -154,7 +154,7 @@ make_f_flag(const CharT *opt_spec, const CharT *ext_desc,
 }
 
 template<typename T, typename CharT>
-inline co::option_description
+inline co::basic_option_description<CharT>
 make_f_flag(const CharT *opt_spec, const CharT *ext_desc,
   const co::basic_constraint<CharT> &cnts = co::basic_constraint<CharT>())
 {
@@ -165,7 +165,7 @@ make_f_flag(const CharT *opt_spec, const CharT *ext_desc,
 }
 
 template<typename T, typename CharT>
-inline co::option_description
+inline co::basic_option_description<CharT>
 make_f_flag(const CharT *opt_spec, const std::basic_string<CharT> &ext_desc,
   bool negative_form = false,
   const co::basic_constraint<CharT> &cnts = co::basic_constraint<CharT>())
@@ -177,7 +177,7 @@ make_f_flag(const CharT *opt_spec, const std::basic_string<CharT> &ext_desc,
 }
 
 template<typename T, typename CharT>
-inline co::option_description
+inline co::basic_option_description<CharT>
 make_f_flag(const CharT *opt_spec, const std::basic_string<CharT> &ext_desc,
   const co::basic_constraint<CharT> &cnts = co::basic_constraint<CharT>())
 {
@@ -188,7 +188,7 @@ make_f_flag(const CharT *opt_spec, const std::basic_string<CharT> &ext_desc,
 }
 
 template<typename T, typename CharT>
-inline co::option_description
+inline co::basic_option_description<CharT>
 make_f_flag(const std::basic_string<CharT> &opt_spec, const CharT *ext_desc,
   bool negative_form = false,
   const co::basic_constraint<CharT> &cnts = co::basic_constraint<CharT>())
@@ -200,7 +200,7 @@ make_f_flag(const std::basic_string<CharT> &opt_spec, const CharT *ext_desc,
 }
 
 template<typename T, typename CharT>
-inline co::option_description
+inline co::basic_option_description<CharT>
 make_f_flag(const std::basic_string<CharT> &opt_spec, const CharT *ext_desc,
   const co::basic_constraint<CharT> &cnts = co::basic_constraint<CharT>())
 {
@@ -216,7 +216,7 @@ make_f_flag(const std::basic_string<CharT> &opt_spec, const CharT *ext_desc,
 
 
 template<typename T, typename CharT>
-co::option_description
+co::basic_option_description<CharT>
 make_hidden_f_flag(const std::basic_string<CharT> &opt_spec,
   const co::basic_constraint<CharT> &cnts = co::basic_constraint<CharT>())
 {
@@ -227,7 +227,7 @@ make_hidden_f_flag(const std::basic_string<CharT> &opt_spec,
 }
 
 template<typename T, typename CharT>
-inline co::option_description
+inline co::basic_option_description<CharT>
 make_hidden_f_flag(const CharT *opt_spec,
   const co::basic_constraint<CharT> &cnts = co::basic_constraint<CharT>())
 {

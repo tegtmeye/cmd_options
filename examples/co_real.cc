@@ -42,6 +42,8 @@ int main (int argc, char *argv[])
     co::options_group desc{
       co::make_option("help","produce help message",
           co::constrain().occurrences(0,1)),
+      co::make_option("option_with_a_really_really_long_name","This option has a really really long name and a really really long description that must be wrapped.",
+          co::constrain().occurrences(0,1)),
       co::make_option("output,o", co::value<std::string>(),
         "pathname for output",
         co::constrain().occurrences(0,1).
