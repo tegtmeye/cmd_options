@@ -50,7 +50,7 @@ option_description_type check_pos_arg(const option_description_type &desc,
 option_description_type nested1{
   [](const string_type &option) -> option_pack_type {
     if(option == _LIT("-foo"))
-      return option_pack_type{true,false,_LIT("-"),_LIT("foo"),
+      return option_pack_type{true,false,_LIT("foo"),
         {_LIT("-a"),_LIT("-bar"),_LIT("-c")}};
     return option_pack_type{false};
   },
@@ -67,7 +67,7 @@ option_description_type nested1{
 option_description_type nested2{
   [](const string_type &option) -> option_pack_type {
     if(option == _LIT("-bar"))
-      return option_pack_type{true,false,_LIT("-"),_LIT("bar"),
+      return option_pack_type{true,false,_LIT("bar"),
         {_LIT("-d"),_LIT("-e"),_LIT("-f")}};
     return option_pack_type{false};
   },
@@ -84,7 +84,7 @@ option_description_type nested2{
 option_description_type nested3{
   [](const string_type &option) -> option_pack_type {
     if(option == _LIT("-bar"))
-      return option_pack_type{true,false,_LIT("-"),_LIT("bar"),
+      return option_pack_type{true,false,_LIT("bar"),
         {_LIT("-d"),_LIT("pos"),_LIT("-f")}};
     return option_pack_type{false};
   },

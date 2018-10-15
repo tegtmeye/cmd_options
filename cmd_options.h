@@ -368,10 +368,6 @@ typedef std::multimap<std::basic_string<char32_t>,any> variable_map32;
     true if the option expects a later argument--only if it is provided
     as part of the given string.
 
-  - `prefix`
-
-    A string specifying the option prefix, ie '-' or '--' [deprecated]
-
   - `raw_key`
 
     A string containing the raw option key parsed in the option. This is
@@ -479,7 +475,6 @@ struct basic_option_pack {
 
   bool did_unpack;
   bool value_provided;
-  string_type prefix;
   string_type raw_key;
   packed_arg_seq packed_arguments;
   string_type value;
@@ -857,7 +852,7 @@ basic_option_pack<CharT> unpack_posix(const std::basic_string<CharT> &str)
     return option_pack{false};
 
   if(res.second+1 == str.end())
-    return option_pack{true,false,sprefix,{res.second,res.second+1},{},{}};
+    return option_pack{true,false,{res.second,res.second+1},{},{}};
 
   if(uses_packed_flags) {
     string_type raw_key{res.second,++res.second};
@@ -865,10 +860,10 @@ basic_option_pack<CharT> unpack_posix(const std::basic_string<CharT> &str)
     while(res.second != str.end())
       packed_arguments.push_back(sprefix+(*(res.second++)));
 
-    return option_pack{true,false,sprefix,raw_key,packed_arguments};
+    return option_pack{true,false,raw_key,packed_arguments};
   }
 
-  return option_pack{true,true,sprefix,{res.second,res.second+1},{},
+  return option_pack{true,true,{res.second,res.second+1},{},
     {res.second+1,str.end()}};
 }
 
@@ -937,9 +932,9 @@ basic_option_pack<CharT> unpack_gnu(const std::basic_string<CharT> &str)
     std::search(res.second,str.end(),assignment.begin(),assignment.end());
 
   if(assign_loc == str.end())
-    return option_pack{true,false,lprefix,{res.second,str.end()},{},{}};
+    return option_pack{true,false,{res.second,str.end()},{},{}};
 
-  return option_pack{true,true,lprefix,{res.second,assign_loc},{},
+  return option_pack{true,true,{res.second,assign_loc},{},
     {assign_loc+1,str.end()}};
 }
 
