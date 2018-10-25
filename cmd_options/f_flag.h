@@ -78,9 +78,9 @@ unpack_f(const std::basic_string<CharT> &s)
 
   if (s.find(string_type{'-','f'}) == 0) {
     if (s.substr(2, 3) == string_type{'n','o','-'})
-      return co::basic_option_pack<CharT>{true,true,{'-'},s.substr(5),{},{'0'}};
+      return co::basic_option_pack<CharT>{true,true,s.substr(5),{},{'0'}};
     else
-      return co::basic_option_pack<CharT>{true,true,{'-'},s.substr(2),{},{'1'}};
+      return co::basic_option_pack<CharT>{true,true,s.substr(2),{},{'1'}};
   }
 
   return co::basic_option_pack<CharT>{false};

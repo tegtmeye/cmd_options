@@ -1420,7 +1420,7 @@ class basic_value {
       return _implicit;
     }
 
-    const basic_value<T,CharT> & implicit(const T &val) {
+    basic_value<T,CharT> & implicit(const T &val) {
       _implicit = std::make_shared<T>(val);
 
       return *this;

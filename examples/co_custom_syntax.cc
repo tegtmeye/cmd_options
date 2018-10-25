@@ -53,9 +53,9 @@ co::option_pack unpack_f(const std::string &s)
 {
   if (s.find("-f") == 0) {
     if (s.substr(2, 3) == "no-")
-      return co::option_pack{true,true,"-",s.substr(5),{},"false"};
+      return co::option_pack{true,true,s.substr(5),{},"false"};
     else
-      return co::option_pack{true,true,"-",s.substr(2),{},"true"};
+      return co::option_pack{true,true,s.substr(2),{},"true"};
   }
 
   return co::unpack_gnu<true,char>(s);
