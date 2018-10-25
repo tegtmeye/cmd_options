@@ -1103,7 +1103,7 @@ parse_incremental_arguments(BidirectionalIterator first,
             }
             else {
               _vm.emplace(mapped_key,
-                desc->make_value(mapped_key,option_count,arg_count,
+                desc->make_value(mapped_key,option_count,arg_count++,
                   current_cmdlist.back(),_vm));
                 current_cmdlist.pop_back();
             }
@@ -2891,13 +2891,11 @@ to_string(const std::vector<basic_option_description<CharT> > &grp,
   std::vector<output_pair_type> output_grp;
   output_grp.reserve(grp.size());
 
-  std::size_t extent = 0;
   for(auto &desc : grp) {
     // hidden means no long or short key descriptions
     if((desc.key_description)) {
       output_grp.emplace_back(
         std::make_pair(&desc,fmt.typeset_description(desc)));
-      extent = std::max(extent,output_grp.back().second.size());
     }
   }
 
