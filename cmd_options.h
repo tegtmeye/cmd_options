@@ -1436,8 +1436,38 @@ class basic_value {
       return *this;
     }
 
+    basic_value<T,CharT> & validate(const std::function<void(const T &)> &fn) {
+      _validate = fn;
+
+      return *this;
+    }
+
+    const std::function<void(const T &)> & validate(void) const {
+      return _callback;
+    }
+
+    basic_value<T,CharT> &
+    transform(const std::function<
+      std::basic_string<CharT>(const std::basic_string<CharT> &str)> &fn)
+    {
+      _transform = fn;
+
+      return *this;
+    }
+
+    const std::function<
+      std::basic_string<CharT>(const std::basic_string<CharT> &)> &
+    transform(void) const
+    {
+      return _transform;
+    }
+
+
   private:
+    std::function<
+      std::basic_string<CharT>(const std::basic_string<CharT> &)> _transform;
     std::function<void(const T &)> _callback;
+    std::function<void(const T &)> _validate;
     std::shared_ptr<value_type> _implicit;
     std::basic_string<CharT> _description{'a','r','g'};
 };
@@ -1938,23 +1968,51 @@ inline void set_default_option_value(const basic_value<T,CharT> &val,
     };
   }
 
-  desc.make_value = [=](const string_type &, std::size_t posn, std::size_t argn,
-    const string_type &in_val, const variable_map_type &)
-  {
-    try {
-      const T &result = convert_value<T>::from_string(in_val);
+  if(val.transform()) {
+    desc.make_value = [=](const string_type &, std::size_t posn,
+      std::size_t argn, const string_type &in_val, const variable_map_type &)
+    {
+      try {
+        const T &result =
+          convert_value<T>::from_string(val.transform()(in_val));
 
-      if(val.callback())
-        val.callback()(result);
+        if(val.validate())
+          val.validate()(result);
 
-      return any(result);
-    }
-    catch (...) {
-      std::throw_with_nested(invalid_argument_error{posn,argn});
-    }
+        if(val.callback())
+          val.callback()(result);
 
-    return any(); // should never get here, used to avoid compiler warnings
-  };
+        return any(result);
+      }
+      catch (...) {
+        std::throw_with_nested(invalid_argument_error{posn,argn});
+      }
+
+      return any(); // should never get here, used to avoid compiler warnings
+    };
+  }
+  else {
+    desc.make_value = [=](const string_type &, std::size_t posn,
+      std::size_t argn, const string_type &in_val, const variable_map_type &)
+    {
+      try {
+        const T &result = convert_value<T>::from_string(in_val);
+
+        if(val.validate())
+          val.validate()(result);
+
+        if(val.callback())
+          val.callback()(result);
+
+        return any(result);
+      }
+      catch (...) {
+        std::throw_with_nested(invalid_argument_error{posn,argn});
+      }
+
+      return any(); // should never get here, used to avoid compiler warnings
+    };
+  }
 }
 
 template<typename T, typename CharT>
@@ -1974,12 +2032,38 @@ inline void set_default_operand_value(const basic_value<T,CharT> &val,
       return any(*(val.implicit()));
     };
   }
+  else if(val.transform()) {
+    desc.make_value = [=](const string_type &, std::size_t posn,
+      std::size_t argn, const string_type &in_val, const variable_map_type &)
+    {
+      try {
+        const T &result =
+          convert_value<T>::from_string(val.transform()(in_val));
+
+        if(val.validate())
+          val.validate()(result);
+
+        if(val.callback())
+          val.callback()(result);
+
+        return any(result);
+      }
+      catch (...) {
+        std::throw_with_nested(invalid_argument_error{posn,argn});
+      }
+
+      return any(); // should never get here, used to avoid compiler warnings
+    };
+  }
   else {
     desc.make_value = [=](const string_type &, std::size_t posn,
       std::size_t argn, const string_type &in_val, const variable_map_type &)
     {
       try {
         const T &result = convert_value<T>::from_string(in_val);
+
+        if(val.validate())
+          val.validate()(result);
 
         if(val.callback())
           val.callback()(result);
