@@ -1443,7 +1443,7 @@ class basic_value {
     }
 
     const std::function<void(const T &)> & validate(void) const {
-      return _callback;
+      return _validate;
     }
 
     basic_value<T,CharT> &
