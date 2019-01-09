@@ -30,6 +30,8 @@
 
 #if __cplusplus < 201703L
 #include <boost/any.hpp>
+#else
+#include <any>
 #endif
 
 #include <map>
@@ -82,6 +84,33 @@ namespace cmd_options {
   using bad_any_cast = boost::bad_any_cast;
 #else
   using any = std::any;
+
+  /*
+    Checking if any has a value is different between boost and C++17.
+
+    Provide an abstraction
+  */
+  inline bool is_empty(const any &_val)
+  {
+    return _val.has_value();
+  }
+
+  /*
+    Convenience syntax for any_cast between boost::any and std::any
+
+    Would rather use a "using any_cast = boost::any_cast" syntax but aliases
+    are not available for functions
+  */
+  template<typename T, typename AnyT>
+  inline T any_cast(AnyT && _val)
+  {
+    return std::any_cast<T>(std::forward<AnyT>(_val));
+  }
+
+  /*
+    Convenience for bad_any_cast between boost::any and std::any
+  */
+  using bad_any_cast = std::bad_any_cast;
 #endif
 
 namespace detail {
