@@ -209,15 +209,15 @@ class occurrence_error : public constraint_error {
         :constraint_error("occurrence_error",mapped_key), _min(min), _max(max),
           _occurrences(occurrences) {}
 
-    const std::size_t min(void) const noexcept {
+    std::size_t min(void) const noexcept {
       return _min;
     }
 
-    const std::size_t max(void) const noexcept {
+    std::size_t max(void) const noexcept {
       return _max;
     }
 
-    const std::size_t occurrences(void) const noexcept {
+    std::size_t occurrences(void) const noexcept {
       return _occurrences;
     }
 
@@ -878,7 +878,7 @@ basic_option_pack<CharT> unpack_posix(const std::basic_string<CharT> &str)
   auto &&res =
     detail::mismatch(sprefix.begin(),sprefix.end(),str.begin(),str.end());
   if(res.first != sprefix.end() || res.second == str.end())
-    return option_pack{false};
+    return option_pack{false,{},{},{},{}};
 
   if(res.second+1 == str.end())
     return option_pack{true,false,{res.second,res.second+1},{},{}};
@@ -889,7 +889,7 @@ basic_option_pack<CharT> unpack_posix(const std::basic_string<CharT> &str)
     while(res.second != str.end())
       packed_arguments.push_back(sprefix+(*(res.second++)));
 
-    return option_pack{true,false,raw_key,packed_arguments};
+    return option_pack{true,false,raw_key,packed_arguments,{}};
   }
 
   return option_pack{true,true,{res.second,res.second+1},{},
@@ -2453,7 +2453,7 @@ inline basic_option_description<CharT> make_options_error(void)
   typedef basic_variable_map<CharT> variable_map_type;
 
   return basic_option_description<CharT>{unpack_gnu<false,CharT>,
-    [](const string_type &raw_key,int,int,const variable_map_type &) {
+    [](const string_type &,int,int,const variable_map_type &) {
       return std::make_pair(false,string_type());
     }};
 }
