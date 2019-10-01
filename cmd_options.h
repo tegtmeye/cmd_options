@@ -2119,8 +2119,11 @@ inline void set_default_operand_key(const std::basic_string<CharT> &key,
     desc.mapped_key = [=](const string_type &, std::size_t _posn,
       std::size_t _argn, const variable_map_type &)
     {
-      if((posn<0 || posn == _posn) && (argn<0 || argn == _argn))
+      if((posn<0 || posn == static_cast<int>(_posn)) &&
+        (argn<0 || argn == static_cast<int>(_argn)))
+      {
         return std::make_pair(true,key);
+      }
       return std::make_pair(false,std::basic_string<CharT>());
     };
   }
