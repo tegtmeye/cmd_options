@@ -24,7 +24,7 @@
 #  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 additional_cppflags= \
-	-pedantic -Wall -I$(top_srcdir) \
+	-I$(top_srcdir) \
 	$(SYSTEM_BOOST_CPPFLAGS)
 
 char_cpp_flags= \
@@ -45,15 +45,10 @@ wchar_cpp_flags= \
 additional_cflags=
 
 additional_libs= \
-	$(BOOST_UNIT_TEST_FRAMEWORK_LIBS) \
-	$(BOOST_SYSTEM_LIBS) \
-	$(BOOST_FILESYSTEM_LIBS)
+	$(BOOST_UNIT_TEST_FRAMEWORK_LIB)
 
 additional_ldflags= \
-        $(BOOST_LDFLAGS) \
-        $(BOOST_UNIT_TEST_FRAMEWORK_LDFLAGS) \
-        $(BOOST_SYSTEM_LDFLAGS) \
-        $(BOOST_FILESYSTEM_LDFLAGS)
+  $(BOOST_LDFLAGS)
 
 
 check_PROGRAMS=\

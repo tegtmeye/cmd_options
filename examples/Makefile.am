@@ -24,15 +24,13 @@
 #  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 additional_cppflags= \
-	-pedantic -Wall -I$(top_srcdir) \
+	-I$(top_srcdir) \
 	$(SYSTEM_BOOST_CPPFLAGS)
-
-additional_cflags=
 
 additional_libs=
 
 additional_ldflags= \
-        $(BOOST_LDFLAGS)
+  $(BOOST_LDFLAGS)
 
 
 noinst_PROGRAMS=\

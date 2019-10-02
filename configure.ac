@@ -39,10 +39,22 @@ AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 
+
+# Check how to add all warnings for this compiler
+AX_CHECK_COMPILE_FLAG([-Wextra],
+  [AX_PREPEND_FLAG([-Wextra],[AM_CXXFLAGS])])
+AX_CHECK_COMPILE_FLAG([-pedantic],
+  [AX_PREPEND_FLAG([-pedantic],[AM_CXXFLAGS])])
+
+# CXXFLAGS is reserved for user, so set AM_CXXFLAGS instead
+AX_CXXFLAGS_WARN_ALL([[AM_CXXFLAGS]])
+
+
+
+
 # We need boost
 AX_BOOST_BASE([1.61])
 AX_BOOST_UNIT_TEST_FRAMEWORK
-AX_BOOST_PROGRAM_OPTIONS
 
 # Use SYSTEM_BOOST_CPPFLAGS to add includes with -isystem instead of -I
 # to suppress boost compiler warnings
@@ -61,6 +73,12 @@ AM_CONDITIONAL([EXAMPLES], [test "x$with_examples" == xyes])
 
 # Check for C++11 support
 AX_CXX_COMPILE_STDCXX([11],[noext],[mandatory])
+
+
+
+# Output accumulated flags to the Makefile files.
+AC_SUBST([AM_CXXFLAGS])
+
 
 AC_CONFIG_FILES( \
 		 cmd_options.pc \

@@ -83,7 +83,7 @@ unpack_f(const std::basic_string<CharT> &s)
       return co::basic_option_pack<CharT>{true,true,s.substr(2),{},{'1'}};
   }
 
-  return co::basic_option_pack<CharT>{false};
+  return co::basic_option_pack<CharT>{false,{},{},{},{}};
 }
 
 template<typename T, typename CharT>
@@ -237,7 +237,7 @@ make_hidden_f_flag(const CharT *opt_spec,
     false,cnts);
   desc.key_description = nullptr;
 
-  return desc;
+  return std::move(desc);
 }
 
 
