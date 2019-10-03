@@ -507,6 +507,19 @@ struct basic_option_pack {
   string_type raw_key;
   packed_arg_seq packed_arguments;
   string_type value;
+
+  basic_option_pack(bool _did_unpack, bool _value_provided = false,
+    const string_type &_raw_key = string_type(),
+    const packed_arg_seq & _packed_arguments = packed_arg_seq(),
+    const string_type &_value = string_type()) :did_unpack(_did_unpack),
+      value_provided(_value_provided), raw_key(_raw_key),
+      packed_arguments(_packed_arguments), value(_value) {}
+};
+
+enum parse_flag {
+  reject            = 0,
+  accept            = (1 << 0),
+  accept_terminate  = accept | (1 << 1)
 };
 
 typedef basic_option_pack<char> option_pack;
@@ -626,7 +639,7 @@ struct basic_option_description {
 
     Where `infile` is always first and `outfile` is always second.
   */
-  std::function<std::pair<bool,string_type>(
+  std::function<std::pair<parse_flag,string_type>(
     const string_type &raw_key, std::size_t posn, std::size_t argn,
     const variable_map_type &vm)> mapped_key;
 
@@ -878,10 +891,10 @@ basic_option_pack<CharT> unpack_posix(const std::basic_string<CharT> &str)
   auto &&res =
     detail::mismatch(sprefix.begin(),sprefix.end(),str.begin(),str.end());
   if(res.first != sprefix.end() || res.second == str.end())
-    return option_pack{false,{},{},{},{}};
+    return option_pack(false);
 
   if(res.second+1 == str.end())
-    return option_pack{true,false,{res.second,res.second+1},{},{}};
+    return option_pack(true,false,{res.second,res.second+1},{},{});
 
   if(uses_packed_flags) {
     string_type raw_key{res.second,++res.second};
@@ -1027,7 +1040,7 @@ parse_incremental_arguments(BidirectionalIterator first,
 
   string_type arg;
   string_type mapped_key;
-  option_pack_type option_pack;
+  option_pack_type option_pack(false);
 
   typename options_group_type::const_iterator desc;
 
@@ -1909,9 +1922,9 @@ set_default_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
       const variable_map_type &)
       {
         if(_opt == long_opt || _opt == short_opt)
-          return std::make_pair(true,mapped_key);
+          return std::make_pair(parse_flag::accept,mapped_key);
 
-        return std::make_pair(false,string_type());
+        return std::make_pair(parse_flag::reject,string_type());
       };
 
     if(!hidden) {
@@ -1927,9 +1940,9 @@ set_default_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
       const variable_map_type &)
       {
         if(_opt == long_opt)
-          return std::make_pair(true,mapped_key);
+          return std::make_pair(parse_flag::accept,mapped_key);
 
-        return std::make_pair(false,string_type());
+        return std::make_pair(parse_flag::reject,string_type());
       };
 
     if(!hidden) {
@@ -1944,9 +1957,9 @@ set_default_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
       const variable_map_type &)
       {
         if(_opt == short_opt)
-          return std::make_pair(true,mapped_key);
+          return std::make_pair(parse_flag::accept,mapped_key);
 
-        return std::make_pair(false,string_type());
+        return std::make_pair(parse_flag::reject,string_type());
       };
 
     if(!hidden) {
@@ -2122,16 +2135,16 @@ inline void set_default_operand_key(const std::basic_string<CharT> &key,
       if((posn<0 || posn == static_cast<int>(_posn)) &&
         (argn<0 || argn == static_cast<int>(_argn)))
       {
-        return std::make_pair(true,key);
+        return std::make_pair(parse_flag::accept,key);
       }
-      return std::make_pair(false,std::basic_string<CharT>());
+      return std::make_pair(parse_flag::reject,std::basic_string<CharT>());
     };
   }
   else {
     desc.mapped_key = [=](const string_type &, std::size_t, std::size_t,
       const variable_map_type &)
     {
-      return std::make_pair(true,key);
+      return std::make_pair(parse_flag::accept,key);
     };
   }
 }

@@ -100,7 +100,7 @@ struct userdef_convert_struct {
 template<typename CharT>
 inline typename std::enable_if<std::is_same<CharT,char>::value,
   std::basic_ostream<CharT> &>::type
-operator<<(std::basic_ostream<CharT> &out, const userdef_convert_struct &ts)
+operator<<(std::basic_ostream<CharT> &, const userdef_convert_struct &)
 {
   throw 1;
 }
@@ -108,7 +108,7 @@ operator<<(std::basic_ostream<CharT> &out, const userdef_convert_struct &ts)
 template<typename CharT>
 inline typename std::enable_if<std::is_same<CharT,wchar_t>::value,
   std::basic_ostream<CharT> &>::type
-operator<<(std::basic_ostream<CharT> &out, const userdef_convert_struct &ts)
+operator<<(std::basic_ostream<CharT> &, const userdef_convert_struct &)
 {
   throw 1;
 }
@@ -116,7 +116,7 @@ operator<<(std::basic_ostream<CharT> &out, const userdef_convert_struct &ts)
 template<typename CharT>
 inline typename std::enable_if<std::is_same<CharT,char>::value,
   std::basic_istream<CharT> &>::type
-operator>>(std::basic_istream<CharT> &in, userdef_convert_struct &rhs)
+operator>>(std::basic_istream<CharT> &, userdef_convert_struct &)
 {
   throw 1;
 }
@@ -124,7 +124,7 @@ operator>>(std::basic_istream<CharT> &in, userdef_convert_struct &rhs)
 template<typename CharT>
 inline typename std::enable_if<std::is_same<CharT,wchar_t>::value,
   std::basic_istream<CharT> &>::type
-operator>>(std::basic_istream<CharT> &in, userdef_convert_struct &rhs)
+operator>>(std::basic_istream<CharT> &, userdef_convert_struct &)
 {
   throw 1;
 }

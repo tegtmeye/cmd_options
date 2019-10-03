@@ -109,9 +109,9 @@ make_f_flag(const std::basic_string<CharT> &opt_spec,
     const variable_map_type &)
     {
       if(_opt == long_opt)
-        return std::make_pair(true,mapped_key);
+        return std::make_pair(parse_flag::accept,mapped_key);
 
-      return std::make_pair(false,string_type());
+      return std::make_pair(parse_flag::reject,string_type());
     };
 
   if(negative_form) {

@@ -32,7 +32,8 @@ option_description_type check_pos_arg(const option_description_type &desc,
     auto mapped_key = desc.mapped_key;
 
     assert(mapped_key);
-    std::pair<bool,string_type> base = desc.mapped_key(_key,_posn,_argn,_vm);
+    std::pair<co::parse_flag,string_type> base =
+      desc.mapped_key(_key,_posn,_argn,_vm);
     if(base.first && !(posn == _posn && argn == _argn)) {
       std::stringstream err;
       err << "check_pos_arg failed: posn: " << _posn << " and argn: "
@@ -50,52 +51,55 @@ option_description_type check_pos_arg(const option_description_type &desc,
 option_description_type nested1{
   [](const string_type &option) -> option_pack_type {
     if(option == _LIT("-foo"))
-      return option_pack_type{true,false,_LIT("foo"),
-        {_LIT("-a"),_LIT("-bar"),_LIT("-c")}};
-    return option_pack_type{false};
+      return option_pack_type(true,false,_LIT("foo"),
+        {_LIT("-a"),_LIT("-bar"),_LIT("-c")});
+    return option_pack_type(false);
   },
   [](const string_type &raw_key, std::size_t, std::size_t,
     const variable_map_type &)
-  {
-    return std::make_pair(true,raw_key);
-  },
+      {
+        return std::make_pair(co::parse_flag::accept,raw_key);
+      },
   [](void) -> string_type {
     return _LIT("test nested");
-  }
+  },
+  {},{},{},{},{},{}
 };
 
 option_description_type nested2{
   [](const string_type &option) -> option_pack_type {
     if(option == _LIT("-bar"))
-      return option_pack_type{true,false,_LIT("bar"),
-        {_LIT("-d"),_LIT("-e"),_LIT("-f")}};
-    return option_pack_type{false};
+      return option_pack_type(true,false,_LIT("bar"),
+        {_LIT("-d"),_LIT("-e"),_LIT("-f")});
+    return option_pack_type(false);
   },
   [](const string_type &raw_key, std::size_t, std::size_t,
     const variable_map_type &)
-  {
-    return std::make_pair(true,raw_key);
-  },
+      {
+        return std::make_pair(co::parse_flag::accept,raw_key);
+      },
   [](void) -> string_type {
     return _LIT("test nested2");
-  }
+  },
+  {},{},{},{},{},{}
 };
 
 option_description_type nested3{
   [](const string_type &option) -> option_pack_type {
     if(option == _LIT("-bar"))
-      return option_pack_type{true,false,_LIT("bar"),
-        {_LIT("-d"),_LIT("pos"),_LIT("-f")}};
-    return option_pack_type{false};
+      return option_pack_type(true,false,_LIT("bar"),
+        {_LIT("-d"),_LIT("pos"),_LIT("-f")});
+    return option_pack_type(false);
   },
   [](const string_type &raw_key, std::size_t, std::size_t,
     const variable_map_type &)
-  {
-    return std::make_pair(true,raw_key);
-  },
+    {
+      return std::make_pair(co::parse_flag::accept,raw_key);
+    },
   [](void) -> string_type {
     return _LIT("test nested3");
-  }
+  },
+  {},{},{},{},{},{}
 };
 
 option_description_type make_operand_at(std::size_t posn, std::size_t argn)
@@ -106,15 +110,17 @@ option_description_type make_operand_at(std::size_t posn, std::size_t argn)
       const variable_map_type &)
     {
       if(_posn == posn && _argn == argn)
-        return std::make_pair(true,string_type(_LIT("operand_key")));
-      return std::make_pair(false,string_type());
+        return std::make_pair(
+          co::parse_flag::accept,string_type(_LIT("operand_key")));
+      return std::make_pair(co::parse_flag::reject,string_type());
     },
     {},{},
     [](const string_type &, std::size_t, std::size_t,
       const string_type &value, const variable_map_type &) -> co::any
     {
       return co::any(value);
-    }
+    },
+    {},{},{},{}
   };
 }
 /*
@@ -123,13 +129,14 @@ option_description_type make_operand_at(std::size_t posn, std::size_t argn)
 option_description_type throw_operand{
   {},
   [](const string_type &, std::size_t _posn, std::size_t _argn,
-    const variable_map_type &) -> std::pair<bool,string_type>
+    const variable_map_type &) -> std::pair<co::parse_flag,string_type>
   {
     std::stringstream err;
     err << "throw_operand: posn: " << _posn << " and argn: "
       << _argn << "\n";
     throw std::runtime_error(err.str());
-  }
+  },
+  {},{},{},{},{},{},{}
 };
 
 
