@@ -123,6 +123,7 @@ option_description_type make_operand_at(std::size_t posn, std::size_t argn)
     {},{},{},{}
   };
 }
+
 /*
   Fall through accept that simply throws. Must be last in list of descriptions
 */
@@ -137,6 +138,45 @@ option_description_type throw_operand{
     throw std::runtime_error(err.str());
   },
   {},{},{},{},{},{},{}
+};
+
+/*
+  accept and terminate parsing
+*/
+option_description_type accept_and_terminate_option{
+  {co::unpack_gnu<true,detail::check_char_t>},
+  [](const string_type &raw_key, std::size_t, std::size_t,
+    const variable_map_type &) -> std::pair<co::parse_flag,string_type>
+  {
+    if(raw_key == _LIT("terminate"))
+      return std::make_pair(co::parse_flag::accept_terminate,raw_key);
+    return std::make_pair(co::parse_flag::reject,string_type());
+  },
+  {},{},{},{},{},{},{}
+};
+
+option_description_type make_accept_and_terminate_operand_at(std::size_t posn,
+  std::size_t argn)
+{
+  return option_description_type{
+    {},
+    [=](const string_type &, std::size_t _posn, std::size_t _argn,
+      const variable_map_type &) -> std::pair<co::parse_flag,string_type>
+    {
+      if(_posn == posn && _argn == argn) {
+        return std::make_pair(co::parse_flag::accept_terminate,
+          _LIT("terminate"));
+      }
+      return std::make_pair(co::parse_flag::reject,string_type());
+    },
+    {},{},
+    [](const string_type &, std::size_t, std::size_t,
+      const string_type &value, const variable_map_type &) -> co::any
+    {
+      return co::any(value);
+    },
+    {},{},{},{}
+  };
 };
 
 
@@ -441,6 +481,175 @@ BOOST_AUTO_TEST_CASE( parse_nested_operand_test )
       {_LIT("d"),{}},
       {_LIT("f"),{}},
       {_LIT("foo"),{}},
+    }));
+}
+
+/**
+  Premature termination test
+ */
+BOOST_AUTO_TEST_CASE( premature_terminate_test1 )
+{
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+    _LIT("--terminate"),
+    _LIT("--foo1"),
+    _LIT("--foo2")
+  };
+
+  options = options_group_type{
+    check_pos_arg(accept_and_terminate_option,0,0),
+    check_pos_arg(co::make_option(_LIT("foo1"),_LIT("case 2")),1,1),
+    check_pos_arg(co::make_option(_LIT("foo2"),_LIT("case 2")),2,2),
+  };
+
+  variable_map_type vm =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("terminate"),{}},
+    }));
+}
+
+BOOST_AUTO_TEST_CASE( premature_terminate_test2 )
+{
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+    _LIT("--foo1"),
+    _LIT("--terminate"),
+    _LIT("--foo2")
+  };
+
+  options = options_group_type{
+    check_pos_arg(accept_and_terminate_option,1,1),
+    check_pos_arg(co::make_option(_LIT("foo1"),_LIT("case 2")),0,0),
+    check_pos_arg(co::make_option(_LIT("foo2"),_LIT("case 2")),2,2),
+  };
+
+  variable_map_type vm =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo1"),{}},
+      {_LIT("terminate"),{}},
+    }));
+}
+
+BOOST_AUTO_TEST_CASE( premature_terminate_test3 )
+{
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+    _LIT("--foo1"),
+    _LIT("--foo2"),
+    _LIT("--terminate"),
+  };
+
+  options = options_group_type{
+    check_pos_arg(accept_and_terminate_option,2,2),
+    check_pos_arg(co::make_option(_LIT("foo1"),_LIT("case 2")),0,0),
+    check_pos_arg(co::make_option(_LIT("foo2"),_LIT("case 2")),1,1),
+  };
+
+  variable_map_type vm =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo1"),{}},
+      {_LIT("foo2"),{}},
+      {_LIT("terminate"),{}},
+    }));
+}
+
+BOOST_AUTO_TEST_CASE( premature_terminate_test4 )
+{
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+    _LIT("operand1"),
+    _LIT("operand2"),
+    _LIT("operand3"),
+  };
+
+  options = options_group_type{
+    make_accept_and_terminate_operand_at(0,0),
+    make_operand_at(1,1),
+    make_operand_at(2,2),
+  };
+
+  variable_map_type vm =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("terminate"),{string_type(_LIT("operand1"))}},
+    }));
+}
+
+BOOST_AUTO_TEST_CASE( premature_terminate_test5 )
+{
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+    _LIT("operand1"),
+    _LIT("operand2"),
+    _LIT("operand3"),
+  };
+
+  options = options_group_type{
+    make_accept_and_terminate_operand_at(1,1),
+    make_operand_at(0,0),
+    make_operand_at(2,2),
+  };
+
+  variable_map_type vm =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("operand_key"),{string_type(_LIT("operand1"))}},
+      {_LIT("terminate"),{string_type(_LIT("operand2"))}}
+    }));
+}
+
+BOOST_AUTO_TEST_CASE( premature_terminate_test6 )
+{
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv;
+
+  argv = std::vector<const detail::check_char_t *>{
+    _LIT("operand1"),
+    _LIT("operand2"),
+    _LIT("operand3"),
+  };
+
+  options = options_group_type{
+    make_accept_and_terminate_operand_at(2,2),
+    make_operand_at(0,0),
+    make_operand_at(1,1),
+  };
+
+  variable_map_type vm =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("operand_key"),{string_type(_LIT("operand1"))}},
+      {_LIT("operand_key"),{string_type(_LIT("operand2"))}},
+      {_LIT("terminate"),{string_type(_LIT("operand3"))}},
     }));
 }
 

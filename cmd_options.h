@@ -590,19 +590,19 @@ struct basic_option_description {
   std::function<option_pack(const string_type &option)> unpack_option;
 
   /*
-    If this description can handle the given argument, return true and
-    the key that will be used in the variable map to represent this
-    option or operand depending on the presence or absence of
-    `unpack_option`. That is, this `option_description` should process
-    the _semantic value_ of the given raw key. If it does not, then
-    return `false` as the first value. For example, suppose this option
-    description handles `--foo` options and the string `--foo` was
-    parsed. The `unpack_GNU` unpack function would return `foo` as the
-    raw string. If you would like to access this option in the
-    `variable_map` using the key `my_foo_key`, return
+    If this description can handle the given argument, return
+    parse_flag:;accept and the key that will be used in the variable map
+    to represent this option or operand depending on the presence or
+    absence of `unpack_option`. That is, this `option_description`
+    should process the _semantic value_ of the given raw key. If it does
+    not, then return `parse_flag::reject` as the first value. For
+    example, suppose this option description handles `--foo` options and
+    the string `--foo` was parsed. The `unpack_GNU` unpack function
+    would return `foo` as the raw string. If you would like to access
+    this option in the `variable_map` using the key `my_foo_key`, return
     `{true,"my_foo_key"}`. Likewise, if the string `--bar` was parsed
     and this `option_description` only handles `--foo` options, then
-    return `{false,{}}`.
+    return `{parse_flag::reject,{}}`.
 
     - The `raw_key` argument is the `option_pack.raw_key` string
     returned by `unpack_option`.
@@ -619,8 +619,17 @@ struct basic_option_description {
     - The return value is a pair where `first` indicates whether or not
     this `option_description` can accept this argument. The `second`
     field is a string representing the key to be used in the
-    `variable_map`.
+    `variable_map`. If `first` is parse_flag::accept_and_terminate, the
+    argument will be processed normal but parsing will cease immediately
+    after. This is useful for processing cases like:
 
+        utility_name -h
+        utility_name --lots --of --options operand
+
+    If processing did not terminate when `-h` (for help) was given, the
+    required operand would need to be given even though it will
+    ultimately be unused and the first version would throw a parse
+    error.
 
     If `unpack_option` is set and can successfully unpack the argument,
     then the argument is an option otherwise the argument is considered
@@ -630,10 +639,10 @@ struct basic_option_description {
     operand, the implementation of `mapped_key_fn` can selectively
     choose to handle or not to handle the argument. For example, if this
     `option_description` represents the `--foo` option, it should return
-    `true` if the argument's `raw_key` equals `foo` and return false for
-    everything else. It can additionally discriminate based on the
-    option's or operand's position in the argument list. A common use
-    case is for some utility:
+    `parse_flag::accept` if the argument's `raw_key` equals `foo` and
+    return parse_flag::reject for everything else. It can additionally
+    discriminate based on the option's or operand's position in the
+    argument list. A common use case is for some utility:
 
       > foo infile outfile
 
@@ -1039,6 +1048,7 @@ parse_incremental_arguments(BidirectionalIterator first,
   std::size_t option_count = 0;
 
   string_type arg;
+  parse_flag handles_arg;
   string_type mapped_key;
   option_pack_type option_pack(false);
 
@@ -1074,7 +1084,7 @@ parse_incremental_arguments(BidirectionalIterator first,
             continue;
 
           if(desc->mapped_key) {
-            bool handles_arg = false;
+            handles_arg = parse_flag::reject;
             std::tie(handles_arg,mapped_key) =
               desc->mapped_key(option_pack.raw_key,option_count,arg_count,_vm);
             if(handles_arg) {
@@ -1158,9 +1168,14 @@ parse_incremental_arguments(BidirectionalIterator first,
             option_pack.packed_arguments.end());
           cmd_stack.emplace_back(std::move(option_pack.packed_arguments));
         }
-        state = 0;
+
         ++option_count;
         ++arg_count;
+
+        if(handles_arg == parse_flag::accept_terminate)
+          return _vm;
+
+        state = 0;
       } break;
 
       case 2: {
@@ -1183,19 +1198,20 @@ parse_incremental_arguments(BidirectionalIterator first,
           if(desc->unpack_option || !desc->mapped_key)
             continue;
 
-          std::pair<bool,string_type> operand_key =
-            desc->mapped_key(string_type(),operand_count,arg_count,_vm);
-          if(!operand_key.first)
+//           std::pair<parse_flag,string_type> operand_key =
+            handles_arg = parse_flag::reject;
+            std::tie(handles_arg,mapped_key) =
+              desc->mapped_key(string_type(),operand_count,arg_count,_vm);
+          if(handles_arg == parse_flag::reject)
             continue;
 
           // handle this operand
           if(desc->make_value) {
-            _vm.emplace(operand_key.second,
-              desc->make_value(operand_key.second,operand_count,arg_count,
-                arg,_vm));
+            _vm.emplace(mapped_key,
+              desc->make_value(mapped_key,operand_count,arg_count,arg,_vm));
           }
           else
-            _vm.emplace(operand_key.second,any());
+            _vm.emplace(mapped_key,any());
 
           ++operand_count;
 
@@ -1206,6 +1222,10 @@ parse_incremental_arguments(BidirectionalIterator first,
           throw unexpected_operand_error(operand_count,arg_count);
 
         ++arg_count;
+
+        if(handles_arg == parse_flag::accept_terminate)
+          return _vm;
+
       } break;
 
       default:
@@ -1339,7 +1359,7 @@ parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
     basic_constraint<CharT>{1,2,{"foo"},{"foo"}};
 
   ie is "foo" inclusive or exclusive? what if don't want to use range?
-  therefore lots of constructors that someone needs to be read.
+  therefore lots of constructors that someone needs to read.
 
   Default indicates allow any number of occurrences, at any argument
   position both mutually exclusive and mutually inclusive of nothing.
@@ -1407,6 +1427,18 @@ class basic_constraint {
       return *this;
     }
 
+    bool will_preempt(void) const {
+      return _preempt;
+    }
+
+    /*
+      Cease parsing after processing. This overrides `occurrences`
+    */
+    basic_constraint<CharT> & preempt(bool value = true) {
+      _preempt = value;
+      return *this;
+    }
+
     const std::vector<string_type> & mutually_exclusive(void) const {
       return _mutually_exclusive;
     }
@@ -1435,6 +1467,9 @@ class basic_constraint {
 
     std::size_t _min = 0;
     std::size_t _max = std::numeric_limits<std::size_t>::max();
+
+    bool _preempt = false;
+
     std::vector<string_type> _mutually_exclusive;
     std::vector<string_type> _mutually_inclusive;
 };
@@ -1889,7 +1924,7 @@ split_opt_spec(const std::basic_string<CharT> &str, CharT delim)
 template<bool uses_packed_flags, typename CharT>
 std::basic_string<CharT>
 set_default_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
-  basic_option_description<CharT> &desc, bool hidden)
+  basic_option_description<CharT> &desc, bool preempt, bool hidden)
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_variable_map<CharT> variable_map_type;
@@ -1909,6 +1944,11 @@ set_default_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
   assert(std::all_of(long_opt.begin(),long_opt.end(),is_portable<CharT>));
   assert(std::all_of(short_opt.begin(),short_opt.end(),is_portable<CharT>));
 
+  parse_flag accept_type = parse_flag::accept;
+  if(preempt)
+    accept_type = parse_flag::accept_terminate;
+
+
   if(mapped_key.empty()) {
     if(long_opt.empty())
       mapped_key = short_opt;
@@ -1922,7 +1962,7 @@ set_default_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
       const variable_map_type &)
       {
         if(_opt == long_opt || _opt == short_opt)
-          return std::make_pair(parse_flag::accept,mapped_key);
+          return std::make_pair(accept_type,mapped_key);
 
         return std::make_pair(parse_flag::reject,string_type());
       };
@@ -1940,7 +1980,7 @@ set_default_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
       const variable_map_type &)
       {
         if(_opt == long_opt)
-          return std::make_pair(parse_flag::accept,mapped_key);
+          return std::make_pair(accept_type,mapped_key);
 
         return std::make_pair(parse_flag::reject,string_type());
       };
@@ -1957,7 +1997,7 @@ set_default_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
       const variable_map_type &)
       {
         if(_opt == short_opt)
-          return std::make_pair(parse_flag::accept,mapped_key);
+          return std::make_pair(accept_type,mapped_key);
 
         return std::make_pair(parse_flag::reject,string_type());
       };
@@ -2123,10 +2163,14 @@ inline void set_default_operand_value(const basic_value<T,CharT> &val,
 
 template<typename CharT>
 inline void set_default_operand_key(const std::basic_string<CharT> &key,
-  int posn, int argn, basic_option_description<CharT> &desc)
+  int posn, int argn, basic_option_description<CharT> &desc, bool preempt)
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_variable_map<CharT> variable_map_type;
+
+  parse_flag accept_type = parse_flag::accept;
+  if(preempt)
+    accept_type = parse_flag::accept_terminate;
 
   if(posn >= 0 || argn >= 0) {
     desc.mapped_key = [=](const string_type &, std::size_t _posn,
@@ -2135,7 +2179,7 @@ inline void set_default_operand_key(const std::basic_string<CharT> &key,
       if((posn<0 || posn == static_cast<int>(_posn)) &&
         (argn<0 || argn == static_cast<int>(_argn)))
       {
-        return std::make_pair(parse_flag::accept,key);
+        return std::make_pair(accept_type,key);
       }
       return std::make_pair(parse_flag::reject,std::basic_string<CharT>());
     };
@@ -2144,7 +2188,7 @@ inline void set_default_operand_key(const std::basic_string<CharT> &key,
     desc.mapped_key = [=](const string_type &, std::size_t, std::size_t,
       const variable_map_type &)
     {
-      return std::make_pair(parse_flag::accept,key);
+      return std::make_pair(accept_type,key);
     };
   }
 }
@@ -2205,7 +2249,8 @@ make_option(const std::basic_string<CharT> &opt_spec,
   basic_option_description<CharT> desc;
 
   string_type mapped_key =
-    set_default_option_spec<true>(opt_spec,delim,desc,false);
+    set_default_option_spec<true>(opt_spec,delim,desc,
+      cnts.will_preempt(),false);
 
   desc.extended_description = [=](void) { return extended_desc; };
 
@@ -2261,7 +2306,8 @@ make_option(const std::basic_string<CharT> &opt_spec,
   basic_option_description<CharT> desc;
 
   string_type mapped_key =
-    set_default_option_spec<true>(opt_spec,delim,desc,true);
+    set_default_option_spec<true>(opt_spec,delim,desc,
+      cnts.will_preempt(),true);
 
   set_default_constraints(cnts,desc,mapped_key);
 
@@ -2294,7 +2340,8 @@ make_option(const std::basic_string<CharT> &opt_spec,
   basic_option_description<CharT> desc;
 
   string_type mapped_key =
-    set_default_option_spec<false>(opt_spec,delim,desc,false);
+    set_default_option_spec<false>(opt_spec,delim,desc,
+      cnts.will_preempt(),false);
 
   set_default_option_value(val,desc);
 
@@ -2353,7 +2400,8 @@ make_option(const std::basic_string<CharT> &opt_spec,
   basic_option_description<CharT> desc;
 
   string_type mapped_key =
-    set_default_option_spec<false>(opt_spec,delim,desc,true);
+    set_default_option_spec<false>(opt_spec,delim,desc,
+      cnts.will_preempt(),true);
 
   set_default_option_value(val,desc);
 
@@ -2405,7 +2453,7 @@ make_operand(const std::basic_string<CharT> &mapped_key,
   set_default_operand_value(val,desc);
 
   set_default_operand_key(mapped_key,cnts.at_position(),cnts.at_argument(),
-    desc);
+    desc,cnts.will_preempt());
 
   set_default_constraints(cnts,desc,mapped_key);
 
@@ -2432,7 +2480,7 @@ make_operand(const std::basic_string<CharT> &mapped_key,
   basic_option_description<CharT> desc;
 
   set_default_operand_key(mapped_key,cnts.at_position(),cnts.at_argument(),
-    desc);
+    desc,cnts.will_preempt());
 
   set_default_constraints(cnts,desc,mapped_key);
 
