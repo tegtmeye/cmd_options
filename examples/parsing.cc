@@ -37,8 +37,13 @@ int main (int argc, char *argv[])
   /*
     The there should be exactly 1 'foo' option in a valid variable_map
     instance but since the parse was incremental, there is no error.
+
+    Since we didn't specify a constraint that would cause early
+    termination, we can always ignore the first returned value during
+    incremental parsing as it will always be true.
   */
-  co::variable_map vm = co::parse_incremental_arguments(conf.begin(),
+  co::variable_map vm;
+  std::tie(std::ignore,vm) = co::parse_incremental_arguments(conf.begin(),
     conf.end(),grp);
 
 

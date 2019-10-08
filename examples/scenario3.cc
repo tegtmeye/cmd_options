@@ -95,9 +95,13 @@ int main (int argc, char *argv[])
     for constraints violations because any required arguments could
     be provided in environmental variables or on the command line.
     Specifically, only 'foo' and 'bar' are set here
+
+    Since we didn't specify a constraint that would cause early
+    termination, we can always ignore the first returned value during
+    incremental parsing as it will always be true.
   */
-  vm = co::parse_incremental_arguments(usr_config.begin(),usr_config.end(),
-    usr_config_grp,vm);
+  std::tie(std::ignore,vm) = co::parse_incremental_arguments(usr_config.begin(),
+    usr_config.end(),usr_config_grp,vm);
 
   /*
     Translate environmental variables into option_syntax and parse
@@ -116,6 +120,10 @@ int main (int argc, char *argv[])
     For each translated environmental variable, parse the argument but
     do not check constraints because any missing ones could be provieded
     on the command line. That is returned vm is in an invalid state.
+
+    Since we didn't specify a constraint that would cause early
+    termination, we can always ignore the first returned value during
+    incremental parsing as it will always be true.
   */
   for(auto &pr : env_map) {
     const char *res = std::getenv(pr.first.c_str());
@@ -124,8 +132,8 @@ int main (int argc, char *argv[])
       if(*res)
         opt[1] = res;
       try {
-        vm = co::parse_incremental_arguments(opt.begin(),opt.end(),
-          usr_config_grp,vm);
+        std::tie(std::ignore,vm) = co::parse_incremental_arguments(opt.begin(),
+          opt.end(),usr_config_grp,vm);
       }
       catch(const std::runtime_error &ex) {
         std::cerr << ex.what() << ": " << pr.first << ", received: "
