@@ -2538,6 +2538,98 @@ inline basic_option_description<CharT> make_options_error(void)
     }};
 }
 
+
+/*
+  Convenience function for extracting the last element of the
+  variable_map for a given key. In many existing syntaxes, an option may
+  be specified multiple times where each new one provided is given
+  precedence over the previous. In this case, the value used to make
+  decisions on is the last value for a given key. Since the STL's
+  multimap interface doesn't exactly make this clean, a convenience
+  function is provided.
+
+  For the given 'key', return an iterator to the last value in the range
+  matching 'key' or variable_map::end() if 'key' doesn't exist.
+*/
+template<typename CharT>
+inline typename basic_variable_map<CharT>::const_iterator
+last_of(const typename basic_variable_map<CharT>::key_type &key,
+  const basic_variable_map<CharT> &vm)
+{
+  auto &&range = vm.equal_range(key);
+  if(range.first == range.second)
+    return vm.end();
+  return --(range.second);
+}
+
+/*
+  Convenience function for extracting the last element of the
+  variable_map for a given key. This behaves exactly as \c last_of
+  except that the function throws an assertion failure if the key does
+  not exist in the vm.
+
+  This is generally useful for vms with an expected default value such
+  that if it is missing, it represents a blatant logic error in the
+  program (hence the assertion failure rather than throwing an
+  exception).
+*/
+template<typename CharT>
+inline typename basic_variable_map<CharT>::const_iterator
+assert_last_of(const typename basic_variable_map<CharT>::key_type &key,
+  const basic_variable_map<CharT> &vm)
+{
+  auto &&range = vm.equal_range(key);
+  assert(range.first != range.second);
+
+  return --(range.second);
+}
+
+
+
+/*
+  Convenience function to append the contents of vm2 onto a copy of vm1.
+
+  Useful for working with default values
+*/
+
+template<typename CharT>
+inline basic_variable_map<CharT> append(const basic_variable_map<CharT> &vm1,
+  const basic_variable_map<CharT> &vm2)
+{
+  basic_variable_map<CharT> vm = vm1;
+
+  for(const auto &pair : vm2)
+    vm.emplace(pair);
+
+  return vm;
+}
+
+/*
+  Convenience function to replace any values of shared keys in vm1 and
+  vm2 with the contents of vm2
+
+  Useful for working with default values
+*/
+template<typename CharT>
+inline basic_variable_map<CharT> overlay(const basic_variable_map<CharT> &vm1,
+  const basic_variable_map<CharT> &vm2)
+{
+  basic_variable_map<CharT> vm = vm1;
+
+  for(const auto &pair : vm2)
+    vm.erase(pair.first);
+
+  for(const auto &pair : vm2)
+    vm.emplace(pair);
+
+  return vm;
+}
+
+
+
+
+
+
 namespace detail {
 
 template<typename CharT>
