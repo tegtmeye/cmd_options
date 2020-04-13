@@ -177,7 +177,7 @@ option_description_type make_accept_and_terminate_operand_at(std::size_t posn,
     },
     {},{},{},{}
   };
-};
+}
 
 
 

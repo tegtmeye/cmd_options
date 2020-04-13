@@ -43,9 +43,9 @@
 #include <cassert>
 #include <codecvt>
 #include <locale>
+#include <memory>
 #include <functional>
 #include <algorithm>
-#include <iostream>
 #include <sstream>
 
 namespace cmd_options {
@@ -363,7 +363,7 @@ typedef std::multimap<std::basic_string<char32_t>,any> variable_map32;
 /*
   Structure describing an unpacked argument returned from an unpack
   function. Its important to understand that this structure is intended
-  to represent a the result of unpacking an argument, not the argument's
+  to represent the result of unpacking an argument, not the argument's
   semantic value. That is to say, the function that returns an object of
   this type should not determine if the _value_ of the option is valid,
   for example whether `--foo` is a valid option for this application,
@@ -897,7 +897,7 @@ basic_option_pack<CharT> unpack_posix(const std::basic_string<CharT> &str)
   // character set.
   static const string_type sprefix{'-'};
 
-  auto &&res =
+  auto res =
     detail::mismatch(sprefix.begin(),sprefix.end(),str.begin(),str.end());
   if(res.first != sprefix.end() || res.second == str.end())
     return option_pack(false);
@@ -906,10 +906,11 @@ basic_option_pack<CharT> unpack_posix(const std::basic_string<CharT> &str)
     return option_pack(true,false,{res.second,res.second+1},{},{});
 
   if(uses_packed_flags) {
-    string_type raw_key{res.second,++res.second};
+    string_type raw_key{res.second,res.second+1};
+
     packed_arg_seq packed_arguments;
-    while(res.second != str.end())
-      packed_arguments.push_back(sprefix+(*(res.second++)));
+    while(++res.second != str.end())
+      packed_arguments.push_back(sprefix+(*(res.second)));
 
     return option_pack{true,false,raw_key,packed_arguments,{}};
   }
@@ -1049,7 +1050,7 @@ parse_incremental_arguments(BidirectionalIterator first,
   std::size_t option_count = 0;
 
   string_type arg;
-  parse_flag handles_arg;
+  parse_flag handles_arg = parse_flag::reject;
   string_type mapped_key;
   option_pack_type option_pack(false);
 
@@ -1899,24 +1900,27 @@ inline bool is_portable(CharT c)
     long,short,key,*.*
 */
 template<typename CharT>
-inline std::array<std::basic_string<CharT>,3>
+inline std::tuple<std::basic_string<CharT>,std::basic_string<CharT>,
+  std::basic_string<CharT> >
 split_opt_spec(const std::basic_string<CharT> &str, CharT delim)
 {
   typedef std::basic_string<CharT> string_type;
+  typedef std::tuple<std::basic_string<CharT>,std::basic_string<CharT>,
+    std::basic_string<CharT> > result_type;
 
-  std::array<std::basic_string<CharT>,3> result{};
+  result_type result;
 
   auto sloc = std::find(str.begin(),str.end(),delim);
-  result[0] = string_type(str.begin(),sloc);
+  std::get<0>(result) = string_type(str.begin(),sloc);
 
   if(sloc != str.end()) {
     auto kloc = std::find(sloc+1,str.end(),delim);
-    result[1] = string_type(sloc+1,kloc);
+    std::get<1>(result) = string_type(sloc+1,kloc);
 
     if(kloc != str.end()) {
       auto eloc = std::find(kloc+1,str.end(),delim);
       assert(eloc == str.end()); // extra delim
-      result[2] = string_type(kloc+1,str.end());
+      std::get<2>(result) = string_type(kloc+1,str.end());
     }
   }
 

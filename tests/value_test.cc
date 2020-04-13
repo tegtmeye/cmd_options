@@ -4,8 +4,6 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <iostream>
-
 /**
   Check for fundmental and STL value handling
  */
@@ -20,6 +18,7 @@ typedef co::basic_options_group<detail::check_char_t> options_group_type;
 typedef co::basic_variable_map<detail::check_char_t> variable_map_type;
 typedef detail::std_stream_select<detail::check_char_t> stream_select;
 
+namespace cmd_options {
 
 struct userdef_struct {
   userdef_struct(const string_type &str=string_type()) :_str(str) {}
@@ -42,7 +41,7 @@ inline typename std::enable_if<std::is_same<CharT,char>::value,
   std::basic_ostream<CharT> &>::type
 operator<<(std::basic_ostream<CharT> &out, const userdef_struct &ts)
 {
-  return (out << co::detail::asUTF8(ts._str));
+  return (out << detail::asUTF8(ts._str));
 }
 
 template<typename CharT>
@@ -61,7 +60,7 @@ operator>>(std::basic_istream<CharT> &in, userdef_struct &rhs)
   std::istreambuf_iterator<CharT> first(in);
   std::istreambuf_iterator<CharT> last;
 
-  rhs._str = co::detail::fromUTF8<detail::check_char_t>({first,last});
+  rhs._str = detail::fromUTF8<::detail::check_char_t>({first,last});
 
   return in;
 }
@@ -94,7 +93,7 @@ struct userdef_convert_struct {
 /*
   These 4 functions should never be chosen by the compiler, the EZ
   interface should pick up the specialized
-  'co::convert_value<userdef_convert_struct>' structure instead of
+  'convert_value<userdef_convert_struct>' structure instead of
   choosing these.
 */
 template<typename CharT>
@@ -130,9 +129,8 @@ operator>>(std::basic_istream<CharT> &, userdef_convert_struct &)
 }
 
 
-
 template<>
-struct co::convert_value<userdef_convert_struct> {
+struct convert_value<userdef_convert_struct> {
   static userdef_convert_struct from_string(const string_type &str)
   {
     return userdef_convert_struct(str);
@@ -144,7 +142,7 @@ struct co::convert_value<userdef_convert_struct> {
   }
 };
 
-
+}
 
 BOOST_AUTO_TEST_SUITE( value_test_suite )
 
@@ -819,7 +817,7 @@ BOOST_AUTO_TEST_CASE( userdef_value_test )
 
   options = options_group_type{
     co::make_option(_LIT("userdef"),
-      co::basic_value<userdef_struct,detail::check_char_t>(),
+      co::basic_value<co::userdef_struct,detail::check_char_t>(),
       _LIT("case 6"))
   };
 
@@ -827,7 +825,7 @@ BOOST_AUTO_TEST_CASE( userdef_value_test )
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("userdef"),
-        static_cast<userdef_struct>(_LIT("Hello World"))),
+        static_cast<co::userdef_struct>(_LIT("Hello World"))),
     }
   ));
 }
@@ -842,7 +840,7 @@ BOOST_AUTO_TEST_CASE( userdef_convert_value_test )
 
   options = options_group_type{
     co::make_option(_LIT("userdef"),
-      co::basic_value<userdef_convert_struct,detail::check_char_t>(),
+      co::basic_value<co::userdef_convert_struct,detail::check_char_t>(),
       _LIT("case 6"))
   };
 
@@ -850,7 +848,7 @@ BOOST_AUTO_TEST_CASE( userdef_convert_value_test )
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("userdef"),
-        static_cast<userdef_convert_struct>(_LIT("Hello World"))),
+        static_cast<co::userdef_convert_struct>(_LIT("Hello World"))),
     }
   ));
 }

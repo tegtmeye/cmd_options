@@ -24,7 +24,7 @@
 #  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 AC_PREREQ(2.59)
-AC_INIT(cmd_options, 0.1.0)
+AC_INIT(cmd_options, 0.1.1)
 AC_CONFIG_SRCDIR([Makefile.am])
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_AUX_DIR(config)
@@ -53,7 +53,7 @@ AX_CXXFLAGS_WARN_ALL([[AM_CXXFLAGS]])
 
 
 # We need boost
-AX_BOOST_BASE([1.61])
+AX_BOOST_BASE([1.58])
 AX_BOOST_UNIT_TEST_FRAMEWORK
 
 # Use SYSTEM_BOOST_CPPFLAGS to add includes with -isystem instead of -I

@@ -47,25 +47,26 @@ namespace co = cmd_options;
     long,key,*.*
 */
 template<typename CharT>
-inline std::array<std::basic_string<CharT>,2>
+inline std::pair<std::basic_string<CharT>,std::basic_string<CharT>>
 split_fopt(const std::basic_string<CharT> &str, CharT delim)
 {
   typedef std::basic_string<CharT> string_type;
+  typedef std::pair<string_type,string_type> result_type;
 
-  std::array<std::basic_string<CharT>,2> result;
+  result_type result;
 
   auto lloc = std::find(str.begin(),str.end(),delim);
   assert(lloc != str.begin());
 
-  result[0] = string_type(str.begin(),lloc);
+  result.first = string_type(str.begin(),lloc);
 
   if(lloc != str.end()) {
     assert(std::find(lloc+1,str.end(),delim) != str.end());
 
-    result[1] = string_type(lloc+1,str.end());
+    result.second = string_type(lloc+1,str.end());
   }
   else
-    result[1] = result[0];
+    result.second = result.first;
 
   return result;
 }
