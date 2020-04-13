@@ -1,7 +1,7 @@
 cmd_options
 =======
 
-I wrote this header-only options parser to specifically address limitations of other common parsers in an easy-to-use syntax while taking advantage of language features available in c++11.
+A header-only options parser intended to specifically address limitations of other common parsers in an easy-to-use syntax while taking advantage of language features available in c++11.
 
 Current support is for \*nix although there should be no reason it cannot support Windows as well. If there are interested folks in this capability, please contact me.
 
