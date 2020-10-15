@@ -60,7 +60,8 @@ int main (int argc, char *argv[])
     Parse app-wide configuration arguments, returned vm is checkeded
     for constraints violations
   */
-  co::variable_map vm = co::parse_arguments(app_config.begin(),
+  co::variable_map vm;
+  std::tie(std::ignore,vm) = co::parse_arguments(app_config.begin(),
     app_config.end(),app_config_grp);
 
   /*
@@ -148,7 +149,8 @@ int main (int argc, char *argv[])
     or operands are considered an error so check against the
     constraints. The returned variable_map is valid
   */
-  vm = co::parse_arguments(argv+1,argv+argc,usr_config_grp,vm);
+  char **res = 0;
+  std::tie(res,vm) = co::parse_arguments(argv+1,argv+argc,usr_config_grp,vm);
 
   std::cout << "VM contains:\n";
   for(auto &&key_val : vm) {

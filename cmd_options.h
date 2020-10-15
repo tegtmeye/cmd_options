@@ -519,7 +519,8 @@ struct basic_option_pack {
 enum parse_flag {
   reject            = 0,
   accept            = (1 << 0),
-  accept_terminate  = accept | (1 << 1)
+  ignore            = (1 << 1),
+  terminate         = (1 << 2),
 };
 
 typedef basic_option_pack<char> option_pack;
@@ -591,7 +592,7 @@ struct basic_option_description {
 
   /*
     If this description can handle the given argument, return
-    parse_flag:;accept and the key that will be used in the variable map
+    parse_flag::accept and the key that will be used in the variable map
     to represent this option or operand depending on the presence or
     absence of `unpack_option`. That is, this `option_description`
     should process the _semantic value_ of the given raw key. If it does
@@ -600,9 +601,9 @@ struct basic_option_description {
     the string `--foo` was parsed. The `unpack_GNU` unpack function
     would return `foo` as the raw string. If you would like to access
     this option in the `variable_map` using the key `my_foo_key`, return
-    `{true,"my_foo_key"}`. Likewise, if the string `--bar` was parsed
-    and this `option_description` only handles `--foo` options, then
-    return `{parse_flag::reject,{}}`.
+    `{parse_flag::accept,"my_foo_key"}`. Likewise, if the string `--bar`
+    was parsed and this `option_description` only handles `--foo`
+    options, then return `{parse_flag::reject,{}}`.
 
     - The `raw_key` argument is the `option_pack.raw_key` string
     returned by `unpack_option`.
@@ -619,17 +620,22 @@ struct basic_option_description {
     - The return value is a pair where `first` indicates whether or not
     this `option_description` can accept this argument. The `second`
     field is a string representing the key to be used in the
-    `variable_map`. If `first` is parse_flag::accept_and_terminate, the
+    `variable_map`. If `first` has the parse_flag::terminate bit set, the
     argument will be processed normal but parsing will cease immediately
     after. This is useful for processing cases like:
 
         utility_name -h
-        utility_name --lots --of --options operand
+        utility_name --lots --of --required --options operand
 
     If processing did not terminate when `-h` (for help) was given, the
     required operand would need to be given even though it will
     ultimately be unused and the first version would throw a parse
     error.
+
+    If the first field of the returned pair has the parse_flag::ignore
+    bit set, the option or operand will be checked for constraints
+    including proper conversion to the requested value but it will
+    ultimately not be added to the variable map.
 
     If `unpack_option` is set and can successfully unpack the argument,
     then the argument is an option otherwise the argument is considered
@@ -1022,7 +1028,7 @@ basic_option_pack<CharT> unpack_gnu(const std::basic_string<CharT> &str)
 template<typename BidirectionalIterator, typename CharT =
   typename std::remove_pointer<
     typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
-std::pair<bool,basic_variable_map<CharT> >
+std::pair<BidirectionalIterator,basic_variable_map<CharT> >
 parse_incremental_arguments(BidirectionalIterator first,
   BidirectionalIterator last, const basic_options_group<CharT> &grp,
   const basic_variable_map<CharT> &vm,
@@ -1048,6 +1054,7 @@ parse_incremental_arguments(BidirectionalIterator first,
   std::size_t arg_count = 0;
   std::size_t operand_count = 0;
   std::size_t option_count = 0;
+  std::size_t nargs = cmd_stack[0].size();
 
   string_type arg;
   parse_flag handles_arg = parse_flag::reject;
@@ -1115,9 +1122,12 @@ parse_incremental_arguments(BidirectionalIterator first,
             throw unexpected_argument_error(option_count,arg_count);
 
           // handle the flag only
-          if(desc->make_implicit_value)
-            _vm.emplace(mapped_key,desc->make_implicit_value(mapped_key,_vm));
-          else
+          if(desc->make_implicit_value) {
+            auto res = desc->make_implicit_value(mapped_key,_vm);
+            if(!(handles_arg & parse_flag::ignore))
+              _vm.emplace(mapped_key,res);
+          }
+          else if(!(handles_arg & parse_flag::ignore))
             _vm.emplace(mapped_key,any());
         }
         else {
@@ -1125,12 +1135,16 @@ parse_incremental_arguments(BidirectionalIterator first,
           // is it embedded in the option pack?
           if(option_pack.value_provided) {
             // handle the provided value
-            _vm.emplace(mapped_key,
-              desc->make_value(mapped_key,option_count,arg_count,
-                option_pack.value,_vm));
+            auto val = desc->make_value(mapped_key,option_count,arg_count,
+                option_pack.value,_vm);
+
+            if(!(handles_arg & parse_flag::ignore))
+              _vm.emplace(mapped_key,val);
           }
           else if(desc->make_implicit_value) {
-            _vm.emplace(mapped_key,desc->make_implicit_value(mapped_key,_vm));
+            auto val = desc->make_implicit_value(mapped_key,_vm);
+            if(!(handles_arg & parse_flag::ignore))
+              _vm.emplace(mapped_key,val);
           }
           else if(current_cmdlist.empty()) {
             // no more items in the current pack
@@ -1156,10 +1170,13 @@ parse_incremental_arguments(BidirectionalIterator first,
               throw missing_argument_error(option_count,arg_count);
             }
             else {
-              _vm.emplace(mapped_key,
-                desc->make_value(mapped_key,option_count,arg_count++,
-                  current_cmdlist.back(),_vm));
-                current_cmdlist.pop_back();
+              auto res = desc->make_value(mapped_key,option_count,arg_count++,
+                current_cmdlist.back(),_vm);
+
+              if(!(handles_arg & parse_flag::ignore))
+                _vm.emplace(mapped_key,res);
+
+              current_cmdlist.pop_back();
             }
           }
         }
@@ -1174,8 +1191,10 @@ parse_incremental_arguments(BidirectionalIterator first,
         ++option_count;
         ++arg_count;
 
-        if(handles_arg == parse_flag::accept_terminate)
-          return {false,_vm};
+        if(handles_arg & parse_flag::terminate) {
+          std::advance(first,(nargs-cmd_stack[0].size())-1);
+          return {first,_vm};
+        }
 
         state = 0;
       } break;
@@ -1200,19 +1219,21 @@ parse_incremental_arguments(BidirectionalIterator first,
           if(desc->unpack_option || !desc->mapped_key)
             continue;
 
-//           std::pair<parse_flag,string_type> operand_key =
-            handles_arg = parse_flag::reject;
-            std::tie(handles_arg,mapped_key) =
-              desc->mapped_key(string_type(),operand_count,arg_count,_vm);
+          handles_arg = parse_flag::reject;
+          std::tie(handles_arg,mapped_key) =
+            desc->mapped_key(string_type(),operand_count,arg_count,_vm);
+
           if(handles_arg == parse_flag::reject)
             continue;
 
           // handle this operand
           if(desc->make_value) {
-            _vm.emplace(mapped_key,
-              desc->make_value(mapped_key,operand_count,arg_count,arg,_vm));
+            auto res =
+              desc->make_value(mapped_key,operand_count,arg_count,arg,_vm);
+            if(!(handles_arg & parse_flag::ignore))
+              _vm.emplace(mapped_key,res);
           }
-          else
+          else if(!(handles_arg & parse_flag::ignore))
             _vm.emplace(mapped_key,any());
 
           ++operand_count;
@@ -1225,8 +1246,10 @@ parse_incremental_arguments(BidirectionalIterator first,
 
         ++arg_count;
 
-        if(handles_arg == parse_flag::accept_terminate)
-          return {false,_vm};
+        if(handles_arg & parse_flag::terminate) {
+          std::advance(first,(nargs-cmd_stack[0].size())-1);
+          return {first,_vm};
+        }
 
       } break;
 
@@ -1235,7 +1258,7 @@ parse_incremental_arguments(BidirectionalIterator first,
     }
   }
 
-  return {true,_vm};
+  return {last,_vm};
 }
 
 /*
@@ -1262,7 +1285,7 @@ finalize_parsing(const basic_options_group<CharT> &grp,
 template<typename BidirectionalIterator,
   typename CharT = typename std::remove_pointer<
     typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
-inline std::pair<bool,basic_variable_map<CharT> >
+inline std::pair<BidirectionalIterator,basic_variable_map<CharT> >
 parse_incremental_arguments(BidirectionalIterator first,
   BidirectionalIterator last, const basic_options_group<CharT> &grp,
   const std::basic_string<CharT> &end_of_options)
@@ -1274,7 +1297,7 @@ parse_incremental_arguments(BidirectionalIterator first,
 template<typename BidirectionalIterator,
   typename CharT = typename std::remove_pointer<
     typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
-inline std::pair<bool,basic_variable_map<CharT> >
+inline std::pair<BidirectionalIterator,basic_variable_map<CharT> >
 parse_incremental_arguments(BidirectionalIterator first,
   BidirectionalIterator last, const basic_options_group<CharT> &grp,
   const basic_variable_map<CharT> &vm)
@@ -1286,7 +1309,7 @@ parse_incremental_arguments(BidirectionalIterator first,
 template<typename BidirectionalIterator,
   typename CharT = typename std::remove_pointer<
     typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
-inline std::pair<bool,basic_variable_map<CharT> >
+inline std::pair<BidirectionalIterator,basic_variable_map<CharT> >
 parse_incremental_arguments(BidirectionalIterator first,
   BidirectionalIterator last, const basic_options_group<CharT> &grp)
 {
@@ -1302,7 +1325,7 @@ parse_incremental_arguments(BidirectionalIterator first,
 template<typename BidirectionalIterator,
   typename CharT = typename std::remove_pointer<
     typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
-inline basic_variable_map<CharT>
+inline std::pair<BidirectionalIterator,basic_variable_map<CharT> >
 parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
   const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm,
   const std::basic_string<CharT> &end_of_options)
@@ -1310,20 +1333,20 @@ parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
   auto &&result =
     parse_incremental_arguments(first,last,grp,vm,end_of_options);
 
-  if(result.first) {
+  if(result.first == last) {
     for(auto &desc : grp) {
       if(desc.finalize)
         desc.finalize(result.second);
     }
   }
 
-  return std::move(result.second);
+  return std::move(result);
 }
 
 template<typename BidirectionalIterator,
   typename CharT = typename std::remove_pointer<
     typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
-inline basic_variable_map<CharT>
+inline std::pair<BidirectionalIterator,basic_variable_map<CharT> >
 parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
   const basic_options_group<CharT> &grp,
   const std::basic_string<CharT> &end_of_options)
@@ -1335,7 +1358,7 @@ parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
 template<typename BidirectionalIterator,
   typename CharT = typename std::remove_pointer<
     typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
-inline basic_variable_map<CharT>
+inline std::pair<BidirectionalIterator,basic_variable_map<CharT> >
 parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
   const basic_options_group<CharT> &grp, const basic_variable_map<CharT> &vm)
 {
@@ -1345,7 +1368,7 @@ parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
 template<typename BidirectionalIterator,
   typename CharT = typename std::remove_pointer<
     typename std::iterator_traits<BidirectionalIterator>::value_type>::type>
-inline basic_variable_map<CharT>
+inline std::pair<BidirectionalIterator,basic_variable_map<CharT> >
 parse_arguments(BidirectionalIterator first, BidirectionalIterator last,
   const basic_options_group<CharT> &grp)
 {
@@ -1456,6 +1479,19 @@ class basic_constraint {
       return *this;
     }
 
+    bool should_ignore(void) const {
+      return _ignore;
+    }
+
+    /*
+      Ignore the value after processing. Do not use with mutually_inclusive
+      as this will never appear in the variable map
+    */
+    basic_constraint<CharT> & ignore(bool value = true) {
+      _ignore = value;
+      return *this;
+    }
+
     const std::vector<string_type> & mutually_exclusive(void) const {
       return _mutually_exclusive;
     }
@@ -1486,6 +1522,7 @@ class basic_constraint {
     std::size_t _max = std::numeric_limits<std::size_t>::max();
 
     bool _preempt = false;
+    bool _ignore = false;
 
     std::vector<string_type> _mutually_exclusive;
     std::vector<string_type> _mutually_inclusive;
@@ -1944,7 +1981,7 @@ split_opt_spec(const std::basic_string<CharT> &str, CharT delim)
 template<bool uses_packed_flags, typename CharT>
 std::basic_string<CharT>
 set_default_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
-  basic_option_description<CharT> &desc, bool preempt, bool hidden)
+  basic_option_description<CharT> &desc, bool preempt, bool ignore, bool hidden)
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_variable_map<CharT> variable_map_type;
@@ -1966,7 +2003,9 @@ set_default_option_spec(const std::basic_string<CharT> &opt_spec, CharT delim,
 
   parse_flag accept_type = parse_flag::accept;
   if(preempt)
-    accept_type = parse_flag::accept_terminate;
+    accept_type = static_cast<parse_flag>(accept_type | parse_flag::terminate);
+  if(ignore)
+    accept_type = static_cast<parse_flag>(accept_type | parse_flag::ignore);
 
 
   if(mapped_key.empty()) {
@@ -2183,14 +2222,17 @@ inline void set_default_operand_value(const basic_value<T,CharT> &val,
 
 template<typename CharT>
 inline void set_default_operand_key(const std::basic_string<CharT> &key,
-  int posn, int argn, basic_option_description<CharT> &desc, bool preempt)
+  int posn, int argn, basic_option_description<CharT> &desc, bool preempt,
+  bool ignore)
 {
   typedef std::basic_string<CharT> string_type;
   typedef basic_variable_map<CharT> variable_map_type;
 
   parse_flag accept_type = parse_flag::accept;
   if(preempt)
-    accept_type = parse_flag::accept_terminate;
+    accept_type = static_cast<parse_flag>(accept_type | parse_flag::terminate);
+  if(ignore)
+    accept_type = static_cast<parse_flag>(accept_type | parse_flag::ignore);
 
   if(posn >= 0 || argn >= 0) {
     desc.mapped_key = [=](const string_type &, std::size_t _posn,
@@ -2270,7 +2312,7 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
   string_type mapped_key =
     set_default_option_spec<true>(opt_spec,delim,desc,
-      cnts.will_preempt(),false);
+      cnts.will_preempt(),cnts.should_ignore(),false);
 
   desc.extended_description = [=](void) { return extended_desc; };
 
@@ -2327,7 +2369,7 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
   string_type mapped_key =
     set_default_option_spec<true>(opt_spec,delim,desc,
-      cnts.will_preempt(),true);
+      cnts.will_preempt(),cnts.should_ignore(),true);
 
   set_default_constraints(cnts,desc,mapped_key);
 
@@ -2361,7 +2403,7 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
   string_type mapped_key =
     set_default_option_spec<false>(opt_spec,delim,desc,
-      cnts.will_preempt(),false);
+      cnts.will_preempt(),cnts.should_ignore(),false);
 
   set_default_option_value(val,desc);
 
@@ -2421,7 +2463,7 @@ make_option(const std::basic_string<CharT> &opt_spec,
 
   string_type mapped_key =
     set_default_option_spec<false>(opt_spec,delim,desc,
-      cnts.will_preempt(),true);
+      cnts.will_preempt(),cnts.should_ignore(),true);
 
   set_default_option_value(val,desc);
 
@@ -2473,7 +2515,7 @@ make_operand(const std::basic_string<CharT> &mapped_key,
   set_default_operand_value(val,desc);
 
   set_default_operand_key(mapped_key,cnts.at_position(),cnts.at_argument(),
-    desc,cnts.will_preempt());
+    desc,cnts.will_preempt(),cnts.should_ignore());
 
   set_default_constraints(cnts,desc,mapped_key);
 
@@ -2500,7 +2542,7 @@ make_operand(const std::basic_string<CharT> &mapped_key,
   basic_option_description<CharT> desc;
 
   set_default_operand_key(mapped_key,cnts.at_position(),cnts.at_argument(),
-    desc,cnts.will_preempt());
+    desc,cnts.will_preempt(),cnts.should_ignore());
 
   set_default_constraints(cnts,desc,mapped_key);
 

@@ -41,7 +41,14 @@ int main (int argc, char *argv[])
         "set compression level",co::constrain().occurrences(0,1))
     };
 
-    co::variable_map vm = co::parse_arguments(argv+1,argv+argc,grp);
+    char **res = 0;
+    co::variable_map vm;
+    std::tie(res,vm) = co::parse_arguments(argv+1,argv+argc,grp);
+
+    if(res != argv+argc) {
+      std::cout << "Requested to stop parsing at '"
+        << *res << "'\n";
+    }
 
     if(vm.count("help")) {
       std::cout << "Allowed options\n" << co::to_string(grp) << "\n";

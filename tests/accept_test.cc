@@ -42,7 +42,8 @@ BOOST_AUTO_TEST_CASE( all_flags_test )
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -72,7 +73,8 @@ BOOST_AUTO_TEST_CASE( callback_assignment_test )
       _LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -102,7 +104,8 @@ BOOST_AUTO_TEST_CASE( callback_function_test )
       _LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<int>(vm,
     variable_map_type{

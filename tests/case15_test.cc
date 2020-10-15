@@ -41,7 +41,8 @@ BOOST_AUTO_TEST_CASE( all_key_value_test )
     co::make_operand(_LIT("operand_key"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -83,7 +84,8 @@ BOOST_AUTO_TEST_CASE( key_value_with_embedded_operand_test )
     co::make_operand(_LIT("operand_key"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 

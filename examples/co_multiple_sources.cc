@@ -66,7 +66,14 @@ int main (int argc, char *argv[])
     co::options_group cmd_line = generic;
     cmd_line.insert(cmd_line.end(),config.begin(),config.end());
 
-    co::variable_map vm = co::parse_arguments(argv+1,argv+argc,cmd_line);
+    char **res = 0;
+    co::variable_map vm;
+    std::tie(res,vm) = co::parse_arguments(argv+1,argv+argc,cmd_line);
+
+    if(res != argv+argc) {
+      std::cout << "Requested to stop parsing at '"
+        << *res << "'\n";
+    }
 
     std::ifstream ifs(config_file.c_str());
     if(!ifs) {
@@ -81,7 +88,8 @@ int main (int argc, char *argv[])
       while((ifs >> arg))
         config_vec.push_back(arg);
 
-      vm = co::parse_arguments(config_vec.begin(),config_vec.end(),config,vm);
+      std::tie(std::ignore,vm) =
+        co::parse_arguments(config_vec.begin(),config_vec.end(),config,vm);
     }
 
     if (vm.count("help")) {

@@ -63,7 +63,14 @@ int main (int argc, char *argv[])
     all.insert(all.end(),gui.begin(),gui.end());
     all.insert(all.end(),backend.begin(),backend.end());
 
-    co::variable_map vm = co::parse_arguments(argv+1,argv+argc,all);
+    char **res = 0;
+    co::variable_map vm;
+    std::tie(res,vm) = co::parse_arguments(argv+1,argv+argc,all);
+
+    if(res != argv+argc) {
+      std::cout << "Requested to stop parsing at '"
+        << *res << "'\n";
+    }
 
     if(vm.count("help")) {
       std::cout << "Allowed options:\n\n"

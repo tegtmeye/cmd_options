@@ -42,7 +42,8 @@ BOOST_AUTO_TEST_CASE( all_POSIX_key_value_test )
       co::basic_value<string_type,detail::check_char_t>())
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
@@ -72,7 +73,8 @@ BOOST_AUTO_TEST_CASE( all_GNU_key_value_test )
       co::basic_value<string_type,detail::check_char_t>())
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
@@ -102,7 +104,8 @@ BOOST_AUTO_TEST_CASE( all_invalid_POSIX_key_value_test )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
+    ( std::tie(std::ignore,vm) =
+        co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::missing_argument_error);
 }
 
@@ -123,7 +126,8 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test1 )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
+    ( std::tie(std::ignore,vm) =
+        co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::missing_argument_error);
 }
 
@@ -145,7 +149,8 @@ BOOST_AUTO_TEST_CASE( all_invalid_GNU_key_value_test2 )
   };
 
   BOOST_REQUIRE_THROW(
-    (vm = co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
+    ( std::tie(std::ignore,vm) =
+        co::parse_arguments(argv.data(),argv.data()+argv.size(),options)),
       co::missing_argument_error);
 }
 

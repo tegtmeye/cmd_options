@@ -43,17 +43,24 @@ int main (int argc, char *argv[])
     termination, we can always ignore the first returned value during
     incremental parsing as it will always be true.
   */
+  std::vector<std::string>::iterator sres;
   co::variable_map vm;
-  std::tie(std::ignore,vm) = co::parse_incremental_arguments(conf.begin(),
+  std::tie(sres,vm) = co::parse_incremental_arguments(conf.begin(),
     conf.end(),grp);
 
-
+  assert(sres == conf.end());
   /*
     parse the main arguments and put into the variable map. Don't forget
     that the first argument (argv[0]) is the program name! Since this is
     a full parse, there will be an error if 'foo' has not been given.
   */
-  vm = co::parse_arguments(argv+1,argv+argc,grp,vm);
+  char **res = 0;
+  std::tie(res,vm) = co::parse_arguments(argv+1,argv+argc,grp,vm);
+
+  if(res != argv+argc) {
+    std::cout << "Requested to stop parsing at '"
+      << *res << "'\n";
+  }
 
   for(auto &key_val : vm) {
     std::cout << "key: " << key_val.first;

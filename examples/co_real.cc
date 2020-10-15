@@ -79,7 +79,14 @@ int main (int argc, char *argv[])
           mutually_inclusive({"mainpackage"})),
     };
 
-    co::variable_map vm = co::parse_arguments(argv+1,argv+argc,desc);
+    char **res = 0;
+    co::variable_map vm;
+    std::tie(res,vm) = co::parse_arguments(argv+1,argv+argc,desc);
+
+    if(res != argv+argc) {
+      std::cout << "Requested to stop parsing at '"
+        << *res << "'\n";
+    }
 
     if(vm.count("help")) {
       std::cout << "Usage: regex [options]\n" << co::to_string(desc) << "\n";
@@ -87,9 +94,9 @@ int main (int argc, char *argv[])
     }
 
     std::cout << "two = ";
-    auto &&res = vm.find("two");
-    if(res != vm.end())
-      std::cout << co::any_cast<bool>(res->second) << "\n";
+    auto &&two = vm.find("two");
+    if(two != vm.end())
+      std::cout << co::any_cast<bool>(two->second) << "\n";
     else
       std::cout << "0\n";
   }

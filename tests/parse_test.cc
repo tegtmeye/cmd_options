@@ -149,7 +149,9 @@ option_description_type accept_and_terminate_option{
     const variable_map_type &) -> std::pair<co::parse_flag,string_type>
   {
     if(raw_key == _LIT("terminate"))
-      return std::make_pair(co::parse_flag::accept_terminate,raw_key);
+      return std::make_pair(
+        static_cast<co::parse_flag>(co::parse_flag::accept |
+          co::parse_flag::terminate),raw_key);
     return std::make_pair(co::parse_flag::reject,string_type());
   },
   {},{},{},{},{},{},{}
@@ -164,7 +166,9 @@ option_description_type make_accept_and_terminate_operand_at(std::size_t posn,
       const variable_map_type &) -> std::pair<co::parse_flag,string_type>
     {
       if(_posn == posn && _argn == argn) {
-        return std::make_pair(co::parse_flag::accept_terminate,
+        return std::make_pair(
+          static_cast<co::parse_flag>(co::parse_flag::accept |
+            co::parse_flag::terminate),
           _LIT("terminate"));
       }
       return std::make_pair(co::parse_flag::reject,string_type());
@@ -196,8 +200,12 @@ BOOST_AUTO_TEST_CASE( option_empty_args_empty_opts_test )
   options = options_group_type{
   };
 
-  variable_map_type vm =
+  variable_map_type vm;
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(res == argv.data()+argv.size());
 }
 
 /*
@@ -214,11 +222,18 @@ BOOST_AUTO_TEST_CASE( option_repeated_empty_args_empty_opts_test )
   options = options_group_type{
   };
 
-  variable_map_type vm =
+  variable_map_type vm;
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-  variable_map_type vm2 =
+  BOOST_REQUIRE(res == argv.data()+argv.size());
+
+  variable_map_type vm2;
+  std::tie(res,vm2) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options,vm);
+
+  BOOST_REQUIRE(res == argv.data()+argv.size());
 }
 
 /*
@@ -238,8 +253,12 @@ BOOST_AUTO_TEST_CASE( option_empty_args_nonempty_opts_test )
     check_pos_arg(co::make_option(_LIT("foo3"),_LIT("case 2")),2,2),
   };
 
-  variable_map_type vm =
+  variable_map_type vm;
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(res == argv.data()+argv.size());
 }
 
 /*
@@ -259,11 +278,18 @@ BOOST_AUTO_TEST_CASE( option_repeated_empty_args_nonempty_opts_test )
     check_pos_arg(co::make_option(_LIT("foo3"),_LIT("case 2")),2,2),
   };
 
-  variable_map_type vm =
+  variable_map_type vm;
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-  variable_map_type vm2 =
+  BOOST_REQUIRE(res == argv.data()+argv.size());
+
+  variable_map_type vm2;
+  std::tie(res,vm2) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options,vm);
+
+  BOOST_REQUIRE(res == argv.data()+argv.size());
 }
 
 /*
@@ -285,12 +311,21 @@ BOOST_AUTO_TEST_CASE( option_simple_repeated_dynamic_test )
       _LIT("case 2"))
   };
 
-  variable_map_type vm =
+  variable_map_type vm;
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
+  BOOST_REQUIRE(res == argv.data()+argv.size());
+
   std::vector<string_type> argv2;
-  variable_map_type vm2 =
+
+  variable_map_type vm2;
+  std::vector<string_type>::iterator res2;
+  std::tie(res2,vm2) =
     co::parse_arguments(argv2.begin(),argv2.end(),options,vm);
+
+  BOOST_REQUIRE(res2 == argv2.end());
 }
 
 /*
@@ -314,7 +349,11 @@ BOOST_AUTO_TEST_CASE( option_numbering_test )
     check_pos_arg(co::make_option(_LIT("foo3"),_LIT("case 2")),2,2),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(res == argv.data()+argv.size());
 }
 
 BOOST_AUTO_TEST_CASE( operand_numbering_test )
@@ -336,7 +375,11 @@ BOOST_AUTO_TEST_CASE( operand_numbering_test )
     throw_operand
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(res == argv.data()+argv.size());
 }
 
 BOOST_AUTO_TEST_CASE( option_operand_numbering_test1 )
@@ -368,7 +411,11 @@ BOOST_AUTO_TEST_CASE( option_operand_numbering_test1 )
     throw_operand
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(res == argv.data()+argv.size());
 }
 
 BOOST_AUTO_TEST_CASE( option_operand_numbering_test2 )
@@ -400,7 +447,11 @@ BOOST_AUTO_TEST_CASE( option_operand_numbering_test2 )
     throw_operand
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(res == argv.data()+argv.size());
 }
 
 
@@ -428,9 +479,11 @@ BOOST_AUTO_TEST_CASE( parse_nested_option_test )
     check_pos_arg(co::make_option(_LIT(",c"),_LIT("case 2")),6,6)
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
+  BOOST_REQUIRE(res == argv.data()+argv.size());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -468,9 +521,11 @@ BOOST_AUTO_TEST_CASE( parse_nested_operand_test )
     throw_operand
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
-//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
+  BOOST_REQUIRE(res == argv.data()+argv.size());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -504,9 +559,12 @@ BOOST_AUTO_TEST_CASE( premature_terminate_test1 )
     check_pos_arg(co::make_option(_LIT("foo2"),_LIT("case 2")),2,2),
   };
 
-  variable_map_type vm =
+  variable_map_type vm;
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
+  BOOST_REQUIRE(res == argv.data());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -531,9 +589,12 @@ BOOST_AUTO_TEST_CASE( premature_terminate_test2 )
     check_pos_arg(co::make_option(_LIT("foo2"),_LIT("case 2")),2,2),
   };
 
-  variable_map_type vm =
+  variable_map_type vm;
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
+  BOOST_REQUIRE(res == argv.data()+1);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -559,8 +620,12 @@ BOOST_AUTO_TEST_CASE( premature_terminate_test3 )
     check_pos_arg(co::make_option(_LIT("foo2"),_LIT("case 2")),1,1),
   };
 
-  variable_map_type vm =
+  variable_map_type vm;
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(res == argv.data()+2);
 
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
@@ -588,9 +653,12 @@ BOOST_AUTO_TEST_CASE( premature_terminate_test4 )
     make_operand_at(2,2),
   };
 
-  variable_map_type vm =
+  variable_map_type vm;
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
+  BOOST_REQUIRE(res == argv.data());
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -615,8 +683,12 @@ BOOST_AUTO_TEST_CASE( premature_terminate_test5 )
     make_operand_at(2,2),
   };
 
-  variable_map_type vm =
+  variable_map_type vm;
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(res == argv.data()+1);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -642,8 +714,12 @@ BOOST_AUTO_TEST_CASE( premature_terminate_test6 )
     make_operand_at(1,1),
   };
 
-  variable_map_type vm =
+  variable_map_type vm;
+  const detail::check_char_t ** res;
+  std::tie(res,vm) =
     co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(res == argv.data()+2);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{

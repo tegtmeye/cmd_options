@@ -56,7 +56,9 @@ int main (int argc, char *argv[])
   std::vector<std::string> app_config{
     "-a","a app value","-b","b app value"
   };
-  co::variable_map vm = co::parse_arguments(app_config.begin(),
+
+  co::variable_map vm;
+  std::tie(std::ignore,vm) = co::parse_arguments(app_config.begin(),
     app_config.end(),grp);
 
   /*
@@ -65,7 +67,8 @@ int main (int argc, char *argv[])
   std::vector<std::string> usr_config{
     "-b","b usr value","-c","c usr value"
   };
-  vm = co::parse_arguments(usr_config.begin(),usr_config.end(),grp,vm);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(usr_config.begin(),usr_config.end(),grp,vm);
 
   /*
     Translate environmental variables into option_syntax and parse
@@ -87,7 +90,8 @@ int main (int argc, char *argv[])
       if(*res)
         opt[1] = res;
       try {
-        vm = co::parse_arguments(opt.begin(),opt.end(),grp,vm);
+        std::tie(std::ignore,vm) =
+          co::parse_arguments(opt.begin(),opt.end(),grp,vm);
       }
       catch(const std::runtime_error &ex) {
         std::cerr << ex.what() << ": " << pr.first << ", received: "
@@ -99,7 +103,13 @@ int main (int argc, char *argv[])
   grp.emplace_back(co::make_operand("operand",
     co::value<std::string>(),co::constrain().occurrences(1)));
 
-  vm = co::parse_arguments(argv+1,argv+argc,grp,vm);
+  char **res = 0;
+  std::tie(res,vm) = co::parse_arguments(argv+1,argv+argc,grp,vm);
+
+  if(res != argv+argc) {
+    std::cout << "Requested to stop parsing at '"
+      << *res << "'\n";
+  }
 
   std::cout << "VM contains:\n";
   for(auto &&key_val : vm) {

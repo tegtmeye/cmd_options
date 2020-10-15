@@ -165,7 +165,8 @@ BOOST_AUTO_TEST_CASE( bool_value_test )
       _LIT("case 6")),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("bool"),static_cast<bool>(1)),
@@ -240,7 +241,8 @@ BOOST_AUTO_TEST_CASE( CharT_value_test )
       _LIT("case 6")),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("CharT"),static_cast<detail::check_char_t>('a'))
@@ -289,7 +291,8 @@ BOOST_AUTO_TEST_CASE( short_value_test )
       co::basic_value<short,detail::check_char_t>(),_LIT("case 6")),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("short"),static_cast<short>(11)),
@@ -350,7 +353,8 @@ BOOST_AUTO_TEST_CASE( ushort_value_test )
       co::basic_value<unsigned short,detail::check_char_t>(),_LIT("case 6")),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("ushort"),static_cast<unsigned short>(21))
@@ -387,7 +391,8 @@ BOOST_AUTO_TEST_CASE( int_value_test )
       co::basic_value<int,detail::check_char_t>(),_LIT("case 6")),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("int"),static_cast<int>(12)),
@@ -424,7 +429,8 @@ BOOST_AUTO_TEST_CASE( uint_value_test )
       co::basic_value<unsigned int,detail::check_char_t>(),_LIT("case 6")),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("uint"),static_cast<unsigned int>(22)),
@@ -461,7 +467,8 @@ BOOST_AUTO_TEST_CASE( long_value_test )
       co::basic_value<long,detail::check_char_t>(),_LIT("case 6")),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("long"),static_cast<long>(13)),
@@ -498,7 +505,8 @@ BOOST_AUTO_TEST_CASE( ulong_value_test )
       co::basic_value<unsigned long,detail::check_char_t>(),_LIT("case 6")),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("ulong"),static_cast<unsigned long>(23)),
@@ -535,7 +543,8 @@ BOOST_AUTO_TEST_CASE( longlong_value_test )
       co::basic_value<long long,detail::check_char_t>(),_LIT("case 6")),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("longlong"),static_cast<long long>(14)),
@@ -573,7 +582,8 @@ BOOST_AUTO_TEST_CASE( ulonglong_value_test )
       _LIT("case 6")),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("ulonglong"),
@@ -611,7 +621,8 @@ BOOST_AUTO_TEST_CASE( float_value_test )
       co::basic_value<float,detail::check_char_t>(),_LIT("case 6")),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("float"),static_cast<float>(5.1),
@@ -649,7 +660,8 @@ BOOST_AUTO_TEST_CASE( double_value_test )
       co::basic_value<double,detail::check_char_t>(),_LIT("case 6")),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("double"),static_cast<double>(6.1),
@@ -688,7 +700,8 @@ BOOST_AUTO_TEST_CASE( long_double_value_test )
       _LIT("case 6"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("longdouble"),static_cast<long double>(7.1),
@@ -761,7 +774,8 @@ BOOST_AUTO_TEST_CASE( fundamental_value_test )
       _LIT("case 6"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("CharT"),static_cast<detail::check_char_t>('a')),
@@ -798,7 +812,8 @@ BOOST_AUTO_TEST_CASE( string_value_test )
       _LIT("case 6"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("string"),
@@ -821,7 +836,8 @@ BOOST_AUTO_TEST_CASE( userdef_value_test )
       _LIT("case 6"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("userdef"),
@@ -844,7 +860,8 @@ BOOST_AUTO_TEST_CASE( userdef_convert_value_test )
       _LIT("case 6"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("userdef"),

@@ -53,7 +53,14 @@ int main (int argc, char *argv[])
         co::constrain().occurrences(0,1))
     };
 
-    co::variable_map vm = co::parse_arguments(argv+1,argv+argc,desc);
+    char **res = 0;
+    co::variable_map vm;
+    std::tie(res,vm) = co::parse_arguments(argv+1,argv+argc,desc);
+
+    if(res != argv+argc) {
+      std::cout << "Requested to stop parsing at '"
+        << *res << "'\n";
+    }
 
     if(vm.count("help")) {
       std::cout << co::to_string(desc) << "\n";

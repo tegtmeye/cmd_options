@@ -23,6 +23,87 @@ typedef co::basic_options_group<detail::check_char_t> options_group_type;
 typedef co::basic_variable_map<detail::check_char_t> variable_map_type;
 typedef detail::std_stream_select<detail::check_char_t> stream_select;
 
+
+/**
+  ignore flagged options
+ */
+BOOST_AUTO_TEST_CASE( option_ignore_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("--bar"),
+    _LIT("--baz"),
+    _LIT("arg"),
+    _LIT("--buz"),
+    _LIT("--foobar"),
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("foo"),_LIT("ignored"),
+      co::basic_constraint<detail::check_char_t>().ignore()),
+    co::make_option(_LIT("bar"),_LIT("case 2")),
+    co::make_option(_LIT("baz"),
+      co::basic_value<string_type,detail::check_char_t>(),
+      _LIT("ignored"),
+      co::basic_constraint<detail::check_char_t>().ignore()),
+    co::make_option(_LIT("buz"),_LIT("case 2")),
+    co::make_option(_LIT("foobar"),_LIT("ignored"),
+      co::basic_constraint<detail::check_char_t>().ignore()),
+  };
+
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("bar"),{}},
+      {_LIT("buz"),{}}
+    }));
+}
+
+/**
+  ignore flagged operands
+ */
+BOOST_AUTO_TEST_CASE( operand_ignore_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("foo"),
+    _LIT("bar"),
+    _LIT("baz"),
+    _LIT("buz"),
+    _LIT("foobar"),
+  };
+
+  options = options_group_type{
+    co::make_operand(_LIT("foo"),
+      co::basic_constraint<detail::check_char_t>().at_position(0).ignore()),
+    co::make_operand(_LIT("bar"),
+      co::basic_constraint<detail::check_char_t>().at_position(1)),
+    co::make_operand(_LIT("baz"),
+      co::basic_constraint<detail::check_char_t>().at_position(2).ignore()),
+    co::make_operand(_LIT("buz"),
+      co::basic_constraint<detail::check_char_t>().at_position(3)),
+    co::make_operand(_LIT("foobar"),
+      co::basic_constraint<detail::check_char_t>().at_position(4).ignore()),
+  };
+
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+//    stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("bar"),{}},
+      {_LIT("buz"),{}}
+    }));
+}
+
+
 /**
   option no restriction given 0
  */
@@ -39,7 +120,8 @@ BOOST_AUTO_TEST_CASE( option_no_restrictions_given_0_test )
     co::make_option(_LIT("bar,b"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -62,7 +144,8 @@ BOOST_AUTO_TEST_CASE( option_no_restrictions_given_1_test )
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -83,11 +166,13 @@ BOOST_AUTO_TEST_CASE( option_degenerate_occurrences_test )
 
   options = options_group_type{
     co::make_option(_LIT("foo,f"),
-      _LIT("case 2"),co::basic_constraint<detail::check_char_t>().occurrences(0)),
+      _LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().occurrences(0)),
     co::make_option(_LIT("bar,b"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -111,7 +196,8 @@ BOOST_AUTO_TEST_CASE( option_strict_0_given_1_test )
       co::basic_constraint<detail::check_char_t>().occurrences(0)),
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
       return (ex.mapped_key() == co::detail::asUTF8(string_type(_LIT("foo")))
         && ex.min() == 0 && ex.max() == 0 && ex.occurrences() == 1);
@@ -134,7 +220,8 @@ BOOST_AUTO_TEST_CASE( option_strict_1_given_0_test )
       co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
       return (ex.mapped_key() == co::detail::asUTF8(string_type(_LIT("foo")))
         && ex.min() == 1 && ex.max() == 1 && ex.occurrences() == 0);
@@ -158,7 +245,8 @@ BOOST_AUTO_TEST_CASE( option_strict_1_given_1_test )
       co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -183,7 +271,8 @@ BOOST_AUTO_TEST_CASE( option_strict_1_given_2_test )
       co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
       return (ex.mapped_key() == co::detail::asUTF8(string_type(_LIT("foo")))
         && ex.min() == 1 && ex.max() == 1 && ex.occurrences() == 2);
@@ -211,7 +300,8 @@ BOOST_AUTO_TEST_CASE( operand_no_restrictions_given_0_test )
       co::basic_value<string_type,detail::check_char_t>())
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -235,7 +325,8 @@ BOOST_AUTO_TEST_CASE( operand_no_restrictions_given_1_test )
       co::basic_value<string_type,detail::check_char_t>())
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -255,12 +346,14 @@ BOOST_AUTO_TEST_CASE( operand_strict_0_given_0_test )
   };
 
   options = options_group_type{
-    co::make_operand(_LIT("case 14"),co::basic_value<string_type,detail::check_char_t>(),
+    co::make_operand(_LIT("case 14"),
+      co::basic_value<string_type,detail::check_char_t>(),
       co::basic_constraint<detail::check_char_t>().occurrences(0)),
     co::make_option(_LIT("bar,b"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -285,7 +378,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_0_given_1_test )
       co::basic_constraint<detail::check_char_t>().occurrences(0))
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
       return (ex.mapped_key() == co::detail::asUTF8(_LIT("operand_key"))
         && ex.min() == 0 && ex.max() == 0 && ex.occurrences() == 1);
@@ -309,7 +403,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_0_test )
       co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
       return (ex.mapped_key() == co::detail::asUTF8(_LIT("operand_key"))
         && ex.min() == 1 && ex.max() == 1 && ex.occurrences() == 0);
@@ -334,7 +429,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_1_test )
       co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -360,7 +456,8 @@ BOOST_AUTO_TEST_CASE( operand_strict_1_given_2_test )
       co::basic_constraint<detail::check_char_t>().occurrences(1))
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
       return (ex.mapped_key() == co::detail::asUTF8(_LIT("operand_key"))
         && ex.min() == 1 && ex.max() == 1 && ex.occurrences() == 2);
@@ -387,7 +484,8 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_0_test )
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -416,7 +514,8 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_1_test )
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -447,7 +546,8 @@ BOOST_AUTO_TEST_CASE( operand_0_1_given_2_test )
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
     co::occurrence_error, [](const co::occurrence_error &ex) {
       return (ex.mapped_key() == co::detail::asUTF8(_LIT("operand_key"))
         && ex.min() == 0 && ex.max() == 1 && ex.occurrences() == 2);
@@ -482,7 +582,8 @@ BOOST_AUTO_TEST_CASE( operand_unconstrained_argument )
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
@@ -515,7 +616,8 @@ BOOST_AUTO_TEST_CASE( operand_argument_0_given_0 )
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -543,7 +645,8 @@ BOOST_AUTO_TEST_CASE( operand_argument_0_given_1 )
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
     co::unexpected_operand_error, [](const co::unexpected_operand_error &ex) {
       return (ex.position() == 0 && ex.argument() == 1);
     }
@@ -573,7 +676,8 @@ BOOST_AUTO_TEST_CASE( operand_unconstrained_position )
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
@@ -606,7 +710,8 @@ BOOST_AUTO_TEST_CASE( operand_position_0_given_0 )
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
   BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
     variable_map_type{
@@ -635,7 +740,8 @@ BOOST_AUTO_TEST_CASE( operand_position_0_given_1 )
     co::make_option(_LIT("foo,f"),_LIT("case 2"))
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
     co::unexpected_operand_error, [](const co::unexpected_operand_error &ex) {
       return (ex.position() == 1 && ex.argument() == 2);
     }
@@ -661,7 +767,8 @@ BOOST_AUTO_TEST_CASE( option_empty_mutual_exclusion_test )
         {_LIT("bar"),_LIT("baz"),_LIT("foobar")})),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
@@ -688,7 +795,8 @@ BOOST_AUTO_TEST_CASE( option_non_mutual_exclusion_test )
         {_LIT("bar"),_LIT("baz"),_LIT("foobar")})),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
@@ -717,7 +825,8 @@ BOOST_AUTO_TEST_CASE( option_mutual_exclusion_test )
         {_LIT("bar")})),
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
     co::mutually_exclusive_error, [](const co::mutually_exclusive_error &ex) {
       return (ex.mapped_key() == co::detail::asUTF8(string_type(_LIT("foo")))
         && ex.exclusive_mapped_key() ==
@@ -742,7 +851,8 @@ BOOST_AUTO_TEST_CASE( option_empty_mutual_inclusion_test )
         {_LIT("bar")})),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
@@ -770,7 +880,8 @@ BOOST_AUTO_TEST_CASE( option_non_mutual_inclusion_test )
         {_LIT("bar")})),
   };
 
-  vm =  co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
 
 //   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
 
@@ -799,7 +910,8 @@ BOOST_AUTO_TEST_CASE( option_mutual_inclusion_test )
         {_LIT("bar")})),
   };
 
-  BOOST_CHECK_EXCEPTION(co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
     co::mutually_inclusive_error, [](const co::mutually_inclusive_error &ex) {
       return (ex.mapped_key() == co::detail::asUTF8(string_type(_LIT("foo")))
         && ex.inclusive_mapped_key() ==
