@@ -2609,7 +2609,7 @@ last_of(const typename basic_variable_map<CharT>::key_type &key,
 }
 
 /*
-  Convenience function for extracting the last element of the
+  Convenience functions for extracting the last element of the
   variable_map for a given key. This behaves exactly as \c last_of
   except that the function throws an assertion failure if the key does
   not exist in the vm.
@@ -2619,6 +2619,17 @@ last_of(const typename basic_variable_map<CharT>::key_type &key,
   program (hence the assertion failure rather than throwing an
   exception).
 */
+template<typename CharT>
+inline typename basic_variable_map<CharT>::iterator
+assert_last_of(const typename basic_variable_map<CharT>::key_type &key,
+  basic_variable_map<CharT> &vm)
+{
+  auto &&range = vm.equal_range(key);
+  assert(range.first != range.second);
+
+  return --(range.second);
+}
+
 template<typename CharT>
 inline typename basic_variable_map<CharT>::const_iterator
 assert_last_of(const typename basic_variable_map<CharT>::key_type &key,
