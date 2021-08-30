@@ -142,6 +142,52 @@ struct convert_value<userdef_convert_struct> {
   }
 };
 
+template<typename CharT>
+std::basic_string<CharT> userdef_transform(const std::basic_string<CharT> &in)
+{
+  return std::basic_string<CharT>(in.rbegin(),in.rend());
+}
+
+/**
+  Userdefined conversion function. Convert the contents of the string to
+  a T using operator>>. If all goes well, just replace the value with
+  the one supplied to the constructor. Just used to check that the
+  userdefined version is used.
+*/
+template<typename T, typename CharT>
+struct userdef_cvt {
+  T operator()(const std::basic_string<CharT> &str) const
+  {
+    return co::convert_value<T>::from_string(str+str);
+  }
+
+  void operator()(std::basic_string<CharT> &str, const T &val) const {
+    co::convert_value<T>::to_string(str,val);
+    str = str+str;
+  }
+};
+
+/**
+  Userdefined conversion function. Convert the contents of the given value  to a string using operator<<. If all goes well, just replace the string with
+  the one supplied to the constructor. Just used to check that the
+  userdefined version is used.
+*/
+template<typename T, typename CharT>
+struct userdef_to_string {
+  userdef_to_string(const std::basic_string<CharT> &val) :_val(val) {}
+
+  void operator()(std::basic_string<CharT> &str, const T &val)
+  {
+    std::basic_stringstream<CharT> out;
+    if(!(out << val))
+      throw 1;
+
+    str = _val;
+  }
+
+  std::basic_string<CharT> &_val;
+};
+
 }
 
 BOOST_AUTO_TEST_SUITE( value_test_suite )
@@ -866,6 +912,46 @@ BOOST_AUTO_TEST_CASE( userdef_convert_value_test )
   BOOST_REQUIRE(detail::vm_check(vm,{
       detail::check_value(_LIT("userdef"),
         static_cast<co::userdef_convert_struct>(_LIT("Hello World"))),
+    }
+  ));
+}
+
+BOOST_AUTO_TEST_CASE( userdef_custom_value_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--userdef=Hello World"),
+    _LIT("--userdef2"),
+  };
+
+  co::userdef_cvt<string_type,detail::check_char_t> cvt;
+
+  options = options_group_type{
+    co::make_option(_LIT("userdef"),
+      co::basic_value<string_type,detail::check_char_t>()
+        .from_string(cvt)
+        .transform(&co::userdef_transform<detail::check_char_t>),
+      _LIT("case 6")),
+
+    co::make_option(_LIT("userdef2"),
+      co::basic_value<string_type,detail::check_char_t>()
+        .implicit(string_type(_LIT("foobar")))
+        .to_string(cvt),
+      _LIT("case 6"))
+  };
+
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+std::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>())
+  << "\n";
+
+  BOOST_REQUIRE(detail::vm_check(vm,{
+      detail::check_value(_LIT("userdef"),
+        static_cast<string_type>(_LIT("dlroW olleHdlroW olleH"))),
+      detail::check_value(_LIT("userdef2"),
+        static_cast<string_type>(_LIT("foobar"))),
     }
   ));
 }

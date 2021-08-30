@@ -1533,88 +1533,6 @@ typedef basic_constraint<wchar_t> wconstrain;
 
 
 
-template<typename T, typename CharT>
-class basic_value {
-  public:
-    typedef T value_type;
-
-    basic_value(void) = default;
-    basic_value(T *_val) :_callback([=](const T &val){*_val = val;}) {}
-    basic_value(const std::function<void(const T &)> &callback)
-      :_callback(callback) {}
-
-    const std::function<void(const T &)> & callback(void) const {
-      return _callback;
-    }
-
-    std::shared_ptr<value_type> implicit(void) const {
-      return _implicit;
-    }
-
-    basic_value<T,CharT> & implicit(const T &val) {
-      _implicit = std::make_shared<T>(val);
-
-      return *this;
-    }
-
-    const std::basic_string<CharT> description(void) const {
-      return _description;
-    }
-
-    basic_value<T,CharT> & description(const std::basic_string<CharT> &str) {
-      _description = str;
-
-      return *this;
-    }
-
-    basic_value<T,CharT> & validate(const std::function<void(const T &)> &fn) {
-      _validate = fn;
-
-      return *this;
-    }
-
-    const std::function<void(const T &)> & validate(void) const {
-      return _validate;
-    }
-
-    basic_value<T,CharT> &
-    transform(const std::function<
-      std::basic_string<CharT>(const std::basic_string<CharT> &str)> &fn)
-    {
-      _transform = fn;
-
-      return *this;
-    }
-
-    const std::function<
-      std::basic_string<CharT>(const std::basic_string<CharT> &)> &
-    transform(void) const
-    {
-      return _transform;
-    }
-
-
-  private:
-    std::function<
-      std::basic_string<CharT>(const std::basic_string<CharT> &)> _transform;
-    std::function<void(const T &)> _callback;
-    std::function<void(const T &)> _validate;
-    std::shared_ptr<value_type> _implicit;
-    std::basic_string<CharT> _description{'a','r','g'};
-};
-
-template<typename T>
-using value = basic_value<T,char>;
-
-template<typename T>
-using wvalue = basic_value<T,wchar_t>;
-
-template<typename T>
-using value16 = basic_value<T,char16_t>;
-
-template<typename T>
-using value32 = basic_value<T,char32_t>;
-
 /*
   Intermediary conversion class to handle conversion to and from
   basic_string<CharT> and value T.
@@ -1692,7 +1610,7 @@ struct convert_value {
 
 template<typename CharT>
 struct convert_value<std::basic_string<CharT> > {
-  static const std::basic_string<CharT> &
+  static std::basic_string<CharT>
   from_string(const std::basic_string<CharT> &str)
   {
     return str;
@@ -1739,7 +1657,7 @@ struct convert_value<bool> {
   }
 
   template<typename CharT>
-  static void to_string(std::basic_string<CharT> &str, bool val)
+  static void to_string(std::basic_string<CharT> &str, const bool &val)
   {
     std::basic_ostringstream<CharT> out;
     out << std::boolalpha << val;
@@ -1772,7 +1690,7 @@ struct convert_value<char16_t> {
     return str.front();
   }
 
-  static void to_string(std::u16string &str, char16_t val)
+  static void to_string(std::u16string &str, const char16_t &val)
   {
     str = val;
   }
@@ -1788,12 +1706,136 @@ struct convert_value<char32_t> {
     return str.front();
   }
 
-  static void to_string(std::u32string &str, char32_t val)
+  static void to_string(std::u32string &str, const char32_t &val)
   {
     str = val;
   }
 };
 
+template<typename T, typename CharT>
+class basic_value {
+  public:
+    typedef T value_type;
+
+    typedef T (*from_string_fn)(const std::basic_string<CharT> &);
+    typedef void(*to_string_fn)(std::basic_string<CharT> &s, const T&);
+
+
+    basic_value(void) = default;
+    basic_value(T *_val) :_callback([=](const T &val){*_val = val;}) {}
+    basic_value(const std::function<void(const T &)> &callback)
+      :_callback(callback) {}
+
+    const std::function<void(const T &)> & callback(void) const {
+      return _callback;
+    }
+
+    std::shared_ptr<value_type> implicit(void) const {
+      return _implicit;
+    }
+
+    basic_value<T,CharT> & implicit(const T &val) {
+      _implicit = std::make_shared<T>(val);
+
+      return *this;
+    }
+
+    const std::basic_string<CharT> description(void) const {
+      return _description;
+    }
+
+    basic_value<T,CharT> & description(const std::basic_string<CharT> &str) {
+      _description = str;
+
+      return *this;
+    }
+
+    basic_value<T,CharT> & validate(const std::function<void(const T &)> &fn) {
+      _validate = fn;
+
+      return *this;
+    }
+
+    const std::function<void(const T &)> & validate(void) const {
+      return _validate;
+    }
+
+    basic_value<T,CharT> &
+    transform(const std::function<
+      std::basic_string<CharT>(const std::basic_string<CharT> &str)> &fn)
+    {
+      _transform = fn;
+
+      return *this;
+    }
+
+    const std::function<
+      std::basic_string<CharT>(const std::basic_string<CharT> &)> &
+    transform(void) const
+    {
+      return _transform;
+    }
+
+    basic_value<T,CharT> &
+    from_string(const std::function<T(const std::basic_string<CharT> &)> &fn)
+    {
+      _from_string = fn;
+
+      return *this;
+    }
+
+    const std::function<T(const std::basic_string<CharT> &)> &
+    from_string(void) const
+    {
+      return _from_string;
+    }
+
+    basic_value<T,CharT> &
+    to_string(
+      const std::function<void(std::basic_string<CharT> &s, const T&)> &fn)
+    {
+      _to_string = fn;
+
+      return *this;
+    }
+
+    const std::function<void(std::basic_string<CharT> &s, const T&)> &
+    to_string(void) const
+    {
+      return _to_string;
+    }
+
+  private:
+
+    static constexpr from_string_fn default_from_string =
+      convert_value<T>::from_string;
+
+    static constexpr to_string_fn default_to_string =
+      convert_value<T>::to_string;
+
+    std::function<void(const T &)> _callback;
+    std::shared_ptr<value_type> _implicit;
+    std::basic_string<CharT> _description{'a','r','g'};
+    std::function<void(const T &)> _validate;
+    std::function<
+      std::basic_string<CharT>(const std::basic_string<CharT> &)> _transform;
+    std::function<T(const std::basic_string<CharT> &)> _from_string =
+      default_from_string;
+    std::function<void(std::basic_string<CharT> &s, const T&)> _to_string =
+      default_to_string;
+};
+
+template<typename T>
+using value = basic_value<T,char>;
+
+template<typename T>
+using wvalue = basic_value<T,wchar_t>;
+
+template<typename T>
+using value16 = basic_value<T,char16_t>;
+
+template<typename T>
+using value32 = basic_value<T,char32_t>;
 
 
 
@@ -2109,51 +2151,27 @@ inline void set_default_option_value(const basic_value<T,CharT> &val,
     };
   }
 
-  if(val.transform()) {
-    desc.make_value = [=](const string_type &, std::size_t posn,
-      std::size_t argn, const string_type &in_val, const variable_map_type &)
-    {
-      try {
-        const T &result =
-          convert_value<T>::from_string(val.transform()(in_val));
+  desc.make_value = [=](const string_type &, std::size_t posn,
+    std::size_t argn, const string_type &in_val, const variable_map_type &)
+  {
+    try {
+      const T &result = val.from_string()(
+        (!val.transform() ? in_val : val.transform()(in_val)));
 
-        if(val.validate())
-          val.validate()(result);
+      if(val.validate())
+        val.validate()(result);
 
-        if(val.callback())
-          val.callback()(result);
+      if(val.callback())
+        val.callback()(result);
 
-        return any(result);
-      }
-      catch (...) {
-        std::throw_with_nested(invalid_argument_error{posn,argn});
-      }
+      return any(result);
+    }
+    catch (...) {
+      std::throw_with_nested(invalid_argument_error{posn,argn});
+    }
 
-      return any(); // should never get here, used to avoid compiler warnings
-    };
-  }
-  else {
-    desc.make_value = [=](const string_type &, std::size_t posn,
-      std::size_t argn, const string_type &in_val, const variable_map_type &)
-    {
-      try {
-        const T &result = convert_value<T>::from_string(in_val);
-
-        if(val.validate())
-          val.validate()(result);
-
-        if(val.callback())
-          val.callback()(result);
-
-        return any(result);
-      }
-      catch (...) {
-        std::throw_with_nested(invalid_argument_error{posn,argn});
-      }
-
-      return any(); // should never get here, used to avoid compiler warnings
-    };
-  }
+    return any(); // should never get here, used to avoid compiler warnings
+  };
 }
 
 template<typename T, typename CharT>
@@ -2173,35 +2191,13 @@ inline void set_default_operand_value(const basic_value<T,CharT> &val,
       return any(*(val.implicit()));
     };
   }
-  else if(val.transform()) {
-    desc.make_value = [=](const string_type &, std::size_t posn,
-      std::size_t argn, const string_type &in_val, const variable_map_type &)
-    {
-      try {
-        const T &result =
-          convert_value<T>::from_string(val.transform()(in_val));
-
-        if(val.validate())
-          val.validate()(result);
-
-        if(val.callback())
-          val.callback()(result);
-
-        return any(result);
-      }
-      catch (...) {
-        std::throw_with_nested(invalid_argument_error{posn,argn});
-      }
-
-      return any(); // should never get here, used to avoid compiler warnings
-    };
-  }
   else {
     desc.make_value = [=](const string_type &, std::size_t posn,
       std::size_t argn, const string_type &in_val, const variable_map_type &)
     {
       try {
-        const T &result = convert_value<T>::from_string(in_val);
+        const T &result = val.from_string()(
+          (!val.transform() ? in_val : val.transform()(in_val)));
 
         if(val.validate())
           val.validate()(result);
