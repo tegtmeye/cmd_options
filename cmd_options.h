@@ -45,6 +45,7 @@
 #include <locale>
 #include <memory>
 #include <functional>
+#include <type_traits>
 #include <algorithm>
 #include <sstream>
 
@@ -2146,7 +2147,7 @@ inline void set_default_option_value(const basic_value<T,CharT> &val,
     };
     desc.implicit_value_description = [=](void) {
       string_type str;
-      convert_value<T>::to_string(str,*(val.implicit()));
+      val.to_string()(str,*(val.implicit()));
       return str;
     };
   }
@@ -2605,7 +2606,7 @@ last_of(const typename basic_variable_map<CharT>::key_type &key,
 }
 
 /*
-  Convenience functions for extracting the last element of the
+  Convenience function for extracting the last element of the
   variable_map for a given key. This behaves exactly as \c last_of
   except that the function throws an assertion failure if the key does
   not exist in the vm.
@@ -2614,29 +2615,38 @@ last_of(const typename basic_variable_map<CharT>::key_type &key,
   that if it is missing, it represents a blatant logic error in the
   program (hence the assertion failure rather than throwing an
   exception).
+
+  Use as:
+
+  int foo = co::assert_last_value<int>("bar",vm);
 */
-template<typename CharT>
-inline typename basic_variable_map<CharT>::iterator
-assert_last_of(const typename basic_variable_map<CharT>::key_type &key,
+template<typename T, typename CharT>
+inline T
+assert_last_value(const typename basic_variable_map<CharT>::key_type &key,
   basic_variable_map<CharT> &vm)
 {
+  typedef typename std::remove_cv<
+    typename std::remove_reference<T>::type>::type value_type;
+
   auto &&range = vm.equal_range(key);
   assert(range.first != range.second);
 
-  return --(range.second);
+  return any_cast<value_type &>((--(range.second))->second);
 }
 
-template<typename CharT>
-inline typename basic_variable_map<CharT>::const_iterator
-assert_last_of(const typename basic_variable_map<CharT>::key_type &key,
+template<typename T, typename CharT>
+inline T
+assert_last_value(const typename basic_variable_map<CharT>::key_type &key,
   const basic_variable_map<CharT> &vm)
 {
+  typedef typename std::remove_cv<
+    typename std::remove_reference<T>::type>::type value_type;
+
   auto &&range = vm.equal_range(key);
   assert(range.first != range.second);
 
-  return --(range.second);
+  return any_cast<const value_type &>((--(range.second))->second);
 }
-
 
 
 /*
@@ -2674,6 +2684,45 @@ inline basic_variable_map<CharT> overlay(const basic_variable_map<CharT> &vm1,
 
   for(const auto &pair : vm2)
     vm.emplace(pair);
+
+  return vm;
+}
+
+/*
+  Convenience function to return the exclusive-or of vm1 and vm2
+
+  i.e.
+  vm1 = {
+    {key1,vm1_value1_1},
+    {key2,vm1_value2_1},
+  }
+
+  vm2 = {
+    {key2,vm2_value2_1},
+    {key2,vm2_value2_2},
+    {key3,vm2_value3_1},
+    {key3,vm2_value3_2},
+  }
+
+  result = {
+    {key1,foo_value1_1},
+    {key2,vm1_value2_1},
+    {key3,vm2_value3_1},
+    {key3,vm2_value3_2},
+  }
+
+  Useful for working with default values
+*/
+template<typename CharT>
+inline basic_variable_map<CharT> ensure(const basic_variable_map<CharT> &vm1,
+  const basic_variable_map<CharT> &vm2)
+{
+  basic_variable_map<CharT> vm = vm1;
+
+  for(const auto &pair : vm2) {
+    if(vm1.count(pair.first) == 0)
+      vm.emplace(pair);
+  }
 
   return vm;
 }
