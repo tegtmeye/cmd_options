@@ -49,6 +49,20 @@
 #include <algorithm>
 #include <sstream>
 
+
+/**
+  clang supports the pre-c++17 attribute gnu::fallthrough
+  https://clang.llvm.org/docs/AttributeReference.html#fallthrough
+*/
+#if __cplusplus >= 201703L
+  #define BFS_FALLTHROUGH fallthrough
+#else
+  #define BFS_FALLTHROUGH gnu::fallthrough
+#endif
+
+
+
+
 namespace cmd_options {
 
 /*
@@ -1207,8 +1221,9 @@ parse_incremental_arguments(BidirectionalIterator first,
 
 
       case 3:
-        state = 0;
         // note the fall through so only execute case 4 once
+        state = 0;
+        [[BFS_FALLTHROUGH]];
 
       case 4: {
         // operand, if end_of_option is set, then we continually repeat here
