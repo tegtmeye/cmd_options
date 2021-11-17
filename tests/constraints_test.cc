@@ -920,5 +920,178 @@ BOOST_AUTO_TEST_CASE( option_mutual_inclusion_test )
   );
 }
 
+
+
+
+
+
+
+
+/**
+  option (empty) mutual inclusion any
+*/
+BOOST_AUTO_TEST_CASE( option_empty_mutual_inclusion_any_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_inclusive_any(
+        {_LIT("bar")})),
+  };
+
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+    }));
+}
+
+/**
+  option (non) mutual inclusion any
+*/
+BOOST_AUTO_TEST_CASE( option_non_mutual_inclusion_any_test1 )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("--bar")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("bar,b"),_LIT("case 2")),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_inclusive_any(
+        {_LIT("bar")})),
+  };
+
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("bar"),{}},
+      {_LIT("foo"),{}}
+    }));
+}
+
+/**
+  option (non) mutual inclusion any
+*/
+BOOST_AUTO_TEST_CASE( option_non_mutual_inclusion_any_test2 )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("--bar")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("bar,b"),_LIT("case 2")),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_inclusive_any(
+        {_LIT("bar"),_LIT("foobar")})),
+  };
+
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("bar"),{}},
+      {_LIT("foo"),{}}
+    }));
+}
+
+/**
+  option (non) mutual inclusion any
+*/
+BOOST_AUTO_TEST_CASE( option_non_mutual_inclusion_any_test3 )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+    _LIT("--bar")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("bar,b"),_LIT("case 2")),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_inclusive_any(
+        {_LIT("foobar"),_LIT("bar")})),
+  };
+
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("bar"),{}},
+      {_LIT("foo"),{}}
+    }));
+}
+
+
+
+
+
+
+
+
+
+
+/**
+  option mutual inclusion (actual) any
+*/
+BOOST_AUTO_TEST_CASE( option_mutual_inclusion_any_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("bar,b"),_LIT("case 2")),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_inclusive_any(
+        {_LIT("bar"),_LIT("foobar")})),
+  };
+
+  std::vector<std::string> inclusive_any_keys{
+    co::detail::asUTF8(string_type(_LIT("bar"))),
+    co::detail::asUTF8(string_type(_LIT("foobar")))};
+
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+    co::mutually_inclusive_any_error,
+      [&](const co::mutually_inclusive_any_error &ex)
+      {
+        return (ex.mapped_key() == co::detail::asUTF8(string_type(_LIT("foo")))
+          && ex.inclusive_any_keys() == inclusive_any_keys);
+      }
+  );
+}
+
+
+
+
+
+
 BOOST_AUTO_TEST_SUITE_END()
 

@@ -272,6 +272,26 @@ class mutually_inclusive_error : public constraint_error {
     std::runtime_error _inclusive_mapped_key;
 };
 
+class mutually_inclusive_any_error : public constraint_error {
+  public:
+    mutually_inclusive_any_error(const std::string &mapped_key,
+      const std::vector<std::string> &inclusive_any_keys)
+        :constraint_error("mutually_inclusive_any_error",mapped_key),
+          _inclusive_any_keys{inclusive_any_keys} {}
+
+    mutually_inclusive_any_error(const std::string &mapped_key,
+      std::vector<std::string> &&inclusive_any_keys)
+        :constraint_error("mutually_inclusive_any_error",mapped_key),
+          _inclusive_any_keys{inclusive_any_keys} {}
+
+    const std::vector<std::string> & inclusive_any_keys(void) const noexcept {
+      return _inclusive_any_keys;
+    }
+
+  private:
+    std::vector<std::string> _inclusive_any_keys;
+};
+
 /*
   Used for parsing errors during formatting
 */
@@ -1530,6 +1550,17 @@ class basic_constraint {
       return *this;
     }
 
+    const std::vector<string_type> & mutually_inclusive_any(void) const {
+      return _mutually_inclusive_any;
+    }
+
+    basic_constraint<CharT> &
+    mutually_inclusive_any(const std::vector<string_type> &mapped_key_vec)
+    {
+      _mutually_inclusive_any = mapped_key_vec;
+      return *this;
+    }
+
   private:
     int _position = -1;
     int _argument = -1;
@@ -1542,6 +1573,7 @@ class basic_constraint {
 
     std::vector<string_type> _mutually_exclusive;
     std::vector<string_type> _mutually_inclusive;
+    std::vector<string_type> _mutually_inclusive_any;
 };
 
 typedef basic_constraint<char> constrain;
@@ -2295,6 +2327,23 @@ void set_default_constraints(const basic_constraint<CharT> &cnts,
         if(vm.count(inclusive_key) == 0)
           throw mutually_inclusive_error(detail::asUTF8(mapped_key),
             detail::asUTF8(inclusive_key));
+      }
+
+      if(!cnts.mutually_inclusive_any().empty()) {
+        bool contains = false;
+        for(auto &inclusive_any_key : cnts.mutually_inclusive_any()) {
+          if(vm.count(inclusive_any_key) != 0)
+            contains = true;
+        }
+
+        if(!contains) {
+          std::vector<std::string> inclusive_any_keys;
+          for(const auto &elem : cnts.mutually_inclusive_any())
+            inclusive_any_keys.emplace_back(detail::asUTF8(elem));
+
+          throw mutually_inclusive_any_error(detail::asUTF8(mapped_key),
+            inclusive_any_keys);
+        }
       }
     }
   };
