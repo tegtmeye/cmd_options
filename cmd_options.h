@@ -49,7 +49,6 @@
 #include <algorithm>
 #include <sstream>
 
-
 /**
   clang supports the pre-c++17 attribute gnu::fallthrough
   https://clang.llvm.org/docs/AttributeReference.html#fallthrough
@@ -255,6 +254,26 @@ class mutually_exclusive_error : public constraint_error {
 
   private:
     std::runtime_error _exclusive_mapped_key;
+};
+
+class mutually_exclusive_any_error : public constraint_error {
+  public:
+    mutually_exclusive_any_error(const std::string &mapped_key,
+      const std::vector<std::string> &exclusive_any_keys)
+        :constraint_error("mutually_exclusive_any_error",mapped_key),
+          _exclusive_any_keys{exclusive_any_keys} {}
+
+    mutually_exclusive_any_error(const std::string &mapped_key,
+      std::vector<std::string> &&exclusive_any_keys)
+        :constraint_error("mutually_exclusive_any_error",mapped_key),
+          _exclusive_any_keys{exclusive_any_keys} {}
+
+    const std::vector<std::string> & exclusive_any_keys(void) const noexcept {
+      return _exclusive_any_keys;
+    }
+
+  private:
+    std::vector<std::string> _exclusive_any_keys;
 };
 
 class mutually_inclusive_error : public constraint_error {
@@ -1539,6 +1558,17 @@ class basic_constraint {
       return *this;
     }
 
+    const std::vector<string_type> & mutually_exclusive_any(void) const {
+      return _mutually_exclusive_any;
+    }
+
+    basic_constraint<CharT> &
+    mutually_exclusive_any(const std::vector<string_type> &mapped_key_vec)
+    {
+      _mutually_exclusive_any = mapped_key_vec;
+      return *this;
+    }
+
     const std::vector<string_type> & mutually_inclusive(void) const {
       return _mutually_inclusive;
     }
@@ -1572,6 +1602,7 @@ class basic_constraint {
     bool _ignore = false;
 
     std::vector<string_type> _mutually_exclusive;
+    std::vector<string_type> _mutually_exclusive_any;
     std::vector<string_type> _mutually_inclusive;
     std::vector<string_type> _mutually_inclusive_any;
 };
@@ -2345,6 +2376,19 @@ void set_default_constraints(const basic_constraint<CharT> &cnts,
             inclusive_any_keys);
         }
       }
+    }
+    else if(!cnts.mutually_exclusive_any().empty()) {
+      for(const auto &elem : cnts.mutually_exclusive_any()) {
+        if(vm.count(elem))
+          return;
+      }
+
+      std::vector<std::string> exclusive_any_keys;
+      for(const auto &elem : cnts.mutually_exclusive_any())
+        exclusive_any_keys.emplace_back(detail::asUTF8(elem));
+
+      throw mutually_exclusive_any_error(detail::asUTF8(mapped_key),
+        exclusive_any_keys);
     }
   };
 }

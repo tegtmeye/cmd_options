@@ -4,8 +4,6 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <iostream>
-
 /**
   constraints test
  */
@@ -835,6 +833,167 @@ BOOST_AUTO_TEST_CASE( option_mutual_exclusion_test )
   );
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+  option (empty) mutual exclusion any
+*/
+BOOST_AUTO_TEST_CASE( option_empty_mutual_exclusion_any_test1 )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--bar")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("bar,b"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().occurrences(0,1)),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_exclusive_any(
+        {_LIT("bar"),_LIT("baz"),_LIT("foobar")})),
+  };
+
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("bar"),{}}
+    }));
+}
+
+/**
+  option (empty) mutual exclusion any
+*/
+BOOST_AUTO_TEST_CASE( option_empty_mutual_exclusion_any_test2 )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--bar")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("bar,b"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().occurrences(0,1)),
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_exclusive_any(
+        {_LIT("baz"),_LIT("foobar"),_LIT("bar")})),
+  };
+
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("bar"),{}}
+    }));
+}
+
+/**
+  option (non) mutual exclusion any
+*/
+BOOST_AUTO_TEST_CASE( option_non_mutual_exclusion_any_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo")
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_exclusive(
+        {_LIT("bar"),_LIT("baz"),_LIT("foobar")})),
+  };
+
+  std::tie(std::ignore,vm) =
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options);
+
+//   stream_select::cerr << detail::to_string(vm,co::basic_value<string_type,detail::check_char_t>());
+
+  BOOST_REQUIRE(detail::contents_equal<string_type>(vm,
+    variable_map_type{
+      {_LIT("foo"),{}}
+    }));
+}
+
+/**
+  option mutual exclusion any
+*/
+BOOST_AUTO_TEST_CASE( option_mutual_exclusion_any_test )
+{
+  variable_map_type vm;
+  options_group_type options;
+  std::vector<const detail::check_char_t *> argv{
+    _LIT("--foo"),
+  };
+
+  options = options_group_type{
+    co::make_option(_LIT("foo,f"),_LIT("case 2")),
+    co::make_option(_LIT("bar,b"),_LIT("case 2"),
+      co::basic_constraint<detail::check_char_t>().mutually_exclusive_any(
+        {_LIT("baz"),_LIT("foobar")})),
+  };
+
+  std::vector<std::string> exclusive_any_keys{
+    co::detail::asUTF8(string_type(_LIT("baz"))),
+    co::detail::asUTF8(string_type(_LIT("foobar")))};
+
+  BOOST_CHECK_EXCEPTION(
+    co::parse_arguments(argv.data(),argv.data()+argv.size(),options),
+    co::mutually_exclusive_any_error,
+      [&](const co::mutually_exclusive_any_error &ex)
+      {
+        return (ex.mapped_key() == co::detail::asUTF8(string_type(_LIT("bar")))
+          && ex.exclusive_any_keys() == exclusive_any_keys);
+      }
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
   option (empty) mutual inclusion
 */
@@ -1045,15 +1204,6 @@ BOOST_AUTO_TEST_CASE( option_non_mutual_inclusion_any_test3 )
       {_LIT("foo"),{}}
     }));
 }
-
-
-
-
-
-
-
-
-
 
 /**
   option mutual inclusion (actual) any
