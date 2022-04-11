@@ -3030,7 +3030,6 @@ do_expand(typename std::basic_string<CharT>::const_iterator first,
         std::distance(first,cur));
     }
 
-//     std::cerr << "Expanding: '%" << *cur << "'\n";
     if(*cur == '?') {
       if(++cur == last ||
         (*cur != 'K' && *cur != 'V' && *cur != 'I' && *cur != 'E'))
@@ -3081,7 +3080,6 @@ do_expand(typename std::basic_string<CharT>::const_iterator first,
         result.append(false_clause);
 
       ++cur;
-//       std::cerr << "Done Expanding: '%" << *cur << "'\n";
 
     }
     else {
@@ -3132,7 +3130,6 @@ do_expand(typename std::basic_string<CharT>::const_iterator first,
       result.append(subs_str);
       stack.pop_back();
 
-//       std::cerr << "Done Expanding: '%" << *cur << "'\n";
       ++cur;
     }
 
@@ -3283,6 +3280,18 @@ class basic_default_formatter : public basic_description_formatter<CharT> {
 
     virtual std::size_t max_width(void) const {
       return _max_width;
+    }
+
+    virtual string_type wrap(const string_type &str) const
+    {
+      typedef detail::code_point_traits<CharT> cpoint_traits;
+      typedef std::basic_string<typename cpoint_traits::code_point>
+            cpstring_type;
+
+      cpstring_type cpextended_desc = cpoint_traits::convert_from(str);
+      cpstring_type wrapped_text = detail::wrap(cpextended_desc,max_width());
+
+      return cpoint_traits::convert_to(wrapped_text);
     }
 
     virtual string_type wrap(const string_type &str,
